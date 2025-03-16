@@ -9,6 +9,14 @@ export interface CommentAttachment {
   url: string;
 }
 
+export interface ReferenceAttachment {
+  id: string;
+  name: string;
+  size: number;
+  type: string;
+  url: string;
+}
+
 export interface Comment {
   id: string;
   text: string;
@@ -97,3 +105,4 @@ export const mockTasks: Task[] = [
     comments: [],
   },
 ];
+

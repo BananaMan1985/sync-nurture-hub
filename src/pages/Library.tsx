@@ -14,7 +14,10 @@ import {
   Edit,
   Trash,
   Check,
-  X
+  X,
+  Upload,
+  Download,
+  Eye
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Input } from '@/components/ui/input';
@@ -46,9 +49,34 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Checkbox } from "@/components/ui/checkbox";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
+import { ReferenceAttachment } from '@/components/projects/types';
+
+// Initialize with sample reference attachments
+const mockAttachments: ReferenceAttachment[] = [
+  {
+    id: 'att1',
+    name: 'employee_handbook.pdf',
+    size: 2500000,
+    type: 'application/pdf',
+    url: 'https://example.com/files/handbook.pdf'
+  },
+  {
+    id: 'att2',
+    name: 'conference_schedule.docx',
+    size: 450000,
+    type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    url: 'https://example.com/files/schedule.docx'
+  },
+  {
+    id: 'att3',
+    name: 'office_map.png',
+    size: 1200000,
+    type: 'image/png',
+    url: 'https://source.unsplash.com/random/800x600/?map'
+  }
+];
 
 // More realistic reference library data with tags
 const initialReferenceItems = [
@@ -59,7 +87,7 @@ const initialReferenceItems = [
     content: 'For international flights, prefer Star Alliance carriers. For domestic, Southwest or Delta. Prefer Marriott or Hilton for hotels. Always book aisle seats.',
     tags: ['airlines', 'hotels', 'travel policy'],
     icon: Plane,
-    hasAttachment: false,
+    attachments: [],
     updatedAt: '2 days ago'
   },
   {
@@ -69,7 +97,7 @@ const initialReferenceItems = [
     content: 'John Smith (IT): john@example.com, 555-123-4567\nSarah Johnson (HR): sarah@example.com, 555-987-6543\nAlex Brown (Finance): alex@example.com, 555-456-7890',
     tags: ['phone numbers', 'emails', 'employees'],
     icon: Phone,
-    hasAttachment: true,
+    attachments: [mockAttachments[0]],
     updatedAt: '5 days ago'
   },
   {
@@ -79,7 +107,7 @@ const initialReferenceItems = [
     content: '1. Create agenda 48 hours in advance\n2. Share agenda with participants\n3. Prepare slide deck if necessary\n4. Reserve meeting room and test AV equipment\n5. Send calendar invites with agenda attached',
     tags: ['sop', 'meetings', 'preparation'],
     icon: FileText,
-    hasAttachment: false,
+    attachments: [],
     updatedAt: '1 week ago'
   },
   {
@@ -89,7 +117,7 @@ const initialReferenceItems = [
     content: 'Collect all receipts. Categorize expenses. Submit through expense portal within 30 days of purchase. Approval workflow: manager → department head → finance.',
     tags: ['expenses', 'reimbursement', 'finance'],
     icon: FileText,
-    hasAttachment: true,
+    attachments: [mockAttachments[1], mockAttachments[2]],
     updatedAt: '2 weeks ago'
   },
   {
@@ -99,7 +127,7 @@ const initialReferenceItems = [
     content: 'Use the room booking system on the intranet. Book at least 24 hours in advance for small rooms, 48 hours for large conference rooms. For AV equipment, contact IT helpdesk.',
     tags: ['booking', 'conference rooms', 'meetings'],
     icon: FileText, 
-    hasAttachment: false,
+    attachments: [],
     updatedAt: '3 weeks ago'
   },
   {
@@ -109,7 +137,7 @@ const initialReferenceItems = [
     content: 'CEO: ceo@example.com, 555-111-2222\nCFO: cfo@example.com, 555-333-4444\nCTO: cto@example.com, 555-555-6666\nCOO: coo@example.com, 555-777-8888',
     tags: ['leadership', 'executives', 'management'],
     icon: Phone,
-    hasAttachment: false,
+    attachments: [],
     updatedAt: '1 month ago'
   }
 ];
@@ -123,6 +151,8 @@ const Library = () => {
   const [isNewItemDialogOpen, setIsNewItemDialogOpen] = useState(false);
   const [editingTag, setEditingTag] = useState<string | null>(null);
   const [newTagValue, setNewTagValue] = useState('');
+  const [selectedAttachment, setSelectedAttachment] = useState<ReferenceAttachment | null>(null);
+  const [isAttachmentPreviewOpen, setIsAttachmentPreviewOpen] = useState(false);
 
   // Form for creating/editing items
   const form = useForm({
@@ -132,7 +162,7 @@ const Library = () => {
       content: '',
       tags: [],
       newTag: '',
-      hasAttachment: false
+      attachments: [] as ReferenceAttachment[]
     }
   });
 
@@ -154,7 +184,8 @@ const Library = () => {
       item.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
       item.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
+      item.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      item.attachments.some(att => att.name.toLowerCase().includes(searchQuery.toLowerCase()))
     );
     
     // Filter by selected tags
@@ -173,7 +204,7 @@ const Library = () => {
         content: item.content,
         tags: item.tags,
         newTag: '',
-        hasAttachment: item.hasAttachment
+        attachments: item.attachments || []
       });
     } else {
       form.reset({
@@ -182,7 +213,7 @@ const Library = () => {
         content: '',
         tags: [],
         newTag: '',
-        hasAttachment: false
+        attachments: []
       });
     }
   };
@@ -200,6 +231,46 @@ const Library = () => {
     setIsNewItemDialogOpen(true);
   };
 
+  // Simulate file upload
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const newAttachments: ReferenceAttachment[] = [];
+    
+    Array.from(files).forEach(file => {
+      // Create a fake URL for the demo
+      const fakeUrl = URL.createObjectURL(file);
+      
+      newAttachments.push({
+        id: `att_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        url: fakeUrl
+      });
+    });
+
+    const currentAttachments = form.getValues('attachments') || [];
+    form.setValue('attachments', [...currentAttachments, ...newAttachments]);
+    
+    // Reset the input to allow uploading the same file again
+    e.target.value = '';
+  };
+
+  // Remove an attachment from the form
+  const handleRemoveAttachment = (attachmentId: string) => {
+    const currentAttachments = form.getValues('attachments') || [];
+    const updatedAttachments = currentAttachments.filter(att => att.id !== attachmentId);
+    form.setValue('attachments', updatedAttachments);
+  };
+
+  // Preview an attachment
+  const handlePreviewAttachment = (attachment: ReferenceAttachment) => {
+    setSelectedAttachment(attachment);
+    setIsAttachmentPreviewOpen(true);
+  };
+
   // Handle form submission
   const onSubmit = (data: any) => {
     // Process the tags
@@ -215,8 +286,8 @@ const Library = () => {
       description: data.description,
       content: data.content,
       tags: processedTags,
-      icon: FileText, // Default icon
-      hasAttachment: data.hasAttachment,
+      icon: editingItem?.icon || FileText, // Default icon or keep existing
+      attachments: data.attachments || [],
       updatedAt: 'Just now'
     };
     
@@ -457,11 +528,6 @@ const Library = () => {
                         <div className="flex items-center justify-between">
                           <div className="bg-primary/10 p-2 rounded-full">
                             <Icon className="h-5 w-5 text-primary" />
-                            {item.hasAttachment && (
-                              <span className="absolute top-3 right-3">
-                                <FileArchive className="h-4 w-4 text-muted-foreground" />
-                              </span>
-                            )}
                           </div>
                           <div className="text-xs text-muted-foreground">
                             {item.updatedAt}
@@ -471,6 +537,40 @@ const Library = () => {
                       </CardHeader>
                       <CardContent>
                         <CardDescription className="mb-2">{item.description}</CardDescription>
+                        {item.attachments && item.attachments.length > 0 && (
+                          <div className="mt-3 mb-1">
+                            <h4 className="text-xs font-medium text-muted-foreground mb-1">
+                              Attachments ({item.attachments.length})
+                            </h4>
+                            <div className="space-y-1">
+                              {item.attachments.map(attachment => (
+                                <div key={attachment.id} className="flex items-center justify-between bg-gray-50 rounded p-2 text-xs">
+                                  <span className="truncate max-w-[180px]">{attachment.name}</span>
+                                  <div className="flex items-center space-x-1">
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-6 w-6 p-0"
+                                      onClick={() => handlePreviewAttachment(attachment)}
+                                    >
+                                      <Eye className="h-3 w-3" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-6 w-6 p-0"
+                                      asChild
+                                    >
+                                      <a href={attachment.url} download={attachment.name}>
+                                        <Download className="h-3 w-3" />
+                                      </a>
+                                    </Button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                         <div className="flex flex-wrap gap-1 mt-2">
                           {item.tags.map(tag => (
                             <Badge 
@@ -525,10 +625,40 @@ const Library = () => {
                               <div className="p-4 bg-muted/50 rounded-md whitespace-pre-line">
                                 {item.content}
                               </div>
-                              {item.hasAttachment && (
-                                <div className="flex items-center">
-                                  <FileArchive className="h-5 w-5 mr-2 text-muted-foreground" />
-                                  <span className="text-sm">Attachment available</span>
+                              {item.attachments && item.attachments.length > 0 && (
+                                <div className="mt-4">
+                                  <h4 className="text-sm font-medium mb-2">Attachments</h4>
+                                  <div className="space-y-2">
+                                    {item.attachments.map(attachment => (
+                                      <div key={attachment.id} className="flex items-center justify-between bg-gray-50 rounded p-3">
+                                        <div className="flex items-center">
+                                          <FileArchive className="h-4 w-4 mr-2 text-muted-foreground" />
+                                          <span>{attachment.name}</span>
+                                          <span className="text-xs text-muted-foreground ml-2">
+                                            ({(attachment.size / 1024).toFixed(1)} KB)
+                                          </span>
+                                        </div>
+                                        <div className="flex gap-2">
+                                          <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => handlePreviewAttachment(attachment)}
+                                          >
+                                            <Eye className="h-4 w-4 mr-1" /> View
+                                          </Button>
+                                          <Button
+                                            variant="outline"
+                                            size="sm"
+                                            asChild
+                                          >
+                                            <a href={attachment.url} download={attachment.name}>
+                                              <Download className="h-4 w-4 mr-1" /> Download
+                                            </a>
+                                          </Button>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
                                 </div>
                               )}
                             </div>
@@ -629,6 +759,74 @@ const Library = () => {
                 )}
               />
               
+              {/* Attachments Field */}
+              <FormField
+                control={form.control}
+                name="attachments"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Attachments</FormLabel>
+                    <div className="mt-2">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <label htmlFor="file-upload" className="cursor-pointer">
+                            <div className="flex items-center gap-2 bg-primary/5 text-primary px-3 py-2 rounded-md hover:bg-primary/10 transition-colors">
+                              <Upload className="h-4 w-4" />
+                              <span className="text-sm font-medium">Upload File</span>
+                            </div>
+                            <input
+                              id="file-upload"
+                              type="file"
+                              className="hidden"
+                              onChange={handleFileUpload}
+                              multiple
+                            />
+                          </label>
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          {field.value.length} file(s) attached
+                        </div>
+                      </div>
+                      
+                      {field.value && field.value.length > 0 && (
+                        <div className="mt-3 space-y-2">
+                          {field.value.map((attachment: ReferenceAttachment) => (
+                            <div key={attachment.id} className="flex items-center justify-between bg-muted/50 rounded-md p-2 text-sm">
+                              <div className="flex items-center overflow-hidden">
+                                <FileArchive className="h-4 w-4 mr-2 text-muted-foreground flex-shrink-0" />
+                                <span className="truncate max-w-[150px]">{attachment.name}</span>
+                                <span className="text-xs text-muted-foreground ml-2 flex-shrink-0">
+                                  ({(attachment.size / 1024).toFixed(1)} KB)
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-8 w-8 p-0"
+                                  onClick={() => handlePreviewAttachment(attachment)}
+                                >
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-8 w-8 p-0 text-destructive"
+                                  onClick={() => handleRemoveAttachment(attachment.id)}
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
               <FormField
                 control={form.control}
                 name="tags"
@@ -689,24 +887,6 @@ const Library = () => {
                 )}
               />
               
-              <FormField
-                control={form.control}
-                name="hasAttachment"
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-start space-x-3 space-y-0 py-2">
-                    <FormControl>
-                      <Checkbox
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-                    <div className="space-y-1 leading-none">
-                      <FormLabel>This entry has attachments</FormLabel>
-                    </div>
-                  </FormItem>
-                )}
-              />
-              
               <DialogFooter>
                 <Button type="submit">
                   {editingItem ? 'Update Entry' : 'Add Entry'}
@@ -716,8 +896,67 @@ const Library = () => {
           </Form>
         </DialogContent>
       </Dialog>
+
+      {/* Attachment Preview Dialog */}
+      <Dialog 
+        open={isAttachmentPreviewOpen} 
+        onOpenChange={(open) => {
+          if (!open) {
+            setIsAttachmentPreviewOpen(false);
+            setSelectedAttachment(null);
+          }
+        }}
+      >
+        <DialogContent className="max-w-4xl max-h-[90vh]">
+          {selectedAttachment && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <FileArchive className="h-5 w-5" />
+                  {selectedAttachment.name}
+                </DialogTitle>
+                <DialogDescription>
+                  {(selectedAttachment.size / 1024).toFixed(2)} KB - {selectedAttachment.type}
+                </DialogDescription>
+              </DialogHeader>
+              
+              <div className="flex-1 overflow-auto my-6 flex items-center justify-center">
+                {selectedAttachment.type.startsWith('image/') ? (
+                  <img 
+                    src={selectedAttachment.url} 
+                    alt={selectedAttachment.name} 
+                    className="max-w-full max-h-[60vh] object-contain"
+                  />
+                ) : (
+                  <div className="text-center p-10 bg-slate-50 rounded-lg">
+                    <FileText className="h-16 w-16 mx-auto mb-4 text-slate-400" />
+                    <p className="mb-4">This file type cannot be previewed directly.</p>
+                    <Button asChild>
+                      <a href={selectedAttachment.url} target="_blank" rel="noopener noreferrer">
+                        <Eye className="h-4 w-4 mr-2" />
+                        Open File
+                      </a>
+                    </Button>
+                  </div>
+                )}
+              </div>
+              
+              <DialogFooter>
+                <Button asChild variant="outline">
+                  <a href={selectedAttachment.url} download={selectedAttachment.name}>
+                    <Download className="h-4 w-4 mr-2" />
+                    Download
+                  </a>
+                </Button>
+                <Button onClick={() => setIsAttachmentPreviewOpen(false)}>Close</Button>
+              </DialogFooter>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 };
 
 export default Library;
+
