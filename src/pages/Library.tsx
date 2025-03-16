@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
 import AppMenu from '@/components/AppMenu';
@@ -53,7 +52,6 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { ReferenceAttachment } from '@/components/projects/types';
 
-// Initialize with sample reference attachments
 const mockAttachments: ReferenceAttachment[] = [
   {
     id: 'att1',
@@ -78,7 +76,6 @@ const mockAttachments: ReferenceAttachment[] = [
   }
 ];
 
-// More realistic reference library data with tags
 const initialReferenceItems = [
   {
     id: 1,
@@ -154,7 +151,6 @@ const Library = () => {
   const [selectedAttachment, setSelectedAttachment] = useState<ReferenceAttachment | null>(null);
   const [isAttachmentPreviewOpen, setIsAttachmentPreviewOpen] = useState(false);
 
-  // Form for creating/editing items
   const form = useForm({
     defaultValues: {
       title: '',
@@ -166,7 +162,6 @@ const Library = () => {
     }
   });
 
-  // Extract unique tags
   useEffect(() => {
     const tags = new Set<string>();
     
@@ -177,9 +172,7 @@ const Library = () => {
     setAvailableTags(Array.from(tags));
   }, [referenceItems]);
 
-  // Filter items based on search query and selected tags
   const filteredItems = referenceItems.filter(item => {
-    // Search in title, description, and content
     const matchesSearch = (
       item.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
       item.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -188,14 +181,12 @@ const Library = () => {
       item.attachments.some(att => att.name.toLowerCase().includes(searchQuery.toLowerCase()))
     );
     
-    // Filter by selected tags
     const matchesTags = selectedTags.length === 0 || 
       selectedTags.some(tag => item.tags.includes(tag));
     
     return matchesSearch && matchesTags;
   });
 
-  // Reset the form when editing a new item
   const resetForm = (item?: any) => {
     if (item) {
       form.reset({
@@ -218,20 +209,17 @@ const Library = () => {
     }
   };
 
-  // Handle opening the edit dialog
   const handleEditItem = (item: any) => {
     setEditingItem(item);
     resetForm(item);
   };
 
-  // Handle opening the new item dialog
   const handleNewItem = () => {
     setEditingItem(null);
     resetForm();
     setIsNewItemDialogOpen(true);
   };
 
-  // Simulate file upload
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
@@ -239,7 +227,6 @@ const Library = () => {
     const newAttachments: ReferenceAttachment[] = [];
     
     Array.from(files).forEach(file => {
-      // Create a fake URL for the demo
       const fakeUrl = URL.createObjectURL(file);
       
       newAttachments.push({
@@ -254,68 +241,57 @@ const Library = () => {
     const currentAttachments = form.getValues('attachments') || [];
     form.setValue('attachments', [...currentAttachments, ...newAttachments]);
     
-    // Reset the input to allow uploading the same file again
     e.target.value = '';
   };
 
-  // Remove an attachment from the form
   const handleRemoveAttachment = (attachmentId: string) => {
     const currentAttachments = form.getValues('attachments') || [];
     const updatedAttachments = currentAttachments.filter(att => att.id !== attachmentId);
     form.setValue('attachments', updatedAttachments);
   };
 
-  // Preview an attachment
   const handlePreviewAttachment = (attachment: ReferenceAttachment) => {
     setSelectedAttachment(attachment);
     setIsAttachmentPreviewOpen(true);
   };
 
-  // Handle form submission
   const onSubmit = (data: any) => {
-    // Process the tags
     const processedTags = [...data.tags];
     if (data.newTag && !processedTags.includes(data.newTag)) {
       processedTags.push(data.newTag);
     }
     
-    // Create the new item object
     const newItem = {
       id: editingItem ? editingItem.id : Date.now(),
       title: data.title,
       description: data.description,
       content: data.content,
       tags: processedTags,
-      icon: editingItem?.icon || FileText, // Default icon or keep existing
+      icon: editingItem?.icon || FileText,
       attachments: data.attachments || [],
       updatedAt: 'Just now'
     };
     
     if (editingItem) {
-      // Update existing item
       setReferenceItems(prevItems => 
         prevItems.map(item => item.id === editingItem.id ? newItem : item)
       );
       toast.success("Item updated successfully");
     } else {
-      // Add new item
       setReferenceItems(prevItems => [...prevItems, newItem]);
       toast.success("New item added successfully");
     }
     
-    // Close the dialog and reset the form
     setEditingItem(null);
     setIsNewItemDialogOpen(false);
     resetForm();
   };
 
-  // Handle deleting an item
   const handleDeleteItem = (id: number) => {
     setReferenceItems(prevItems => prevItems.filter(item => item.id !== id));
     toast.success("Item deleted successfully");
   };
 
-  // Toggle tag selection
   const toggleTag = (tag: string) => {
     setSelectedTags(prev => 
       prev.includes(tag) 
@@ -324,16 +300,13 @@ const Library = () => {
     );
   };
 
-  // Handle editing a tag
   const startEditTag = (tag: string) => {
     setEditingTag(tag);
     setNewTagValue(tag);
   };
 
-  // Save edited tag
   const saveEditedTag = () => {
     if (editingTag && newTagValue && newTagValue !== editingTag) {
-      // Update the tag in all items
       setReferenceItems(prevItems => 
         prevItems.map(item => ({
           ...item,
@@ -341,12 +314,10 @@ const Library = () => {
         }))
       );
       
-      // Update selected tags if needed
       setSelectedTags(prevTags => 
         prevTags.map(tag => tag === editingTag ? newTagValue : tag)
       );
       
-      // Update available tags
       setAvailableTags(prevTags => {
         const newTags = prevTags.filter(tag => tag !== editingTag);
         return [...newTags, newTagValue];
@@ -355,20 +326,16 @@ const Library = () => {
       toast.success(`Tag updated from "${editingTag}" to "${newTagValue}"`);
     }
     
-    // Reset editing state
     setEditingTag(null);
     setNewTagValue('');
   };
 
-  // Cancel tag editing
   const cancelEditTag = () => {
     setEditingTag(null);
     setNewTagValue('');
   };
 
-  // Delete a tag
   const deleteTag = (tagToDelete: string) => {
-    // Remove tag from all items
     setReferenceItems(prevItems => 
       prevItems.map(item => ({
         ...item,
@@ -376,10 +343,8 @@ const Library = () => {
       }))
     );
     
-    // Remove from selected tags
     setSelectedTags(prevTags => prevTags.filter(tag => tag !== tagToDelete));
     
-    // Remove from available tags
     setAvailableTags(prevTags => prevTags.filter(tag => tag !== tagToDelete));
     
     toast.success(`Tag "${tagToDelete}" deleted`);
@@ -408,7 +373,6 @@ const Library = () => {
         <AppMenu />
 
         <div className="grid grid-cols-1 md:grid-cols-[1fr_3fr] gap-8 mt-8">
-          {/* Sidebar with search and filters */}
           <div className="space-y-6">
             <div className="relative">
               <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
@@ -420,13 +384,11 @@ const Library = () => {
               />
             </div>
             
-            {/* Tags section */}
             <div className="space-y-4">
               <div className="flex justify-between items-center">
                 <h3 className="text-sm font-medium flex items-center">
                   <Tag className="h-4 w-4 mr-2" /> Tags
                 </h3>
-                {/* Add new tag input */}
                 <div className="flex items-center space-x-1">
                   <Input 
                     value={form.watch('newTag') || ''}
@@ -464,7 +426,7 @@ const Library = () => {
                         />
                         <Button 
                           size="sm" 
-                          variant="ghost" 
+                          variant="ghost"
                           className="h-7 w-7 p-0"
                           onClick={saveEditedTag}
                         >
@@ -516,7 +478,6 @@ const Library = () => {
             </div>
           </div>
           
-          {/* Main content area */}
           <div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {filteredItems.length > 0 ? (
@@ -524,45 +485,45 @@ const Library = () => {
                   const Icon = item.icon;
                   return (
                     <Card key={item.id} className="overflow-hidden hover:shadow-md transition-shadow">
-                      <CardHeader className="pb-2">
+                      <CardHeader className="pb-3">
                         <div className="flex items-center justify-between">
-                          <div className="bg-primary/10 p-2.5 rounded-full">
+                          <div className="bg-primary/10 p-2 rounded-full">
                             <Icon className="h-5 w-5 text-primary" />
                           </div>
                           <div className="text-xs text-muted-foreground">
                             {item.updatedAt}
                           </div>
                         </div>
-                        <CardTitle className="mt-4 text-xl">{item.title}</CardTitle>
-                        <CardDescription className="mt-1.5">{item.description}</CardDescription>
+                        <CardTitle className="mt-3 text-xl">{item.title}</CardTitle>
                       </CardHeader>
-                      <CardContent className="space-y-4 pt-2">
+                      <CardContent className="space-y-4">
+                        <CardDescription>{item.description}</CardDescription>
                         {item.attachments && item.attachments.length > 0 && (
-                          <div className="mt-2">
-                            <h4 className="text-xs font-medium text-muted-foreground mb-2.5">
+                          <div>
+                            <h4 className="text-xs font-medium text-muted-foreground mb-2">
                               Attachments ({item.attachments.length})
                             </h4>
-                            <div className="space-y-2.5">
+                            <div className="space-y-2">
                               {item.attachments.map(attachment => (
                                 <div key={attachment.id} className="flex items-center justify-between bg-gray-50 rounded p-2.5 text-xs">
                                   <span className="truncate max-w-[180px]">{attachment.name}</span>
-                                  <div className="flex items-center space-x-2.5">
+                                  <div className="flex items-center space-x-2">
                                     <Button
                                       variant="ghost"
                                       size="sm"
-                                      className="h-8 w-8 p-0"
+                                      className="h-7 w-7 p-0"
                                       onClick={() => handlePreviewAttachment(attachment)}
                                     >
-                                      <Eye className="h-4 w-4" />
+                                      <Eye className="h-3.5 w-3.5" />
                                     </Button>
                                     <Button
                                       variant="ghost"
                                       size="sm"
-                                      className="h-8 w-8 p-0"
+                                      className="h-7 w-7 p-0"
                                       asChild
                                     >
                                       <a href={attachment.url} download={attachment.name}>
-                                        <Download className="h-4 w-4" />
+                                        <Download className="h-3.5 w-3.5" />
                                       </a>
                                     </Button>
                                   </div>
@@ -571,36 +532,26 @@ const Library = () => {
                             </div>
                           </div>
                         )}
-                        <div className="flex flex-wrap gap-2 pt-2">
+                        <div className="flex flex-wrap gap-1.5 pt-1">
                           {item.tags.map(tag => (
                             <Badge 
                               key={tag} 
                               variant="outline"
-                              className="text-xs py-0.5 px-2"
+                              className="text-xs py-0.5"
                             >
                               {tag}
                             </Badge>
                           ))}
                         </div>
                       </CardContent>
-                      <CardFooter className="pt-3 pb-5 flex justify-between">
-                        <div className="flex gap-2.5">
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            onClick={() => handleEditItem(item)}
-                          >
-                            <Edit className="h-4 w-4 mr-1.5" /> Edit
-                          </Button>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            className="text-destructive"
-                            onClick={() => handleDeleteItem(item.id)}
-                          >
-                            <Trash className="h-4 w-4 mr-1.5" /> Delete
-                          </Button>
-                        </div>
+                      <CardFooter className="pt-2 pb-4 flex justify-between">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => handleEditItem(item)}
+                        >
+                          <Edit className="h-4 w-4 mr-1" /> Edit
+                        </Button>
                         <Dialog>
                           <DialogTrigger asChild>
                             <Button variant="outline" size="sm">View Details</Button>
@@ -691,7 +642,6 @@ const Library = () => {
         </div>
       </motion.div>
 
-      {/* Dialog for adding/editing items */}
       <Dialog 
         open={isNewItemDialogOpen || !!editingItem} 
         onOpenChange={(open) => {
@@ -759,7 +709,6 @@ const Library = () => {
                 )}
               />
               
-              {/* Attachments Field */}
               <FormField
                 control={form.control}
                 name="attachments"
@@ -806,7 +755,7 @@ const Library = () => {
                                   className="h-8 w-8 p-0"
                                   onClick={() => handlePreviewAttachment(attachment)}
                                 >
-                                  <Eye className="h-4 w-4" />
+                                  <Eye className="h-4 w-4 mr-1" /> View
                                 </Button>
                                 <Button
                                   variant="ghost"
@@ -864,13 +813,11 @@ const Library = () => {
                         onClick={() => {
                           const newTag = form.getValues('newTag');
                           if (newTag) {
-                            // Add to current item's tags
                             const currentTags = form.getValues('tags') || [];
                             if (!currentTags.includes(newTag)) {
                               form.setValue('tags', [...currentTags, newTag]);
                             }
                             
-                            // Add to available tags if not already there
                             if (!availableTags.includes(newTag)) {
                               setAvailableTags(prev => [...prev, newTag]);
                             }
@@ -887,7 +834,17 @@ const Library = () => {
                 )}
               />
               
-              <DialogFooter>
+              <DialogFooter className="flex justify-between">
+                {editingItem && (
+                  <Button 
+                    type="button" 
+                    variant="outline"
+                    className="text-destructive"
+                    onClick={() => handleDeleteItem(editingItem.id)}
+                  >
+                    <Trash className="h-4 w-4 mr-1" /> Delete
+                  </Button>
+                )}
                 <Button type="submit">
                   {editingItem ? 'Update Entry' : 'Add Entry'}
                 </Button>
@@ -897,7 +854,6 @@ const Library = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Attachment Preview Dialog */}
       <Dialog 
         open={isAttachmentPreviewOpen} 
         onOpenChange={(open) => {
