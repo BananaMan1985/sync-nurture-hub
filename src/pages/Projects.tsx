@@ -10,11 +10,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 
-// Import the newly created components
+// Import the components with explicit type imports
 import TaskColumn from '@/components/projects/TaskColumn';
 import TaskForm from '@/components/projects/TaskForm';
 import TaskEditDialog from '@/components/projects/TaskEditDialog';
-import { Task, TaskStatus, mockTasks } from '@/components/projects/types';
+import { Task, TaskStatus, mockTasks, Comment as TaskComment } from '@/components/projects/types';
 
 const Projects = () => {
   const [tasks, setTasks] = useState<Task[]>(mockTasks);
@@ -115,8 +115,8 @@ const Projects = () => {
     });
   };
 
-  const handleAddComment = (taskId: string, comment: Omit<Comment, 'id'>) => {
-    const newComment = {
+  const handleAddComment = (taskId: string, comment: Omit<TaskComment, 'id'>) => {
+    const newComment: TaskComment = {
       id: `comment-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
       ...comment
     };
@@ -124,7 +124,7 @@ const Projects = () => {
     console.log("Adding comment:", newComment, "to task:", taskId);
     
     setTasks(prev => {
-      const updatedTasks = prev.map(task => {
+      return prev.map(task => {
         if (task.id === taskId) {
           return {
             ...task,
@@ -133,9 +133,6 @@ const Projects = () => {
         }
         return task;
       });
-      
-      console.log("Updated tasks:", updatedTasks);
-      return updatedTasks;
     });
     
     // Update the selectedTask if it's the one we're adding a comment to
@@ -155,9 +152,9 @@ const Projects = () => {
     });
   };
 
-  const handleEditComment = (taskId: string, commentId: string, updatedComment: Comment) => {
+  const handleEditComment = (taskId: string, commentId: string, updatedComment: TaskComment) => {
     setTasks(prev => {
-      const updatedTasks = prev.map(task => {
+      return prev.map(task => {
         if (task.id === taskId) {
           return {
             ...task,
@@ -168,9 +165,6 @@ const Projects = () => {
         }
         return task;
       });
-      
-      console.log("Updated tasks after comment edit:", updatedTasks);
-      return updatedTasks;
     });
     
     // Also update selectedTask if it's the same task

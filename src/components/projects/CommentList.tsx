@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -26,13 +27,7 @@ const CommentList: React.FC<CommentListProps> = ({ comments, onEditComment, task
   }
   
   const handleSaveEdit = (updatedComment: Comment) => {
-    if (taskId) {
-      // If taskId is provided, use the 3-param version
-      onEditComment(updatedComment.id, updatedComment);
-    } else {
-      // Otherwise use the 2-param version (for backward compatibility)
-      onEditComment(updatedComment.id, updatedComment);
-    }
+    onEditComment(updatedComment.id, updatedComment);
     setEditingCommentId(null);
   };
 

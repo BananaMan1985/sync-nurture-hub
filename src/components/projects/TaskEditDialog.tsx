@@ -52,40 +52,12 @@ const TaskEditDialog: React.FC<TaskEditDialogProps> = ({
 
   const handleAddComment = (taskId: string, comment: Omit<Comment, 'id'>) => {
     onAddComment(taskId, comment);
-    
-    setEditedTask(prev => {
-      if (!prev) return prev;
-      
-      const newComment = {
-        id: `comment-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-        ...comment
-      };
-      
-      return {
-        ...prev,
-        comments: [...(prev.comments || []), newComment]
-      };
-    });
   };
 
   const handleEditComment = (commentId: string, updatedComment: Comment) => {
-    onEditComment(editedTask.id, commentId, updatedComment);
-    
-    setEditedTask(prev => {
-      if (!prev) return prev;
-      
-      return {
-        ...prev,
-        comments: prev.comments?.map(comment => 
-          comment.id === commentId ? updatedComment : comment
-        )
-      };
-    });
-    
-    toast({
-      title: "Comment updated",
-      description: "Your comment has been updated.",
-    });
+    if (editedTask) {
+      onEditComment(editedTask.id, commentId, updatedComment);
+    }
   };
 
   const statusStyles = {
