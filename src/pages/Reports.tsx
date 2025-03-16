@@ -3,7 +3,6 @@ import React from 'react';
 import Layout from '@/components/Layout';
 import AnimatedTransition from '@/components/AnimatedTransition';
 import ReportForm from '@/components/ReportForm';
-import ReportHistory from '@/components/ReportHistory';
 import AppMenu from '@/components/AppMenu';
 
 const Reports: React.FC = () => {
@@ -20,14 +19,8 @@ const Reports: React.FC = () => {
           
           <AppMenu />
           
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
-            <div className="lg:col-span-2">
-              <ReportForm />
-            </div>
-            
-            <div>
-              <ReportHistory />
-            </div>
+          <div className="max-w-3xl mx-auto mt-8">
+            <ReportForm />
           </div>
         </div>
       </AnimatedTransition>
