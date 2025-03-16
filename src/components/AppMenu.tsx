@@ -2,7 +2,7 @@
 import React from 'react';
 import { useLocation, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Mic, ListChecks, ClipboardList, BookOpen, Settings, Navigation } from 'lucide-react';
+import { Mic, ListChecks, ClipboardList, BookOpen, Settings } from 'lucide-react';
 
 interface MenuItemProps {
   href: string;
@@ -41,11 +41,6 @@ const AppMenu: React.FC = () => {
       href: "/tasks", 
       icon: <ListChecks className="mr-2 h-5 w-5" />, 
       label: "Project Board" 
-    },
-    { 
-      href: "/navigation", 
-      icon: <Navigation className="mr-2 h-5 w-5" />, 
-      label: "Navigation" 
     },
     { 
       href: "/reports", 
