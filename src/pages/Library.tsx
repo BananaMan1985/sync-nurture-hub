@@ -4,7 +4,6 @@ import Layout from '@/components/Layout';
 import AppMenu from '@/components/AppMenu';
 import { 
   Search, 
-  Filter, 
   Phone, 
   Plane, 
   FileText, 
@@ -13,7 +12,9 @@ import {
   Tag,
   FileArchive,
   Edit,
-  Trash
+  Trash,
+  Check,
+  X
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Input } from '@/components/ui/input';
@@ -27,7 +28,7 @@ import {
   CardTitle 
 } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
   DialogContent,
@@ -45,25 +46,17 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 
-// More realistic reference library data with dynamic categories and tags
+// More realistic reference library data with tags
 const initialReferenceItems = [
   {
     id: 1,
     title: 'Travel Preferences',
     description: 'Preferred airlines, hotel chains, and travel requirements.',
     content: 'For international flights, prefer Star Alliance carriers. For domestic, Southwest or Delta. Prefer Marriott or Hilton for hotels. Always book aisle seats.',
-    categories: ['Travel', 'Preferences'],
     tags: ['airlines', 'hotels', 'travel policy'],
     icon: Plane,
     hasAttachment: false,
@@ -74,7 +67,6 @@ const initialReferenceItems = [
     title: 'Key Contacts',
     description: 'Important contact information for frequent collaborators.',
     content: 'John Smith (IT): john@example.com, 555-123-4567\nSarah Johnson (HR): sarah@example.com, 555-987-6543\nAlex Brown (Finance): alex@example.com, 555-456-7890',
-    categories: ['Contacts', 'Directory'],
     tags: ['phone numbers', 'emails', 'employees'],
     icon: Phone,
     hasAttachment: true,
@@ -85,7 +77,6 @@ const initialReferenceItems = [
     title: 'Meeting Preparation SOP',
     description: 'Standard operating procedure for preparing meeting materials.',
     content: '1. Create agenda 48 hours in advance\n2. Share agenda with participants\n3. Prepare slide deck if necessary\n4. Reserve meeting room and test AV equipment\n5. Send calendar invites with agenda attached',
-    categories: ['Processes', 'Meetings'],
     tags: ['sop', 'meetings', 'preparation'],
     icon: FileText,
     hasAttachment: false,
@@ -96,7 +87,6 @@ const initialReferenceItems = [
     title: 'Expense Reporting Process',
     description: 'Step-by-step guide for submitting and approving expenses.',
     content: 'Collect all receipts. Categorize expenses. Submit through expense portal within 30 days of purchase. Approval workflow: manager → department head → finance.',
-    categories: ['Finance', 'Processes'],
     tags: ['expenses', 'reimbursement', 'finance'],
     icon: FileText,
     hasAttachment: true,
@@ -107,7 +97,6 @@ const initialReferenceItems = [
     title: 'Conference Room Booking',
     description: 'Instructions for booking conference rooms and AV equipment.',
     content: 'Use the room booking system on the intranet. Book at least 24 hours in advance for small rooms, 48 hours for large conference rooms. For AV equipment, contact IT helpdesk.',
-    categories: ['Facilities', 'Processes'],
     tags: ['booking', 'conference rooms', 'meetings'],
     icon: FileText, 
     hasAttachment: false,
@@ -118,7 +107,6 @@ const initialReferenceItems = [
     title: 'Executive Team Contacts',
     description: 'Contact information for the executive leadership team.',
     content: 'CEO: ceo@example.com, 555-111-2222\nCFO: cfo@example.com, 555-333-4444\nCTO: cto@example.com, 555-555-6666\nCOO: coo@example.com, 555-777-8888',
-    categories: ['Contacts', 'Executive'],
     tags: ['leadership', 'executives', 'management'],
     icon: Phone,
     hasAttachment: false,
@@ -129,12 +117,12 @@ const initialReferenceItems = [
 const Library = () => {
   const [referenceItems, setReferenceItems] = useState(initialReferenceItems);
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeTab, setActiveTab] = useState('all');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [availableTags, setAvailableTags] = useState<string[]>([]);
-  const [availableCategories, setAvailableCategories] = useState<string[]>([]);
   const [editingItem, setEditingItem] = useState<any>(null);
   const [isNewItemDialogOpen, setIsNewItemDialogOpen] = useState(false);
+  const [editingTag, setEditingTag] = useState<string | null>(null);
+  const [newTagValue, setNewTagValue] = useState('');
 
   // Form for creating/editing items
   const form = useForm({
@@ -142,29 +130,24 @@ const Library = () => {
       title: '',
       description: '',
       content: '',
-      categories: [],
-      newCategory: '',
       tags: [],
       newTag: '',
       hasAttachment: false
     }
   });
 
-  // Extract unique tags and categories
+  // Extract unique tags
   useEffect(() => {
     const tags = new Set<string>();
-    const categories = new Set<string>();
     
     referenceItems.forEach(item => {
       item.tags.forEach(tag => tags.add(tag));
-      item.categories.forEach(category => categories.add(category));
     });
     
     setAvailableTags(Array.from(tags));
-    setAvailableCategories(Array.from(categories));
   }, [referenceItems]);
 
-  // Filter items based on search query, active tab, and selected tags
+  // Filter items based on search query and selected tags
   const filteredItems = referenceItems.filter(item => {
     // Search in title, description, and content
     const matchesSearch = (
@@ -174,14 +157,11 @@ const Library = () => {
       item.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
     );
     
-    // Filter by category tab
-    const matchesTab = activeTab === 'all' || item.categories.includes(activeTab);
-    
     // Filter by selected tags
     const matchesTags = selectedTags.length === 0 || 
       selectedTags.some(tag => item.tags.includes(tag));
     
-    return matchesSearch && matchesTab && matchesTags;
+    return matchesSearch && matchesTags;
   });
 
   // Reset the form when editing a new item
@@ -191,8 +171,6 @@ const Library = () => {
         title: item.title,
         description: item.description,
         content: item.content,
-        categories: item.categories,
-        newCategory: '',
         tags: item.tags,
         newTag: '',
         hasAttachment: item.hasAttachment
@@ -202,8 +180,6 @@ const Library = () => {
         title: '',
         description: '',
         content: '',
-        categories: [],
-        newCategory: '',
         tags: [],
         newTag: '',
         hasAttachment: false
@@ -226,12 +202,7 @@ const Library = () => {
 
   // Handle form submission
   const onSubmit = (data: any) => {
-    // Process the categories and tags
-    const processedCategories = [...data.categories];
-    if (data.newCategory && !processedCategories.includes(data.newCategory)) {
-      processedCategories.push(data.newCategory);
-    }
-    
+    // Process the tags
     const processedTags = [...data.tags];
     if (data.newTag && !processedTags.includes(data.newTag)) {
       processedTags.push(data.newTag);
@@ -243,7 +214,6 @@ const Library = () => {
       title: data.title,
       description: data.description,
       content: data.content,
-      categories: processedCategories,
       tags: processedTags,
       icon: FileText, // Default icon
       hasAttachment: data.hasAttachment,
@@ -283,6 +253,67 @@ const Library = () => {
     );
   };
 
+  // Handle editing a tag
+  const startEditTag = (tag: string) => {
+    setEditingTag(tag);
+    setNewTagValue(tag);
+  };
+
+  // Save edited tag
+  const saveEditedTag = () => {
+    if (editingTag && newTagValue && newTagValue !== editingTag) {
+      // Update the tag in all items
+      setReferenceItems(prevItems => 
+        prevItems.map(item => ({
+          ...item,
+          tags: item.tags.map(tag => tag === editingTag ? newTagValue : tag)
+        }))
+      );
+      
+      // Update selected tags if needed
+      setSelectedTags(prevTags => 
+        prevTags.map(tag => tag === editingTag ? newTagValue : tag)
+      );
+      
+      // Update available tags
+      setAvailableTags(prevTags => {
+        const newTags = prevTags.filter(tag => tag !== editingTag);
+        return [...newTags, newTagValue];
+      });
+      
+      toast.success(`Tag updated from "${editingTag}" to "${newTagValue}"`);
+    }
+    
+    // Reset editing state
+    setEditingTag(null);
+    setNewTagValue('');
+  };
+
+  // Cancel tag editing
+  const cancelEditTag = () => {
+    setEditingTag(null);
+    setNewTagValue('');
+  };
+
+  // Delete a tag
+  const deleteTag = (tagToDelete: string) => {
+    // Remove tag from all items
+    setReferenceItems(prevItems => 
+      prevItems.map(item => ({
+        ...item,
+        tags: item.tags.filter(tag => tag !== tagToDelete)
+      }))
+    );
+    
+    // Remove from selected tags
+    setSelectedTags(prevTags => prevTags.filter(tag => tag !== tagToDelete));
+    
+    // Remove from available tags
+    setAvailableTags(prevTags => prevTags.filter(tag => tag !== tagToDelete));
+    
+    toast.success(`Tag "${tagToDelete}" deleted`);
+  };
+
   return (
     <Layout>
       <motion.div
@@ -318,32 +349,92 @@ const Library = () => {
               />
             </div>
             
-            {/* Dynamic categories */}
-            <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="w-full flex flex-wrap justify-start">
-                <TabsTrigger value="all">All</TabsTrigger>
-                {availableCategories.map(category => (
-                  <TabsTrigger key={category} value={category}>{category}</TabsTrigger>
-                ))}
-              </TabsList>
-            </Tabs>
-            
             {/* Tags section */}
-            <div className="space-y-2">
-              <h3 className="text-sm font-medium flex items-center">
-                <Tag className="h-4 w-4 mr-2" /> Tags
-              </h3>
+            <div className="space-y-3">
+              <div className="flex justify-between items-center">
+                <h3 className="text-sm font-medium flex items-center">
+                  <Tag className="h-4 w-4 mr-2" /> Tags
+                </h3>
+                {/* Add new tag input */}
+                <div className="flex items-center space-x-1">
+                  <Input 
+                    value={form.watch('newTag') || ''}
+                    onChange={(e) => form.setValue('newTag', e.target.value)}
+                    placeholder="New tag"
+                    className="h-7 text-xs"
+                  />
+                  <Button 
+                    size="sm" 
+                    variant="ghost"
+                    className="h-7 px-2"
+                    onClick={() => {
+                      const newTag = form.getValues('newTag');
+                      if (newTag && !availableTags.includes(newTag)) {
+                        setAvailableTags(prev => [...prev, newTag]);
+                        form.setValue('newTag', '');
+                        toast.success(`Tag "${newTag}" added`);
+                      }
+                    }}
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
               <div className="flex flex-wrap gap-2">
                 {availableTags.map(tag => (
-                  <Button 
-                    key={tag} 
-                    variant={selectedTags.includes(tag) ? "default" : "outline"} 
-                    size="sm"
-                    onClick={() => toggleTag(tag)}
-                    className="text-xs py-1 h-7"
-                  >
-                    {tag}
-                  </Button>
+                  <div key={tag} className="flex items-center">
+                    {editingTag === tag ? (
+                      <div className="flex items-center">
+                        <Input
+                          value={newTagValue}
+                          onChange={(e) => setNewTagValue(e.target.value)}
+                          className="h-7 text-xs w-24 mr-1"
+                          autoFocus
+                        />
+                        <Button 
+                          size="sm" 
+                          variant="ghost" 
+                          className="h-7 w-7 p-0"
+                          onClick={saveEditedTag}
+                        >
+                          <Check className="h-3 w-3" />
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="ghost" 
+                          className="h-7 w-7 p-0"
+                          onClick={cancelEditTag}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <Badge 
+                        variant={selectedTags.includes(tag) ? "default" : "outline"}
+                        className="text-xs py-1 px-2 cursor-pointer flex items-center gap-1"
+                      >
+                        <span onClick={() => toggleTag(tag)}>{tag}</span>
+                        <div className="flex items-center ml-1">
+                          <Button 
+                            size="sm" 
+                            variant="ghost" 
+                            className="h-4 w-4 p-0"
+                            onClick={() => startEditTag(tag)}
+                          >
+                            <Edit className="h-2 w-2" />
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="ghost" 
+                            className="h-4 w-4 p-0 text-destructive"
+                            onClick={() => deleteTag(tag)}
+                          >
+                            <X className="h-2 w-2" />
+                          </Button>
+                        </div>
+                      </Badge>
+                    )}
+                  </div>
                 ))}
               </div>
             </div>
@@ -382,26 +473,27 @@ const Library = () => {
                         <CardDescription className="mb-2">{item.description}</CardDescription>
                         <div className="flex flex-wrap gap-1 mt-2">
                           {item.tags.map(tag => (
-                            <span 
+                            <Badge 
                               key={tag} 
-                              className="inline-flex items-center px-2 py-1 rounded-full bg-muted text-xs font-medium"
+                              variant="outline"
+                              className="text-xs"
                             >
                               {tag}
-                            </span>
+                            </Badge>
                           ))}
                         </div>
                       </CardContent>
                       <CardFooter className="pt-0 pb-3 flex justify-between">
                         <div className="flex gap-2">
                           <Button 
-                            variant="ghost" 
+                            variant="outline" 
                             size="sm" 
                             onClick={() => handleEditItem(item)}
                           >
                             <Edit className="h-4 w-4 mr-1" /> Edit
                           </Button>
                           <Button 
-                            variant="ghost" 
+                            variant="outline" 
                             size="sm"
                             className="text-destructive"
                             onClick={() => handleDeleteItem(item.id)}
@@ -411,7 +503,7 @@ const Library = () => {
                         </div>
                         <Dialog>
                           <DialogTrigger asChild>
-                            <Button variant="ghost" size="sm">View Details</Button>
+                            <Button variant="outline" size="sm">View Details</Button>
                           </DialogTrigger>
                           <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
                             <DialogHeader>
@@ -420,23 +512,14 @@ const Library = () => {
                             </DialogHeader>
                             <div className="mt-4 space-y-4">
                               <div className="flex flex-wrap gap-1">
-                                {item.categories.map(category => (
-                                  <span 
-                                    key={category} 
-                                    className="inline-flex items-center px-2 py-1 rounded-full bg-primary/10 text-xs font-medium"
-                                  >
-                                    {category}
-                                  </span>
-                                ))}
-                              </div>
-                              <div className="flex flex-wrap gap-1">
                                 {item.tags.map(tag => (
-                                  <span 
+                                  <Badge 
                                     key={tag} 
-                                    className="inline-flex items-center px-2 py-1 rounded-full bg-muted text-xs font-medium"
+                                    variant="outline"
+                                    className="text-xs"
                                   >
                                     {tag}
-                                  </span>
+                                  </Badge>
                                 ))}
                               </div>
                               <div className="p-4 bg-muted/50 rounded-md whitespace-pre-line">
@@ -449,6 +532,15 @@ const Library = () => {
                                 </div>
                               )}
                             </div>
+                            <DialogFooter className="flex justify-end mt-4">
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                onClick={() => handleEditItem(item)}
+                              >
+                                <Edit className="h-4 w-4 mr-1" /> Edit Entry
+                              </Button>
+                            </DialogFooter>
                           </DialogContent>
                         </Dialog>
                       </CardFooter>
@@ -537,171 +629,65 @@ const Library = () => {
                 )}
               />
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-4">
-                  <FormField
-                    control={form.control}
-                    name="categories"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Categories</FormLabel>
-                        <FormControl>
-                          <Select
-                            onValueChange={(value) => {
-                              const currentCategories = field.value || [];
-                              if (!currentCategories.includes(value)) {
-                                field.onChange([...currentCategories, value]);
-                              }
-                            }}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select categories" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {availableCategories.map(category => (
-                                <SelectItem key={category} value={category}>
-                                  {category}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </FormControl>
-                        <div className="flex flex-wrap gap-2 mt-2">
-                          {form.watch('categories')?.map((category: string) => (
-                            <div key={category} className="flex items-center gap-1 bg-primary/10 px-2 py-1 rounded-full text-xs">
-                              {category}
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  const currentCategories = field.value || [];
-                                  field.onChange(currentCategories.filter(c => c !== category));
-                                }}
-                                className="text-muted-foreground hover:text-destructive"
-                              >
-                                ×
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="newCategory"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Add New Category</FormLabel>
-                        <div className="flex gap-2">
-                          <FormControl>
-                            <Input placeholder="New category" {...field} />
-                          </FormControl>
-                          <Button 
-                            type="button" 
-                            onClick={() => {
-                              const newCategory = form.getValues('newCategory');
-                              if (newCategory) {
-                                const currentCategories = form.getValues('categories') || [];
-                                if (!currentCategories.includes(newCategory)) {
-                                  form.setValue('categories', [...currentCategories, newCategory]);
-                                }
-                                form.setValue('newCategory', '');
-                              }
-                            }}
-                          >
-                            Add
-                          </Button>
-                        </div>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-                
-                <div className="space-y-4">
-                  <FormField
-                    control={form.control}
-                    name="tags"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Tags</FormLabel>
-                        <FormControl>
-                          <Select
-                            onValueChange={(value) => {
-                              const currentTags = field.value || [];
-                              if (!currentTags.includes(value)) {
-                                field.onChange([...currentTags, value]);
-                              }
-                            }}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select tags" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {availableTags.map(tag => (
-                                <SelectItem key={tag} value={tag}>
-                                  {tag}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </FormControl>
-                        <div className="flex flex-wrap gap-2 mt-2">
-                          {form.watch('tags')?.map((tag: string) => (
-                            <div key={tag} className="flex items-center gap-1 bg-muted px-2 py-1 rounded-full text-xs">
-                              {tag}
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  const currentTags = field.value || [];
-                                  field.onChange(currentTags.filter(t => t !== tag));
-                                }}
-                                className="text-muted-foreground hover:text-destructive"
-                              >
-                                ×
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="newTag"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Add New Tag</FormLabel>
-                        <div className="flex gap-2">
-                          <FormControl>
-                            <Input placeholder="New tag" {...field} />
-                          </FormControl>
-                          <Button 
-                            type="button" 
-                            onClick={() => {
-                              const newTag = form.getValues('newTag');
-                              if (newTag) {
-                                const currentTags = form.getValues('tags') || [];
-                                if (!currentTags.includes(newTag)) {
-                                  form.setValue('tags', [...currentTags, newTag]);
-                                }
-                                form.setValue('newTag', '');
-                              }
-                            }}
-                          >
-                            Add
-                          </Button>
-                        </div>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-              </div>
+              <FormField
+                control={form.control}
+                name="tags"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tags</FormLabel>
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {availableTags.map(tag => (
+                        <Badge
+                          key={tag}
+                          variant={field.value?.includes(tag) ? "default" : "outline"}
+                          className="text-xs py-1 px-2 cursor-pointer"
+                          onClick={() => {
+                            const currentTags = field.value || [];
+                            if (currentTags.includes(tag)) {
+                              field.onChange(currentTags.filter(t => t !== tag));
+                            } else {
+                              field.onChange([...currentTags, tag]);
+                            }
+                          }}
+                        >
+                          {tag}
+                        </Badge>
+                      ))}
+                    </div>
+                    <div className="flex gap-2 mt-3">
+                      <Input
+                        placeholder="Add a new tag"
+                        value={form.watch('newTag') || ''}
+                        onChange={(e) => form.setValue('newTag', e.target.value)}
+                        className="text-sm"
+                      />
+                      <Button 
+                        type="button" 
+                        onClick={() => {
+                          const newTag = form.getValues('newTag');
+                          if (newTag) {
+                            // Add to current item's tags
+                            const currentTags = form.getValues('tags') || [];
+                            if (!currentTags.includes(newTag)) {
+                              form.setValue('tags', [...currentTags, newTag]);
+                            }
+                            
+                            // Add to available tags if not already there
+                            if (!availableTags.includes(newTag)) {
+                              setAvailableTags(prev => [...prev, newTag]);
+                            }
+                            
+                            form.setValue('newTag', '');
+                          }
+                        }}
+                      >
+                        Add Tag
+                      </Button>
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               
               <FormField
                 control={form.control}
