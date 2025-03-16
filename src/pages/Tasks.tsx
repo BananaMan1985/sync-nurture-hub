@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import Layout from '@/components/Layout';
 import AppMenu from '@/components/AppMenu';
@@ -94,7 +93,6 @@ const TaskCard: React.FC<{
   isDragging
 }) => {
 
-  // Status colors for visual indicators
   const statusColors = {
     todo: 'bg-blue-100',
     inprogress: 'bg-amber-100',
@@ -166,6 +164,7 @@ const TaskColumn: React.FC<{
   
   const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [dropPreviewIndex, setDropPreviewIndex] = useState<number | null>(null);
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault(); // Allow drop
@@ -183,6 +182,7 @@ const TaskColumn: React.FC<{
     }
     setDraggedTaskId(null);
     setDraggedIndex(null);
+    setDropPreviewIndex(null);
   };
 
   const handleDragStart = (e: React.DragEvent, task: Task, index: number) => {
@@ -193,24 +193,38 @@ const TaskColumn: React.FC<{
   const handleDragEnter = (e: React.DragEvent, index: number) => {
     if (draggedTaskId) {
       setDraggedIndex(index);
+      setDropPreviewIndex(index);
     }
   };
+  
+  const handleDragLeave = () => {
+    // Only reset the preview when mouse leaves column area
+    // We'll keep this commented to only hide when dragging stops
+    // setDropPreviewIndex(null);
+  };
 
-  // Column styling based on status
+  const handleDragEnd = () => {
+    setDropPreviewIndex(null);
+  };
+
   const columnStyle = {
     todo: 'from-blue-50 to-blue-100 border-blue-200',
     inprogress: 'from-amber-50 to-amber-100 border-amber-200',
     done: 'from-emerald-50 to-emerald-100 border-emerald-200'
   };
 
-  // Icon colors based on status
   const iconColor = {
     todo: 'text-blue-600',
     inprogress: 'text-amber-600',
     done: 'text-emerald-600'
   };
 
-  // Sort tasks by order property if it exists
+  const dropIndicatorColor = {
+    todo: 'bg-blue-200',
+    inprogress: 'bg-amber-200',
+    done: 'bg-emerald-200'
+  };
+
   const sortedTasks = [...tasks].sort((a, b) => {
     if (a.order !== undefined && b.order !== undefined) {
       return a.order - b.order;
@@ -223,6 +237,8 @@ const TaskColumn: React.FC<{
       className={`rounded-xl p-4 min-w-[300px] w-full bg-gradient-to-b ${columnStyle[status]} border shadow-sm`}
       onDragOver={handleDragOver}
       onDrop={handleDrop}
+      onDragLeave={handleDragLeave}
+      onDragEnd={handleDragEnd}
     >
       <div className="flex items-center mb-5">
         <div className={`p-2 rounded-full ${status === 'todo' ? 'bg-blue-100' : status === 'inprogress' ? 'bg-amber-100' : 'bg-emerald-100'}`}>
@@ -245,16 +261,33 @@ const TaskColumn: React.FC<{
         <ScrollArea className="h-[calc(100vh-240px)]">
           <div className="space-y-3 pr-3">
             {sortedTasks.map((task, index) => (
-              <TaskCard 
-                key={task.id} 
-                task={task} 
-                index={index}
-                onClick={() => onTaskClick(task)}
-                onDragStart={handleDragStart}
-                onDragEnter={handleDragEnter}
-                isDragging={draggedTaskId === task.id}
-              />
+              <React.Fragment key={task.id}>
+                {dropPreviewIndex === index && (
+                  <div 
+                    className={`h-1 w-full ${dropIndicatorColor[status]} rounded-full mb-2 transform transition-all duration-200 animate-pulse`}
+                    style={{marginTop: index === 0 ? '0' : '8px'}}
+                  />
+                )}
+                <TaskCard 
+                  task={task} 
+                  index={index}
+                  onClick={() => onTaskClick(task)}
+                  onDragStart={handleDragStart}
+                  onDragEnter={handleDragEnter}
+                  isDragging={draggedTaskId === task.id}
+                />
+                {dropPreviewIndex === sortedTasks.length && index === sortedTasks.length - 1 && (
+                  <div 
+                    className={`h-1 w-full ${dropIndicatorColor[status]} rounded-full mt-2 transform transition-all duration-200 animate-pulse`}
+                  />
+                )}
+              </React.Fragment>
             ))}
+            {sortedTasks.length === 0 && dropPreviewIndex === 0 && (
+              <div 
+                className={`h-1 w-full ${dropIndicatorColor[status]} rounded-full mb-2 transform transition-all duration-200 animate-pulse`}
+              />
+            )}
           </div>
         </ScrollArea>
       )}
@@ -311,7 +344,6 @@ const TaskEditDialog: React.FC<{
     });
   };
 
-  // Status styling
   const statusStyles = {
     todo: {
       bg: 'bg-blue-50',
@@ -497,7 +529,6 @@ const Tasks: React.FC = () => {
     setTasks(prev => 
       prev.map(task => {
         if (task.id === taskId) {
-          // When moving to a new column, place at the end
           const columnTasks = prev.filter(t => t.status === newStatus);
           const highestOrder = Math.max(...columnTasks.map(t => t.order || 0), 0);
           return { ...task, status: newStatus, order: highestOrder + 1 };
@@ -509,27 +540,21 @@ const Tasks: React.FC = () => {
 
   const handleReorderTasks = (draggedTaskId: string, targetIndex: number, status: TaskStatus) => {
     setTasks(prev => {
-      // Get the dragged task
       const draggedTask = prev.find(t => t.id === draggedTaskId);
       if (!draggedTask) return prev;
       
-      // Get only tasks from the same column, sorted by their current order
       const columnTasks = [...prev.filter(t => t.status === status)]
         .sort((a, b) => (a.order || 0) - (b.order || 0));
       
-      // Remove dragged task from the array
       const withoutDraggedTask = columnTasks.filter(t => t.id !== draggedTaskId);
       
-      // Insert dragged task at the target index
       withoutDraggedTask.splice(targetIndex, 0, draggedTask);
       
-      // Reassign order values
       const reorderedColumnTasks = withoutDraggedTask.map((task, index) => ({
         ...task,
         order: index
       }));
       
-      // Merge with tasks from other columns
       return [
         ...prev.filter(t => t.status !== status),
         ...reorderedColumnTasks
