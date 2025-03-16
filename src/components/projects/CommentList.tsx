@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Pencil, PaperclipIcon, Eye } from 'lucide-react';
+import { Pencil, PaperclipIcon, Eye, Trash2 } from 'lucide-react';
 import { Comment, CommentAttachment } from './types';
 import CommentEditForm from './CommentEditForm';
 import AttachmentPreviewDialog from './AttachmentPreviewDialog';
@@ -10,10 +10,16 @@ import AttachmentPreviewDialog from './AttachmentPreviewDialog';
 interface CommentListProps {
   comments: Comment[];
   onEditComment: (commentId: string, updatedComment: Comment) => void;
-  taskId?: string; // Add optional taskId parameter
+  onDeleteComment: (commentId: string) => void;
+  taskId?: string;
 }
 
-const CommentList: React.FC<CommentListProps> = ({ comments, onEditComment, taskId }) => {
+const CommentList: React.FC<CommentListProps> = ({ 
+  comments, 
+  onEditComment, 
+  onDeleteComment, 
+  taskId 
+}) => {
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [selectedAttachment, setSelectedAttachment] = useState<CommentAttachment | null>(null);
   const [isAttachmentPreviewOpen, setIsAttachmentPreviewOpen] = useState(false);
@@ -54,14 +60,24 @@ const CommentList: React.FC<CommentListProps> = ({ comments, onEditComment, task
                   {new Date(comment.timestamp).toLocaleString()}
                 </p>
                 {editingCommentId !== comment.id && (
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="h-6 w-6 p-0" 
-                    onClick={() => setEditingCommentId(comment.id)}
-                  >
-                    <Pencil className="h-3 w-3" />
-                  </Button>
+                  <div className="flex space-x-1">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-6 w-6 p-0" 
+                      onClick={() => setEditingCommentId(comment.id)}
+                    >
+                      <Pencil className="h-3 w-3" />
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-6 w-6 p-0 text-destructive" 
+                      onClick={() => onDeleteComment(comment.id)}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
                 )}
               </div>
             </div>

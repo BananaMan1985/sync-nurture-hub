@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import Layout from '@/components/Layout';
 import AppMenu from '@/components/AppMenu';
@@ -181,6 +180,36 @@ const Projects = () => {
     }
   };
 
+  const handleDeleteComment = (taskId: string, commentId: string) => {
+    setTasks(prev => {
+      return prev.map(task => {
+        if (task.id === taskId) {
+          return {
+            ...task,
+            comments: task.comments?.filter(comment => comment.id !== commentId)
+          };
+        }
+        return task;
+      });
+    });
+    
+    // Also update selectedTask if it's the same task
+    if (selectedTask && selectedTask.id === taskId) {
+      setSelectedTask(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          comments: prev.comments?.filter(comment => comment.id !== commentId)
+        };
+      });
+    }
+    
+    toast({
+      title: "Comment deleted",
+      description: "Your comment has been removed from the project.",
+    });
+  };
+
   const handleDragOver = (e: React.DragEvent, status: TaskStatus) => {
     // Prevent default to allow drop
     e.preventDefault();
@@ -259,6 +288,7 @@ const Projects = () => {
             onDelete={handleDeleteTask}
             onAddComment={handleAddComment}
             onEditComment={handleEditComment}
+            onDeleteComment={handleDeleteComment}
           />
         )}
         

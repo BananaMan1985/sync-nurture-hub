@@ -17,6 +17,7 @@ interface TaskEditDialogProps {
   onDelete: (taskId: string) => void;
   onAddComment: (taskId: string, comment: Omit<Comment, 'id'>) => void;
   onEditComment: (taskId: string, commentId: string, updatedComment: Comment) => void;
+  onDeleteComment: (taskId: string, commentId: string) => void;
 }
 
 const TaskEditDialog: React.FC<TaskEditDialogProps> = ({ 
@@ -26,7 +27,8 @@ const TaskEditDialog: React.FC<TaskEditDialogProps> = ({
   onSave, 
   onDelete, 
   onAddComment, 
-  onEditComment 
+  onEditComment,
+  onDeleteComment
 }) => {
   const [editedTask, setEditedTask] = useState<Task | null>(null);
   const [activeTab, setActiveTab] = useState<'details' | 'comments'>('details');
@@ -57,6 +59,12 @@ const TaskEditDialog: React.FC<TaskEditDialogProps> = ({
   const handleEditComment = (commentId: string, updatedComment: Comment) => {
     if (editedTask) {
       onEditComment(editedTask.id, commentId, updatedComment);
+    }
+  };
+
+  const handleDeleteComment = (commentId: string) => {
+    if (editedTask) {
+      onDeleteComment(editedTask.id, commentId);
     }
   };
 
@@ -142,6 +150,7 @@ const TaskEditDialog: React.FC<TaskEditDialogProps> = ({
               <CommentList 
                 comments={editedTask.comments || []} 
                 onEditComment={handleEditComment}
+                onDeleteComment={handleDeleteComment}
                 taskId={editedTask.id}
               />
               <div className="border-t pt-4">
