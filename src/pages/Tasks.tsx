@@ -77,12 +77,6 @@ const mockTasks: Task[] = [
 ];
 
 const TaskCard: React.FC<{ task: Task; onClick: () => void }> = ({ task, onClick }) => {
-  const priorityColor = {
-    low: 'bg-blue-100 text-blue-800',
-    medium: 'bg-yellow-100 text-yellow-800',
-    high: 'bg-red-100 text-red-800',
-  }[task.priority];
-
   const handleDragStart = (e: React.DragEvent, taskId: string) => {
     e.dataTransfer.setData('taskId', taskId);
   };
@@ -94,42 +88,49 @@ const TaskCard: React.FC<{ task: Task; onClick: () => void }> = ({ task, onClick
     }
   };
 
+  // Status colors for visual indicators
+  const statusColors = {
+    todo: 'bg-blue-100',
+    inprogress: 'bg-amber-100',
+    done: 'bg-emerald-100'
+  };
+
   return (
     <Card 
-      className="mb-4 cursor-pointer hover:shadow-md transition-shadow" 
+      className={`mb-4 cursor-pointer hover:shadow-md transition-all duration-200 hover:-translate-y-1 border-l-4 ${
+        task.status === 'todo' ? 'border-l-blue-400' : 
+        task.status === 'inprogress' ? 'border-l-amber-400' : 'border-l-emerald-400'
+      } ${statusColors[task.status]} bg-opacity-30`}
       draggable 
       onDragStart={(e) => handleDragStart(e, task.id)}
       onClick={handleClick}
     >
       <CardHeader className="pb-2">
-        <div className="flex justify-between items-start">
-          <CardTitle className="text-lg">{task.title}</CardTitle>
-          <span className={`px-2 py-1 rounded-full text-xs font-medium ${priorityColor}`}>
-            {task.priority}
-          </span>
-        </div>
-        <CardDescription className="mt-1">{task.description}</CardDescription>
+        <CardTitle className="text-lg font-medium">{task.title}</CardTitle>
+        <CardDescription className="mt-1 line-clamp-2">{task.description}</CardDescription>
       </CardHeader>
-      <CardContent className="pb-2">
-        <div className="flex items-center text-sm text-muted-foreground">
+      <CardContent className="pb-3 pt-0">
+        <div className="flex items-center text-sm text-muted-foreground mt-2">
           <CalendarDays className="mr-2 h-4 w-4" />
           <span>Due: {new Date(task.dueDate).toLocaleDateString()}</span>
         </div>
         
-        <div className="flex items-center mt-2 space-x-4">
-          {task.attachments && (
-            <div className="flex items-center text-xs text-muted-foreground">
-              <PaperclipIcon className="mr-1 h-3 w-3" />
-              <span>{task.attachments}</span>
-            </div>
-          )}
-          {task.comments && (
-            <div className="flex items-center text-xs text-muted-foreground">
-              <MessageSquare className="mr-1 h-3 w-3" />
-              <span>{task.comments}</span>
-            </div>
-          )}
-        </div>
+        {(task.attachments || task.comments) && (
+          <div className="flex items-center mt-2 space-x-4">
+            {task.attachments && (
+              <div className="flex items-center text-xs text-muted-foreground">
+                <PaperclipIcon className="mr-1 h-3 w-3" />
+                <span>{task.attachments}</span>
+              </div>
+            )}
+            {task.comments && (
+              <div className="flex items-center text-xs text-muted-foreground">
+                <MessageSquare className="mr-1 h-3 w-3" />
+                <span>{task.comments}</span>
+              </div>
+            )}
+          </div>
+        )}
       </CardContent>
     </Card>
   );
@@ -163,16 +164,34 @@ const TaskColumn: React.FC<{
     onDrop(taskId, status);
   };
 
+  // Column styling based on status
+  const columnStyle = {
+    todo: 'from-blue-50 to-blue-100 border-blue-200',
+    inprogress: 'from-amber-50 to-amber-100 border-amber-200',
+    done: 'from-emerald-50 to-emerald-100 border-emerald-200'
+  };
+
+  // Icon colors based on status
+  const iconColor = {
+    todo: 'text-blue-600',
+    inprogress: 'text-amber-600',
+    done: 'text-emerald-600'
+  };
+
   return (
     <div 
-      className="bg-secondary/40 rounded-lg p-4 min-w-[300px] w-full"
+      className={`rounded-xl p-4 min-w-[300px] w-full bg-gradient-to-b ${columnStyle[status]} border shadow-sm`}
       onDragOver={handleDragOver}
       onDrop={handleDrop}
     >
-      <div className="flex items-center mb-4">
-        {icon}
-        <h3 className="font-medium ml-2">{title}</h3>
-        <div className="ml-2 bg-secondary rounded-full w-6 h-6 flex items-center justify-center text-xs">
+      <div className="flex items-center mb-5">
+        <div className={`p-2 rounded-full ${status === 'todo' ? 'bg-blue-100' : status === 'inprogress' ? 'bg-amber-100' : 'bg-emerald-100'}`}>
+          <div className={`${iconColor[status]}`}>
+            {icon}
+          </div>
+        </div>
+        <h3 className="font-medium ml-2 text-lg">{title}</h3>
+        <div className={`ml-2 ${status === 'todo' ? 'bg-blue-200' : status === 'inprogress' ? 'bg-amber-200' : 'bg-emerald-200'} rounded-full w-6 h-6 flex items-center justify-center text-xs font-medium`}>
           {tasks.length}
         </div>
       </div>
@@ -194,7 +213,14 @@ const TaskColumn: React.FC<{
         </div>
       )}
       
-      <Button variant="ghost" className="w-full mt-3 border border-dashed border-muted-foreground/50">
+      <Button 
+        variant="outline" 
+        className={`w-full mt-4 border border-dashed ${
+          status === 'todo' ? 'border-blue-300 hover:bg-blue-50' : 
+          status === 'inprogress' ? 'border-amber-300 hover:bg-amber-50' : 
+          'border-emerald-300 hover:bg-emerald-50'
+        }`}
+      >
         <Plus className="h-4 w-4 mr-2" />
         Add Task
       </Button>
@@ -239,21 +265,35 @@ const TaskEditDialog: React.FC<{
     });
   };
 
-  const priorityColors = {
-    low: 'bg-blue-100 text-blue-800 border-blue-200',
-    medium: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-    high: 'bg-red-100 text-red-800 border-red-200',
+  // Status styling
+  const statusStyles = {
+    todo: {
+      bg: 'bg-blue-50',
+      border: 'border-blue-200',
+      text: 'text-blue-700'
+    },
+    inprogress: {
+      bg: 'bg-amber-50',
+      border: 'border-amber-200',
+      text: 'text-amber-700'
+    },
+    done: {
+      bg: 'bg-emerald-50',
+      border: 'border-emerald-200',
+      text: 'text-emerald-700'
+    }
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={open => !open && onClose()}>
       <DialogContent className="sm:max-w-[600px] p-0 gap-0 overflow-hidden rounded-xl bg-white">
-        <div className="sticky top-0 z-20 bg-white/95 backdrop-blur-sm border-b">
+        <div className={`sticky top-0 z-20 bg-white/95 backdrop-blur-sm border-b ${statusStyles[editedTask.status].border}`}>
           <DialogHeader className="px-6 pt-6 pb-4">
             <div className="flex justify-between items-center mb-1">
               <DialogTitle className="text-xl">Edit Task</DialogTitle>
-              <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${priorityColors[editedTask.priority]}`}>
-                {editedTask.priority.charAt(0).toUpperCase() + editedTask.priority.slice(1)} Priority
+              <span className={`px-2.5 py-1.5 rounded-full text-xs font-medium ${statusStyles[editedTask.status].bg} ${statusStyles[editedTask.status].text}`}>
+                {editedTask.status === 'todo' ? 'To Do' : 
+                 editedTask.status === 'inprogress' ? 'In Progress' : 'Completed'}
               </span>
             </div>
             <DialogDescription className="text-muted-foreground">
@@ -294,11 +334,11 @@ const TaskEditDialog: React.FC<{
                   <span>To Do</span>
                 </SelectItem>
                 <SelectItem value="inprogress" className="flex items-center gap-2">
-                  <span className="flex h-2 w-2 rounded-full bg-yellow-500"></span>
+                  <span className="flex h-2 w-2 rounded-full bg-amber-500"></span>
                   <span>In Progress</span>
                 </SelectItem>
                 <SelectItem value="done" className="flex items-center gap-2">
-                  <span className="flex h-2 w-2 rounded-full bg-green-500"></span>
+                  <span className="flex h-2 w-2 rounded-full bg-emerald-500"></span>
                   <span>Done</span>
                 </SelectItem>
               </SelectContent>
@@ -452,7 +492,7 @@ const Tasks: React.FC = () => {
             <h2 className="text-xl font-semibold">Current Tasks</h2>
             <p className="text-muted-foreground">Track and manage your projects</p>
           </div>
-          <Button className="bg-[#2D3B22] hover:bg-[#3c4f2d] text-white">
+          <Button className="bg-gradient-to-r from-[#2D3B22] to-[#3c4f2d] hover:from-[#3c4f2d] hover:to-[#4a613a] text-white">
             <Plus className="mr-2 h-4 w-4" />
             New Task
           </Button>
@@ -461,7 +501,7 @@ const Tasks: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pb-12">
           <TaskColumn
             title="To Do"
-            icon={<ListChecks className="h-5 w-5 text-blue-600" />}
+            icon={<ListChecks className="h-5 w-5" />}
             tasks={todoTasks}
             status="todo"
             isLoading={isLoading}
@@ -470,7 +510,7 @@ const Tasks: React.FC = () => {
           />
           <TaskColumn
             title="In Progress"
-            icon={<Clock className="h-5 w-5 text-yellow-600" />}
+            icon={<Clock className="h-5 w-5" />}
             tasks={inProgressTasks}
             status="inprogress"
             isLoading={isLoading}
@@ -479,7 +519,7 @@ const Tasks: React.FC = () => {
           />
           <TaskColumn
             title="Completed"
-            icon={<ListChecks className="h-5 w-5 text-green-600" />}
+            icon={<Check className="h-5 w-5" />}
             tasks={doneTasks}
             status="done"
             isLoading={isLoading}
