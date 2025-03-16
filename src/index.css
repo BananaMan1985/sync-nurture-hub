@@ -1,3 +1,4 @@
+
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap');
 
 @tailwind base;
@@ -109,5 +110,46 @@
   .hide-scrollbar {
     -ms-overflow-style: none;  /* IE and Edge */
     scrollbar-width: none;  /* Firefox */
+  }
+  
+  /* Smooth scrolling for the whole page */
+  html {
+    scroll-behavior: smooth;
+  }
+  
+  /* Fix the truncated UI elements */
+  .dialog-content-fix {
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .dialog-content-fix > div:last-child {
+    padding-bottom: 20px;
+  }
+  
+  /* Enhanced scrollbars for better user experience */
+  .enhanced-scrollbar::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  
+  .enhanced-scrollbar::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+  }
+  
+  .enhanced-scrollbar::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 10px;
+  }
+  
+  .enhanced-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #a1a1a1;
+  }
+  
+  /* Allow horizontal scroll with mouse wheel when holding shift */
+  .horizontal-scroll {
+    overflow-x: auto;
   }
 }

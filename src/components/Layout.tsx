@@ -11,7 +11,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
-      <main className="flex-1 pt-6 pb-12">
+      <main className="flex-1 pt-6 pb-20"> {/* Increased bottom padding */}
         <AnimatePresence mode="wait">
           {children}
         </AnimatePresence>

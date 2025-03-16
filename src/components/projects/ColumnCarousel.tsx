@@ -1,4 +1,3 @@
-
 import React, { useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
@@ -30,9 +29,23 @@ const ColumnCarousel: React.FC<ColumnCarouselProps> = ({ children }) => {
     el.addEventListener('scroll', checkScrollability);
     window.addEventListener('resize', checkScrollability);
     
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (document.activeElement?.tagName !== 'INPUT' && 
+          document.activeElement?.tagName !== 'TEXTAREA') {
+        if (e.key === 'ArrowRight') {
+          scroll('right');
+        } else if (e.key === 'ArrowLeft') {
+          scroll('left');
+        }
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    
     return () => {
       el.removeEventListener('scroll', checkScrollability);
       window.removeEventListener('resize', checkScrollability);
+      window.removeEventListener('keydown', handleKeyDown);
     };
   }, []);
 
@@ -40,16 +53,25 @@ const ColumnCarousel: React.FC<ColumnCarouselProps> = ({ children }) => {
     const el = scrollContainerRef.current;
     if (!el) return;
     
-    const columnsContainer = el.firstElementChild;
-    if (!columnsContainer) return;
-    
-    const columnWidth = 350; // Base column width
-    const scrollAmount = direction === 'left' ? -columnWidth : columnWidth;
+    const scrollAmount = direction === 'left' ? -350 : 350; // One column width
     
     el.scrollBy({
       left: scrollAmount,
       behavior: 'smooth'
     });
+  };
+
+  const handleWheel = (e: React.WheelEvent) => {
+    if (e.shiftKey || Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
+      return; // Let native scrolling happen
+    }
+    
+    if (scrollContainerRef.current) {
+      e.preventDefault();
+      scrollContainerRef.current.scrollBy({
+        left: e.deltaY,
+      });
+    }
   };
 
   return (
@@ -76,8 +98,9 @@ const ColumnCarousel: React.FC<ColumnCarouselProps> = ({ children }) => {
             scrollbarWidth: 'none',
             msOverflowStyle: 'none'
           }}
+          onWheel={handleWheel}
         >
-          <div className="flex gap-6 px-4">
+          <div className="flex gap-6 px-4 py-2">
             {children}
           </div>
         </div>

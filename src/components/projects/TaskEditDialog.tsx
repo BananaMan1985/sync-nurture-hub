@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Trash2 } from 'lucide-react';
+import { Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Task, Comment } from './types';
 import TaskForm from './TaskForm';
@@ -99,9 +99,18 @@ const TaskEditDialog: React.FC<TaskEditDialogProps> = ({
     }
   };
 
+  // Function to navigate between tabs with keyboard arrows
+  const handleKeyNavigation = (e: React.KeyboardEvent) => {
+    if (e.key === 'ArrowRight' && activeTab === 'details') {
+      setActiveTab('comments');
+    } else if (e.key === 'ArrowLeft' && activeTab === 'comments') {
+      setActiveTab('details');
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-auto">
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-auto" onKeyDown={handleKeyNavigation}>
         <DialogHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center">
@@ -120,20 +129,45 @@ const TaskEditDialog: React.FC<TaskEditDialogProps> = ({
             </Button>
           </div>
           <DialogDescription className="pt-2">
-            <div className="flex space-x-8 border-b">
-              <button
-                className={`pb-2 pt-1 px-1 ${activeTab === 'details' ? 'border-b-2 border-primary font-medium' : 'text-muted-foreground'}`}
-                onClick={() => setActiveTab('details')}
-              >
-                Project Details
-              </button>
-              <button
-                className={`pb-2 pt-1 px-1 ${activeTab === 'comments' ? 'border-b-2 border-primary font-medium' : 'text-muted-foreground'}`}
-                onClick={() => setActiveTab('comments')}
-              >
-                Comments {editedTask.comments && editedTask.comments.length > 0 && 
-                  `(${editedTask.comments.length})`}
-              </button>
+            <div className="flex items-center border-b">
+              <div className="flex-1 flex space-x-2">
+                <button
+                  className={`pb-2 pt-1 px-3 flex items-center ${activeTab === 'details' ? 'border-b-2 border-primary font-medium' : 'text-muted-foreground'}`}
+                  onClick={() => setActiveTab('details')}
+                >
+                  Project Details
+                </button>
+                <button
+                  className={`pb-2 pt-1 px-3 flex items-center ${activeTab === 'comments' ? 'border-b-2 border-primary font-medium' : 'text-muted-foreground'}`}
+                  onClick={() => setActiveTab('comments')}
+                >
+                  Comments {editedTask.comments && editedTask.comments.length > 0 && 
+                    <span className="ml-1.5 bg-slate-100 rounded-full w-5 h-5 flex items-center justify-center text-xs font-medium text-slate-600">
+                      {editedTask.comments.length}
+                    </span>}
+                </button>
+              </div>
+              
+              <div className="flex space-x-1">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-8 w-8"
+                  onClick={() => setActiveTab('details')}
+                  disabled={activeTab === 'details'}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-8 w-8"
+                  onClick={() => setActiveTab('comments')}
+                  disabled={activeTab === 'comments'}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           </DialogDescription>
         </DialogHeader>
