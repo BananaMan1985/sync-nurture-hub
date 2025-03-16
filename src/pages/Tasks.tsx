@@ -5,7 +5,7 @@ import AppMenu from '@/components/AppMenu';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
-import { ListChecks, Plus, Clock, CalendarDays, PaperclipIcon, MessageSquare, Trash2, Upload } from 'lucide-react';
+import { ListChecks, Plus, Clock, CalendarDays, PaperclipIcon, MessageSquare, Trash2, Upload, Check, X, Tag, FileText } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -15,6 +15,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { useToast } from '@/hooks/use-toast';
 
 type TaskStatus = 'todo' | 'inprogress' | 'done';
 
@@ -210,6 +211,7 @@ const TaskEditDialog: React.FC<{
 }> = ({ isOpen, task, onClose, onSave, onDelete }) => {
   const [editedTask, setEditedTask] = useState<Task | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+  const { toast } = useToast();
 
   React.useEffect(() => {
     if (task) {
@@ -223,6 +225,10 @@ const TaskEditDialog: React.FC<{
   const handleSave = () => {
     if (editedTask) {
       onSave(editedTask);
+      toast({
+        title: "Task updated",
+        description: "Your task has been successfully updated.",
+      });
     }
   };
 
@@ -233,77 +239,90 @@ const TaskEditDialog: React.FC<{
     });
   };
 
+  const priorityColors = {
+    low: 'bg-blue-100 text-blue-800 border-blue-200',
+    medium: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+    high: 'bg-red-100 text-red-800 border-red-200',
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={open => !open && onClose()}>
-      <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader>
-          <DialogTitle>Edit Task</DialogTitle>
-          <DialogDescription>
-            Update the details of this task.
-          </DialogDescription>
-        </DialogHeader>
+      <DialogContent className="sm:max-w-[600px] p-0 gap-0 overflow-hidden rounded-xl bg-white">
+        <div className="sticky top-0 z-20 bg-white/95 backdrop-blur-sm border-b">
+          <DialogHeader className="px-6 pt-6 pb-4">
+            <div className="flex justify-between items-center mb-1">
+              <DialogTitle className="text-xl">Edit Task</DialogTitle>
+              <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${priorityColors[editedTask.priority]}`}>
+                {editedTask.priority.charAt(0).toUpperCase() + editedTask.priority.slice(1)} Priority
+              </span>
+            </div>
+            <DialogDescription className="text-muted-foreground">
+              Update the details of this task to keep your project organized.
+            </DialogDescription>
+          </DialogHeader>
+        </div>
         
-        <div className="grid gap-4 py-4">
+        <div className="p-6 pt-2 overflow-y-auto max-h-[70vh] space-y-5">
           <div className="space-y-2">
-            <h3 className="text-md font-medium">Task</h3>
+            <div className="flex items-center gap-2 mb-1 text-sm font-medium text-gray-700">
+              <FileText className="h-4 w-4 text-gray-500" />
+              <span>Task Title</span>
+            </div>
             <Input
               value={editedTask.title}
               onChange={(e) => handleChange('title', e.target.value)}
               placeholder="Task title"
+              className="text-lg font-medium"
             />
           </div>
           
           <div className="space-y-2">
-            <h3 className="text-md font-medium">End State</h3>
-            <Input
-              placeholder="What does done look like?"
-              value={editedTask.description}
-              onChange={(e) => handleChange('description', e.target.value)}
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <h3 className="text-md font-medium">Details</h3>
-            <Textarea
-              placeholder="Additional details"
-              value={editedTask.description}
-              onChange={(e) => handleChange('description', e.target.value)}
-              className="min-h-[100px]"
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <h3 className="text-md font-medium">Status</h3>
+            <div className="flex items-center gap-2 mb-1 text-sm font-medium text-gray-700">
+              <Tag className="h-4 w-4 text-gray-500" />
+              <span>Status</span>
+            </div>
             <Select 
               defaultValue={editedTask.status}
               onValueChange={(value) => handleChange('status', value as TaskStatus)}
             >
-              <SelectTrigger>
+              <SelectTrigger className="w-full">
                 <SelectValue placeholder="Select status" />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todo">To Do</SelectItem>
-                <SelectItem value="inprogress">In Progress</SelectItem>
-                <SelectItem value="done">Done</SelectItem>
+              <SelectContent className="w-full">
+                <SelectItem value="todo" className="flex items-center gap-2">
+                  <span className="flex h-2 w-2 rounded-full bg-blue-500"></span>
+                  <span>To Do</span>
+                </SelectItem>
+                <SelectItem value="inprogress" className="flex items-center gap-2">
+                  <span className="flex h-2 w-2 rounded-full bg-yellow-500"></span>
+                  <span>In Progress</span>
+                </SelectItem>
+                <SelectItem value="done" className="flex items-center gap-2">
+                  <span className="flex h-2 w-2 rounded-full bg-green-500"></span>
+                  <span>Done</span>
+                </SelectItem>
               </SelectContent>
             </Select>
           </div>
           
           <div className="space-y-2">
-            <h3 className="text-md font-medium">Attachments</h3>
-            <div className="border rounded-md p-2">
-              <Button variant="outline" className="w-auto">
-                <Upload className="mr-2 h-4 w-4" />
-                Upload Files
-              </Button>
-              <span className="text-sm text-muted-foreground ml-2">
-                Upload documents, images, or other files
-              </span>
+            <div className="flex items-center gap-2 mb-1 text-sm font-medium text-gray-700">
+              <MessageSquare className="h-4 w-4 text-gray-500" />
+              <span>Description</span>
             </div>
+            <Textarea
+              placeholder="Add a detailed description..."
+              value={editedTask.description}
+              onChange={(e) => handleChange('description', e.target.value)}
+              className="min-h-[120px] resize-none"
+            />
           </div>
           
           <div className="space-y-2">
-            <h3 className="text-md font-medium">Due Date (Optional)</h3>
+            <div className="flex items-center gap-2 mb-1 text-sm font-medium text-gray-700">
+              <CalendarDays className="h-4 w-4 text-gray-500" />
+              <span>Due Date</span>
+            </div>
             <Popover>
               <PopoverTrigger asChild>
                 <Button
@@ -314,7 +333,7 @@ const TaskEditDialog: React.FC<{
                   )}
                 >
                   <CalendarDays className="mr-2 h-4 w-4" />
-                  {selectedDate ? format(selectedDate, "PP") : "mm/dd/yyyy"}
+                  {selectedDate ? format(selectedDate, "PPP") : "Select a date"}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0">
@@ -333,18 +352,39 @@ const TaskEditDialog: React.FC<{
               </PopoverContent>
             </Popover>
           </div>
+          
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 mb-1 text-sm font-medium text-gray-700">
+              <PaperclipIcon className="h-4 w-4 text-gray-500" />
+              <span>Attachments</span>
+            </div>
+            <div className="border rounded-lg p-6 bg-gray-50 text-center">
+              <div className="mb-2">
+                <Button variant="outline" className="w-auto">
+                  <Upload className="mr-2 h-4 w-4" />
+                  Upload Files
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Drag and drop files or click to browse
+              </p>
+            </div>
+          </div>
         </div>
         
-        <DialogFooter className="flex sm:justify-between">
-          <Button variant="destructive" onClick={() => onDelete(editedTask.id)}>
-            <Trash2 className="mr-2 h-4 w-4" />
-            Delete Task
+        <DialogFooter className="bg-gray-50 px-6 py-4 gap-2 border-t flex items-center justify-between">
+          <Button variant="destructive" size="sm" onClick={() => onDelete(editedTask.id)}>
+            <Trash2 className="h-4 w-4 mr-1" />
+            Delete
           </Button>
+          
           <div className="flex gap-2">
-            <Button variant="outline" onClick={onClose}>
+            <Button variant="outline" onClick={onClose} size="sm">
+              <X className="h-4 w-4 mr-1" />
               Cancel
             </Button>
-            <Button onClick={handleSave} className="bg-[#2D3B22] hover:bg-[#3c4f2d] text-white">
+            <Button onClick={handleSave} size="sm" className="bg-[#2D3B22] hover:bg-[#3c4f2d] text-white">
+              <Check className="h-4 w-4 mr-1" />
               Save Changes
             </Button>
           </div>
