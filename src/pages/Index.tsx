@@ -4,7 +4,7 @@ import Layout from '@/components/Layout';
 import Hero from '@/components/Hero';
 import FeatureCard from '@/components/FeatureCard';
 import AnimatedTransition from '@/components/AnimatedTransition';
-import { ClipboardList, BookOpen, LayoutKanban, Mic } from 'lucide-react';
+import { ClipboardList, BookOpen, LayoutGrid, Mic } from 'lucide-react';
 
 const features = [
   {
@@ -20,7 +20,7 @@ const features = [
     href: "/library"
   },
   {
-    icon: LayoutKanban,
+    icon: LayoutGrid,
     title: "Project Tracker",
     description: "Visual task management with customizable Kanban-style workflows.",
     href: "/tasks"

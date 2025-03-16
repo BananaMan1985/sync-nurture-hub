@@ -1,8 +1,7 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { Menu, X, ClipboardList, BookOpen, LayoutKanban, Mic } from 'lucide-react';
+import { Menu, X, ClipboardList, BookOpen, LayoutGrid, Mic } from 'lucide-react';
 
 interface NavItemProps {
   href: string;
@@ -49,7 +48,7 @@ const Navbar: React.FC = () => {
   const navItems = [
     { href: "/reports", icon: ClipboardList, label: "Reports" },
     { href: "/library", icon: BookOpen, label: "Reference Library" },
-    { href: "/tasks", icon: LayoutKanban, label: "Tasks" },
+    { href: "/tasks", icon: LayoutGrid, label: "Tasks" },
     { href: "/voice", icon: Mic, label: "Voice Tasks" },
   ];
 
@@ -73,7 +72,6 @@ const Navbar: React.FC = () => {
           <span className="hidden sm:inline-block">Command Center</span>
         </Link>
 
-        {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center space-x-1">
           {navItems.map((item) => (
             <NavItem
@@ -86,7 +84,6 @@ const Navbar: React.FC = () => {
           ))}
         </nav>
 
-        {/* Mobile Menu Toggle */}
         <button
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           className="md:hidden p-2 rounded-lg hover:bg-secondary transition-colors"
@@ -100,7 +97,6 @@ const Navbar: React.FC = () => {
         </button>
       </div>
 
-      {/* Mobile Navigation */}
       {mobileMenuOpen && (
         <div className="md:hidden bg-background/95 backdrop-blur-lg border-t border-border animate-fade-in">
           <nav className="container mx-auto px-4 py-4 flex flex-col space-y-1">
