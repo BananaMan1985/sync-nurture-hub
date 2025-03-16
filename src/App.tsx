@@ -9,6 +9,7 @@ import Reports from "./pages/Reports";
 import Library from "./pages/Library";
 import Voice from "./pages/Voice";
 import Projects from "./pages/Projects";
+import Navigation from "./pages/Navigation";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -24,6 +25,7 @@ const App = () => (
           <Route path="/reports" element={<Reports />} />
           <Route path="/library" element={<Library />} />
           <Route path="/voice" element={<Voice />} />
+          <Route path="/navigation" element={<Navigation />} />
           <Route path="/projects" element={<Projects />} />
           <Route path="/tasks" element={<Projects />} /> {/* Redirect old path to new */}
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
