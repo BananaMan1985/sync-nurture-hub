@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import Layout from '@/components/Layout';
 import AppMenu from '@/components/AppMenu';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
-import { ListChecks, Plus, Clock, CalendarDays, PaperclipIcon, MessageSquare, Trash2, Upload, Check, X, Tag, FileText, Send } from 'lucide-react';
+import { ListChecks, Plus, Clock, CalendarDays, PaperclipIcon, MessageSquare, Trash2, Upload, Check, X, Tag, FileText, Send, Pencil } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -22,11 +22,20 @@ import { useForm } from 'react-hook-form';
 
 type TaskStatus = 'todo' | 'inprogress' | 'done';
 
+interface CommentAttachment {
+  id: string;
+  name: string;
+  size: number;
+  type: string;
+  url: string;
+}
+
 interface Comment {
   id: string;
   text: string;
   authorName: string;
   timestamp: string;
+  attachments?: CommentAttachment[];
 }
 
 interface Task {
@@ -344,6 +353,9 @@ interface CommentFormProps {
 }
 
 const CommentForm: React.FC<CommentFormProps> = ({ taskId, onAddComment }) => {
+  const [attachments, setAttachments] = useState<CommentAttachment[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const form = useForm({
     defaultValues: {
       comment: '',
@@ -354,14 +366,42 @@ const CommentForm: React.FC<CommentFormProps> = ({ taskId, onAddComment }) => {
     onAddComment(taskId, {
       text: data.comment,
       authorName: 'Sagan', // In a real app, this would be the logged-in user's name
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      attachments: attachments.length > 0 ? attachments : undefined
     });
     form.reset();
+    setAttachments([]);
   });
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const newAttachments: CommentAttachment[] = [];
+    
+    Array.from(files).forEach(file => {
+      // Create object URL for preview (in a real app, you would upload to a server)
+      const fileUrl = URL.createObjectURL(file);
+      
+      newAttachments.push({
+        id: `attachment-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        url: fileUrl
+      });
+    });
+    
+    setAttachments(prev => [...prev, ...newAttachments]);
+  };
+
+  const removeAttachment = (id: string) => {
+    setAttachments(prev => prev.filter(attachment => attachment.id !== id));
+  };
   
   return (
     <Form {...form}>
-      <form onSubmit={handleSubmit} className="flex items-end space-x-2">
+      <form onSubmit={handleSubmit} className="space-y-3">
         <FormField
           control={form.control}
           name="comment"
@@ -377,24 +417,200 @@ const CommentForm: React.FC<CommentFormProps> = ({ taskId, onAddComment }) => {
             </FormItem>
           )}
         />
-        <Button 
-          type="submit" 
-          size="sm" 
-          className="mb-1"
-          disabled={!form.getValues().comment.trim()}
-        >
-          <Send className="h-4 w-4" />
-        </Button>
+        
+        {attachments.length > 0 && (
+          <div className="space-y-2">
+            <p className="text-sm font-medium text-gray-700">Attachments</p>
+            <div className="space-y-2">
+              {attachments.map(attachment => (
+                <div key={attachment.id} className="flex items-center justify-between bg-gray-50 rounded p-2 text-sm">
+                  <div className="flex items-center">
+                    <PaperclipIcon className="h-4 w-4 text-gray-500 mr-2" />
+                    <span className="truncate max-w-[200px]">{attachment.name}</span>
+                  </div>
+                  <Button 
+                    type="button" 
+                    variant="ghost" 
+                    size="sm" 
+                    className="h-6 w-6 p-0" 
+                    onClick={() => removeAttachment(attachment.id)}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        
+        <div className="flex items-center justify-between">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => fileInputRef.current?.click()}
+            className="text-gray-500"
+          >
+            <PaperclipIcon className="h-4 w-4 mr-1" />
+            Attach files
+          </Button>
+          
+          <input 
+            type="file" 
+            ref={fileInputRef} 
+            className="hidden" 
+            onChange={handleFileChange} 
+            multiple 
+          />
+          
+          <Button 
+            type="submit" 
+            size="sm"
+            disabled={!form.getValues().comment.trim() && attachments.length === 0}
+          >
+            <Send className="h-4 w-4" />
+          </Button>
+        </div>
       </form>
     </Form>
   );
 };
 
-interface CommentListProps {
-  comments: Comment[];
+interface CommentEditFormProps {
+  comment: Comment;
+  onSave: (updatedComment: Comment) => void;
+  onCancel: () => void;
 }
 
-const CommentList: React.FC<CommentListProps> = ({ comments }) => {
+const CommentEditForm: React.FC<CommentEditFormProps> = ({ 
+  comment, 
+  onSave, 
+  onCancel 
+}) => {
+  const [text, setText] = useState(comment.text);
+  const [attachments, setAttachments] = useState<CommentAttachment[]>(comment.attachments || []);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (text.trim()) {
+      onSave({
+        ...comment,
+        text,
+        attachments: attachments.length > 0 ? attachments : undefined
+      });
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const newAttachments: CommentAttachment[] = [];
+    
+    Array.from(files).forEach(file => {
+      // Create object URL for preview (in a real app, you would upload to a server)
+      const fileUrl = URL.createObjectURL(file);
+      
+      newAttachments.push({
+        id: `attachment-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        url: fileUrl
+      });
+    });
+    
+    setAttachments(prev => [...prev, ...newAttachments]);
+  };
+
+  const removeAttachment = (id: string) => {
+    setAttachments(prev => prev.filter(attachment => attachment.id !== id));
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-3 mt-2">
+      <Textarea
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        className="min-h-[80px] resize-none"
+      />
+      
+      {attachments.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-sm font-medium text-gray-700">Attachments</p>
+          <div className="space-y-2">
+            {attachments.map(attachment => (
+              <div key={attachment.id} className="flex items-center justify-between bg-gray-50 rounded p-2 text-sm">
+                <div className="flex items-center">
+                  <PaperclipIcon className="h-4 w-4 text-gray-500 mr-2" />
+                  <span className="truncate max-w-[200px]">{attachment.name}</span>
+                </div>
+                <Button 
+                  type="button" 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-6 w-6 p-0" 
+                  onClick={() => removeAttachment(attachment.id)}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      
+      <div className="flex items-center justify-between">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => fileInputRef.current?.click()}
+          className="text-gray-500"
+        >
+          <PaperclipIcon className="h-4 w-4 mr-1" />
+          Attach files
+        </Button>
+        
+        <input 
+          type="file" 
+          ref={fileInputRef} 
+          className="hidden" 
+          onChange={handleFileChange} 
+          multiple 
+        />
+        
+        <div className="flex gap-2">
+          <Button 
+            type="button" 
+            variant="outline" 
+            size="sm" 
+            onClick={onCancel}
+          >
+            Cancel
+          </Button>
+          <Button 
+            type="submit" 
+            size="sm"
+            disabled={!text.trim()}
+          >
+            Save
+          </Button>
+        </div>
+      </div>
+    </form>
+  );
+};
+
+interface CommentListProps {
+  comments: Comment[];
+  onEditComment: (commentId: string, updatedComment: Comment) => void;
+}
+
+const CommentList: React.FC<CommentListProps> = ({ comments, onEditComment }) => {
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+  
   if (comments.length === 0) {
     return (
       <div className="text-center py-6 text-muted-foreground">
@@ -402,6 +618,11 @@ const CommentList: React.FC<CommentListProps> = ({ comments }) => {
       </div>
     );
   }
+  
+  const handleSaveEdit = (updatedComment: Comment) => {
+    onEditComment(updatedComment.id, updatedComment);
+    setEditingCommentId(null);
+  };
   
   return (
     <div className="space-y-4">
@@ -416,11 +637,51 @@ const CommentList: React.FC<CommentListProps> = ({ comments }) => {
           <div className="flex-1">
             <div className="flex items-center justify-between">
               <p className="text-sm font-medium">{comment.authorName}</p>
-              <p className="text-xs text-muted-foreground">
-                {new Date(comment.timestamp).toLocaleString()}
-              </p>
+              <div className="flex items-center">
+                <p className="text-xs text-muted-foreground mr-2">
+                  {new Date(comment.timestamp).toLocaleString()}
+                </p>
+                {editingCommentId !== comment.id && (
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="h-6 w-6 p-0" 
+                    onClick={() => setEditingCommentId(comment.id)}
+                  >
+                    <Pencil className="h-3 w-3" />
+                  </Button>
+                )}
+              </div>
             </div>
-            <p className="mt-1 text-sm">{comment.text}</p>
+            
+            {editingCommentId === comment.id ? (
+              <CommentEditForm
+                comment={comment}
+                onSave={handleSaveEdit}
+                onCancel={() => setEditingCommentId(null)}
+              />
+            ) : (
+              <>
+                <p className="mt-1 text-sm">{comment.text}</p>
+                
+                {comment.attachments && comment.attachments.length > 0 && (
+                  <div className="mt-2 space-y-1">
+                    {comment.attachments.map(attachment => (
+                      <a 
+                        key={attachment.id}
+                        href={attachment.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center text-xs text-blue-600 hover:underline"
+                      >
+                        <PaperclipIcon className="h-3 w-3 mr-1" />
+                        {attachment.name}
+                      </a>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
           </div>
         </div>
       ))}
@@ -572,7 +833,8 @@ const TaskEditDialog: React.FC<{
   onSave: (updatedTask: Task) => void;
   onDelete: (taskId: string) => void;
   onAddComment: (taskId: string, comment: Omit<Comment, 'id'>) => void;
-}> = ({ isOpen, task, onClose, onSave, onDelete, onAddComment }) => {
+  onEditComment: (taskId: string, commentId: string, updatedComment: Comment) => void;
+}> = ({ isOpen, task, onClose, onSave, onDelete, onAddComment, onEditComment }) => {
   const [editedTask, setEditedTask] = useState<Task | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [activeTab, setActiveTab] = useState<'details' | 'comments'>('details');
@@ -619,6 +881,26 @@ const TaskEditDialog: React.FC<{
         ...prev,
         comments: [...(prev.comments || []), newComment]
       };
+    });
+  };
+
+  const handleEditComment = (taskId: string, commentId: string, updatedComment: Comment) => {
+    onEditComment(editedTask.id, commentId, updatedComment);
+    
+    setEditedTask(prev => {
+      if (!prev) return prev;
+      
+      return {
+        ...prev,
+        comments: prev.comments?.map(comment => 
+          comment.id === commentId ? updatedComment : comment
+        )
+      };
+    });
+    
+    toast({
+      title: "Comment updated",
+      description: "Your comment has been updated.",
     });
   };
 
@@ -802,7 +1084,10 @@ const TaskEditDialog: React.FC<{
           ) : (
             <div className="space-y-6">
               <ScrollArea className="pr-4 max-h-[400px]">
-                <CommentList comments={comments} />
+                <CommentList 
+                  comments={comments} 
+                  onEditComment={handleEditComment}
+                />
               </ScrollArea>
               
               <div className="pt-4 border-t">
@@ -1042,6 +1327,34 @@ const Tasks: React.FC = () => {
     });
   };
 
+  const handleEditComment = (taskId: string, commentId: string, updatedComment: Comment) => {
+    console.log('Editing comment:', commentId, updatedComment);
+    
+    // Update the tasks array with the edited comment
+    setTasks(prev => 
+      prev.map(task => {
+        if (task.id === taskId) {
+          const updatedComments = (task.comments || []).map(comment => 
+            comment.id === commentId ? updatedComment : comment
+          );
+          return { ...task, comments: updatedComments };
+        }
+        return task;
+      })
+    );
+    
+    // Update the selectedTask if it's the same task
+    if (selectedTask && selectedTask.id === taskId) {
+      setSelectedTask(prev => {
+        if (!prev) return prev;
+        const updatedComments = (prev.comments || []).map(comment => 
+          comment.id === commentId ? updatedComment : comment
+        );
+        return { ...prev, comments: updatedComments };
+      });
+    }
+  };
+
   const handleDragStart = (taskId: string) => {
     setDraggedTaskId(taskId);
   };
@@ -1134,6 +1447,7 @@ const Tasks: React.FC = () => {
           onSave={handleTaskSave}
           onDelete={handleTaskDelete}
           onAddComment={handleAddComment}
+          onEditComment={handleEditComment}
         />
 
         <AddTaskDialog
