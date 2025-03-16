@@ -4,7 +4,7 @@ import AppMenu from '@/components/AppMenu';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
-import { ListChecks, Plus, Clock, CalendarDays, PaperclipIcon, MessageSquare, Trash2, Upload, Check, X, Tag, FileText, Send, Pencil, ExternalLink, Eye, Download } from 'lucide-react';
+import { ListChecks, Plus, Clock, CalendarDays, PaperclipIcon, MessageSquare, Trash2, Upload, Check, X, Tag, FileText, Send, Pencil, ExternalLink, Eye } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -19,7 +19,6 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Form, FormControl, FormField, FormItem } from '@/components/ui/form';
 import { useForm } from 'react-hook-form';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 type TaskStatus = 'todo' | 'inprogress' | 'done';
 
@@ -426,7 +425,7 @@ const CommentForm: React.FC<CommentFormProps> = ({ taskId, onAddComment }) => {
               {attachments.map(attachment => (
                 <div key={attachment.id} className="flex items-center justify-between bg-gray-50 rounded p-2 text-sm">
                   <div className="flex items-center">
-                    <PaperclipIcon className="mr-1 h-3 w-3 text-gray-500" />
+                    <PaperclipIcon className="h-4 w-4 text-gray-500 mr-2" />
                     <span className="truncate max-w-[200px]">{attachment.name}</span>
                   </div>
                   <Button 
@@ -607,15 +606,13 @@ const CommentEditForm: React.FC<CommentEditFormProps> = ({
 interface CommentListProps {
   comments: Comment[];
   onEditComment: (commentId: string, updatedComment: Comment) => void;
-  onDeleteComment?: (commentId: string) => void;
-  taskId?: string;
+  taskId?: string; // Add optional taskId parameter
 }
 
-const CommentList: React.FC<CommentListProps> = ({ comments, onEditComment, onDeleteComment, taskId }) => {
+const CommentList: React.FC<CommentListProps> = ({ comments, onEditComment, taskId }) => {
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [selectedAttachment, setSelectedAttachment] = useState<CommentAttachment | null>(null);
   const [isAttachmentPreviewOpen, setIsAttachmentPreviewOpen] = useState(false);
-  const [commentToDelete, setCommentToDelete] = useState<string | null>(null);
   
   if (comments.length === 0) {
     return (
@@ -640,13 +637,6 @@ const CommentList: React.FC<CommentListProps> = ({ comments, onEditComment, onDe
     setSelectedAttachment(attachment);
     setIsAttachmentPreviewOpen(true);
   };
-
-  const handleDeleteComment = (commentId: string) => {
-    if (onDeleteComment) {
-      onDeleteComment(commentId);
-      setCommentToDelete(null);
-    }
-  };
   
   return (
     <div className="space-y-4">
@@ -666,26 +656,14 @@ const CommentList: React.FC<CommentListProps> = ({ comments, onEditComment, onDe
                   {new Date(comment.timestamp).toLocaleString()}
                 </p>
                 {editingCommentId !== comment.id && (
-                  <div className="flex space-x-1">
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className="h-6 w-6 p-0" 
-                      onClick={() => setEditingCommentId(comment.id)}
-                    >
-                      <Pencil className="h-3 w-3" />
-                    </Button>
-                    {onDeleteComment && (
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="h-6 w-6 p-0 text-destructive hover:text-destructive/90" 
-                        onClick={() => setCommentToDelete(comment.id)}
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    )}
-                  </div>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="h-6 w-6 p-0" 
+                    onClick={() => setEditingCommentId(comment.id)}
+                  >
+                    <Pencil className="h-3 w-3" />
+                  </Button>
                 )}
               </div>
             </div>
@@ -713,26 +691,14 @@ const CommentList: React.FC<CommentListProps> = ({ comments, onEditComment, onDe
                           <PaperclipIcon className="h-3 w-3 mr-1 flex-shrink-0" />
                           <span className="truncate">{attachment.name}</span>
                         </a>
-                        <div className="flex space-x-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-6 w-6 p-0"
-                            onClick={() => openAttachmentPreview(attachment)}
-                          >
-                            <Eye className="h-3 w-3" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-6 w-6 p-0"
-                            asChild
-                          >
-                            <a href={attachment.url} download={attachment.name}>
-                              <Download className="h-3 w-3" />
-                            </a>
-                          </Button>
-                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 w-6 p-0"
+                          onClick={() => openAttachmentPreview(attachment)}
+                        >
+                          <Eye className="h-3 w-3" />
+                        </Button>
                       </div>
                     ))}
                   </div>
@@ -751,26 +717,6 @@ const CommentList: React.FC<CommentListProps> = ({ comments, onEditComment, onDe
           setSelectedAttachment(null);
         }}
       />
-
-      <AlertDialog open={!!commentToDelete} onOpenChange={() => setCommentToDelete(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Comment</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete this comment? This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={() => commentToDelete && handleDeleteComment(commentToDelete)}
-            >
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 };
@@ -827,7 +773,6 @@ const AttachmentPreviewDialog: React.FC<AttachmentPreviewDialogProps> = ({
         <DialogFooter>
           <Button asChild variant="outline">
             <a href={attachment.url} download={attachment.name}>
-              <Download className="h-4 w-4 mr-2" />
               Download
             </a>
           </Button>
@@ -983,19 +928,9 @@ interface TaskEditDialogProps {
   onDelete: (taskId: string) => void;
   onAddComment: (taskId: string, comment: Omit<Comment, 'id'>) => void;
   onEditComment: (taskId: string, commentId: string, updatedComment: Comment) => void;
-  onDeleteComment: (taskId: string, commentId: string) => void;
 }
 
-const TaskEditDialog: React.FC<TaskEditDialogProps> = ({ 
-  isOpen, 
-  task, 
-  onClose, 
-  onSave, 
-  onDelete, 
-  onAddComment, 
-  onEditComment,
-  onDeleteComment
-}) => {
+const TaskEditDialog: React.FC<TaskEditDialogProps> = ({ isOpen, task, onClose, onSave, onDelete, onAddComment, onEditComment }) => {
   const [editedTask, setEditedTask] = useState<Task | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [activeTab, setActiveTab] = useState<'details' | 'comments'>('details');
@@ -1062,24 +997,6 @@ const TaskEditDialog: React.FC<TaskEditDialogProps> = ({
     toast({
       title: "Comment updated",
       description: "Your comment has been updated.",
-    });
-  };
-
-  const handleDeleteComment = (commentId: string) => {
-    onDeleteComment(editedTask.id, commentId);
-    
-    setEditedTask(prev => {
-      if (!prev) return prev;
-      
-      return {
-        ...prev,
-        comments: prev.comments?.filter(comment => comment.id !== commentId)
-      };
-    });
-    
-    toast({
-      title: "Comment deleted",
-      description: "Your comment has been deleted.",
     });
   };
 
@@ -1165,7 +1082,6 @@ const TaskEditDialog: React.FC<TaskEditDialogProps> = ({
               <CommentList 
                 comments={editedTask.comments || []} 
                 onEditComment={handleEditComment}
-                onDeleteComment={handleDeleteComment}
                 taskId={editedTask.id}
               />
               <div className="border-t pt-4">
@@ -1357,33 +1273,6 @@ const Tasks = () => {
     }
   };
 
-  const handleDeleteComment = (taskId: string, commentId: string) => {
-    setTasks(prev => {
-      const updatedTasks = prev.map(task => {
-        if (task.id === taskId) {
-          return {
-            ...task,
-            comments: task.comments?.filter(comment => comment.id !== commentId)
-          };
-        }
-        return task;
-      });
-      
-      return updatedTasks;
-    });
-    
-    // Also update selectedTask if it's the same task
-    if (selectedTask && selectedTask.id === taskId) {
-      setSelectedTask(prev => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          comments: prev.comments?.filter(comment => comment.id !== commentId)
-        };
-      });
-    }
-  };
-
   const handleDragOver = (e: React.DragEvent, status: TaskStatus) => {
     // Prevent default to allow drop
     e.preventDefault();
@@ -1462,7 +1351,6 @@ const Tasks = () => {
             onDelete={handleDeleteTask}
             onAddComment={handleAddComment}
             onEditComment={handleEditComment}
-            onDeleteComment={handleDeleteComment}
           />
         )}
         
@@ -1488,4 +1376,3 @@ const Tasks = () => {
 };
 
 export default Tasks;
-
