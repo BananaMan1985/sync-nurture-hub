@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import Layout from '@/components/Layout';
 import AppMenu from '@/components/AppMenu';
@@ -73,6 +74,12 @@ const TaskCard: React.FC<{ task: Task }> = ({ task }) => {
     high: 'bg-red-100 text-red-800',
   }[task.priority];
 
+  const handleEditClick = () => {
+    console.log(`Editing task: ${task.id} - ${task.title}`);
+    alert(`Editing task: ${task.title}`);
+    // In a real application, you would open a modal or navigate to an edit page
+  };
+
   const handleDragStart = (e: React.DragEvent, taskId: string) => {
     e.dataTransfer.setData('taskId', taskId);
   };
@@ -114,7 +121,7 @@ const TaskCard: React.FC<{ task: Task }> = ({ task }) => {
         </div>
       </CardContent>
       <CardFooter className="flex justify-between pt-0">
-        <Button variant="ghost" size="sm">Edit</Button>
+        <Button variant="ghost" size="sm" onClick={handleEditClick}>Edit</Button>
         <Button variant="outline" size="sm">Open</Button>
       </CardFooter>
     </Card>
