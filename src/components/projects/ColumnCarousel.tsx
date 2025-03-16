@@ -1,3 +1,4 @@
+
 import React, { useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
@@ -82,6 +83,7 @@ const ColumnCarousel: React.FC<ColumnCarouselProps> = ({ children }) => {
           size="icon"
           className="absolute left-0 top-1/2 -translate-y-1/2 z-10 h-10 w-10 rounded-full border bg-background/80 shadow-md backdrop-blur-sm"
           onClick={() => scroll('left')}
+          aria-label="Scroll left"
         >
           <ChevronLeft className="h-6 w-6" />
         </Button>
@@ -112,6 +114,7 @@ const ColumnCarousel: React.FC<ColumnCarouselProps> = ({ children }) => {
           size="icon"
           className="absolute right-0 top-1/2 -translate-y-1/2 z-10 h-10 w-10 rounded-full border bg-background/80 shadow-md backdrop-blur-sm"
           onClick={() => scroll('right')}
+          aria-label="Scroll right"
         >
           <ChevronRight className="h-6 w-6" />
         </Button>
