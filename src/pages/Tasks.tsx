@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import Layout from '@/components/Layout';
 import AppMenu from '@/components/AppMenu';
@@ -39,7 +38,7 @@ interface Task {
   priority: 'low' | 'medium' | 'high';
   attachments?: number;
   comments?: Comment[];
-  order?: number; // Added order property for sorting within columns
+  order?: number;
 }
 
 const mockTasks: Task[] = [
@@ -605,6 +604,24 @@ const TaskEditDialog: React.FC<{
     });
   };
 
+  const handleAddComment = (taskId: string, comment: Omit<Comment, 'id'>) => {
+    onAddComment(taskId, comment);
+    
+    setEditedTask(prev => {
+      if (!prev) return prev;
+      
+      const newComment = {
+        id: `comment-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+        ...comment
+      };
+      
+      return {
+        ...prev,
+        comments: [...(prev.comments || []), newComment]
+      };
+    });
+  };
+
   const statusStyles = {
     todo: {
       bg: 'bg-slate-50',
@@ -791,7 +808,7 @@ const TaskEditDialog: React.FC<{
               <div className="pt-4 border-t">
                 <CommentForm 
                   taskId={editedTask.id} 
-                  onAddComment={onAddComment} 
+                  onAddComment={handleAddComment} 
                 />
               </div>
             </div>
@@ -990,20 +1007,34 @@ const Tasks: React.FC = () => {
   };
 
   const handleAddComment = (taskId: string, comment: Omit<Comment, 'id'>) => {
+    console.log('Adding comment to task:', taskId, comment);
+    
+    // Create the new comment with ID
+    const newComment = {
+      id: `comment-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      ...comment
+    };
+    
+    // Update the tasks array with the new comment
     setTasks(prev => 
       prev.map(task => {
         if (task.id === taskId) {
-          const newComment = {
-            id: `comment-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-            ...comment
-          };
-          
           const updatedComments = [...(task.comments || []), newComment];
+          console.log('Updated comments for task:', task.id, updatedComments);
           return { ...task, comments: updatedComments };
         }
         return task;
       })
     );
+    
+    // Update the selectedTask if it's the same task
+    if (selectedTask && selectedTask.id === taskId) {
+      setSelectedTask(prev => {
+        if (!prev) return prev;
+        const updatedComments = [...(prev.comments || []), newComment];
+        return { ...prev, comments: updatedComments };
+      });
+    }
     
     toast({
       title: "Comment added",
