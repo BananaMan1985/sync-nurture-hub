@@ -3,6 +3,7 @@ import React from 'react';
 import Layout from '@/components/Layout';
 import AnimatedTransition from '@/components/AnimatedTransition';
 import ReportForm from '@/components/ReportForm';
+import AppMenu from '@/components/AppMenu';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { CalendarDays, CheckCircle2, Clock } from 'lucide-react';
 
@@ -45,7 +46,9 @@ const Reports: React.FC = () => {
             </p>
           </div>
           
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <AppMenu />
+          
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
             <div className="lg:col-span-2">
               <ReportForm />
             </div>
