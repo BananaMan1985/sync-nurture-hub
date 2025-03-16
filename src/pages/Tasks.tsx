@@ -16,6 +16,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 type TaskStatus = 'todo' | 'inprogress' | 'done';
 
@@ -28,6 +29,7 @@ interface Task {
   priority: 'low' | 'medium' | 'high';
   attachments?: number;
   comments?: number;
+  order?: number; // Added order property for sorting within columns
 }
 
 const mockTasks: Task[] = [
@@ -76,17 +78,21 @@ const mockTasks: Task[] = [
   },
 ];
 
-const TaskCard: React.FC<{ task: Task; onClick: () => void }> = ({ task, onClick }) => {
-  const handleDragStart = (e: React.DragEvent, taskId: string) => {
-    e.dataTransfer.setData('taskId', taskId);
-  };
-
-  const handleClick = (e: React.MouseEvent) => {
-    // Only trigger click if not dragging
-    if (!e.currentTarget.classList.contains('dragging')) {
-      onClick();
-    }
-  };
+const TaskCard: React.FC<{ 
+  task: Task; 
+  onClick: () => void;
+  index: number;
+  onDragStart: (e: React.DragEvent, task: Task, index: number) => void;
+  onDragEnter: (e: React.DragEvent, index: number) => void;
+  isDragging: boolean;
+}> = ({ 
+  task, 
+  onClick, 
+  index,
+  onDragStart,
+  onDragEnter,
+  isDragging
+}) => {
 
   // Status colors for visual indicators
   const statusColors = {
@@ -100,10 +106,12 @@ const TaskCard: React.FC<{ task: Task; onClick: () => void }> = ({ task, onClick
       className={`mb-4 cursor-pointer hover:shadow-md transition-all duration-200 hover:-translate-y-1 border-l-4 ${
         task.status === 'todo' ? 'border-l-blue-400' : 
         task.status === 'inprogress' ? 'border-l-amber-400' : 'border-l-emerald-400'
-      } ${statusColors[task.status]} bg-opacity-30`}
+      } ${statusColors[task.status]} bg-opacity-30 ${isDragging ? 'opacity-50' : ''}`}
       draggable 
-      onDragStart={(e) => handleDragStart(e, task.id)}
-      onClick={handleClick}
+      onDragStart={(e) => onDragStart(e, task, index)}
+      onDragEnter={(e) => onDragEnter(e, index)}
+      onDragOver={(e) => e.preventDefault()}
+      onClick={onClick}
     >
       <CardHeader className="pb-2">
         <CardTitle className="text-lg font-medium">{task.title}</CardTitle>
@@ -144,6 +152,7 @@ const TaskColumn: React.FC<{
   isLoading: boolean;
   onDrop: (taskId: string, newStatus: TaskStatus) => void;
   onTaskClick: (task: Task) => void;
+  onReorderTasks: (draggedTaskId: string, targetIndex: number, status: TaskStatus) => void;
 }> = ({
   title,
   icon,
@@ -152,8 +161,12 @@ const TaskColumn: React.FC<{
   isLoading,
   onDrop,
   onTaskClick,
+  onReorderTasks,
 }) => {
   
+  const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault(); // Allow drop
   };
@@ -161,7 +174,26 @@ const TaskColumn: React.FC<{
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     const taskId = e.dataTransfer.getData('taskId');
-    onDrop(taskId, status);
+    if (draggedIndex !== null && draggedTaskId) {
+      // If we're dragging within the same column
+      onReorderTasks(draggedTaskId, draggedIndex, status);
+    } else {
+      // If we're dragging between columns
+      onDrop(taskId, status);
+    }
+    setDraggedTaskId(null);
+    setDraggedIndex(null);
+  };
+
+  const handleDragStart = (e: React.DragEvent, task: Task, index: number) => {
+    e.dataTransfer.setData('taskId', task.id);
+    setDraggedTaskId(task.id);
+  };
+
+  const handleDragEnter = (e: React.DragEvent, index: number) => {
+    if (draggedTaskId) {
+      setDraggedIndex(index);
+    }
   };
 
   // Column styling based on status
@@ -177,6 +209,14 @@ const TaskColumn: React.FC<{
     inprogress: 'text-amber-600',
     done: 'text-emerald-600'
   };
+
+  // Sort tasks by order property if it exists
+  const sortedTasks = [...tasks].sort((a, b) => {
+    if (a.order !== undefined && b.order !== undefined) {
+      return a.order - b.order;
+    }
+    return 0;
+  });
 
   return (
     <div 
@@ -202,15 +242,21 @@ const TaskColumn: React.FC<{
           <Skeleton className="h-[120px] mb-4" />
         </>
       ) : (
-        <div className="space-y-3">
-          {tasks.map((task) => (
-            <TaskCard 
-              key={task.id} 
-              task={task} 
-              onClick={() => onTaskClick(task)}
-            />
-          ))}
-        </div>
+        <ScrollArea className="h-[calc(100vh-240px)]">
+          <div className="space-y-3 pr-3">
+            {sortedTasks.map((task, index) => (
+              <TaskCard 
+                key={task.id} 
+                task={task} 
+                index={index}
+                onClick={() => onTaskClick(task)}
+                onDragStart={handleDragStart}
+                onDragEnter={handleDragEnter}
+                isDragging={draggedTaskId === task.id}
+              />
+            ))}
+          </div>
+        </ScrollArea>
       )}
       
       <Button 
@@ -436,7 +482,10 @@ const TaskEditDialog: React.FC<{
 
 const Tasks: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
-  const [tasks, setTasks] = useState<Task[]>(mockTasks);
+  const [tasks, setTasks] = useState<Task[]>(mockTasks.map((task, index) => ({
+    ...task,
+    order: index
+  })));
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   
@@ -446,10 +495,46 @@ const Tasks: React.FC = () => {
 
   const handleTaskMove = (taskId: string, newStatus: TaskStatus) => {
     setTasks(prev => 
-      prev.map(task => 
-        task.id === taskId ? { ...task, status: newStatus } : task
-      )
+      prev.map(task => {
+        if (task.id === taskId) {
+          // When moving to a new column, place at the end
+          const columnTasks = prev.filter(t => t.status === newStatus);
+          const highestOrder = Math.max(...columnTasks.map(t => t.order || 0), 0);
+          return { ...task, status: newStatus, order: highestOrder + 1 };
+        }
+        return task;
+      })
     );
+  };
+
+  const handleReorderTasks = (draggedTaskId: string, targetIndex: number, status: TaskStatus) => {
+    setTasks(prev => {
+      // Get the dragged task
+      const draggedTask = prev.find(t => t.id === draggedTaskId);
+      if (!draggedTask) return prev;
+      
+      // Get only tasks from the same column, sorted by their current order
+      const columnTasks = [...prev.filter(t => t.status === status)]
+        .sort((a, b) => (a.order || 0) - (b.order || 0));
+      
+      // Remove dragged task from the array
+      const withoutDraggedTask = columnTasks.filter(t => t.id !== draggedTaskId);
+      
+      // Insert dragged task at the target index
+      withoutDraggedTask.splice(targetIndex, 0, draggedTask);
+      
+      // Reassign order values
+      const reorderedColumnTasks = withoutDraggedTask.map((task, index) => ({
+        ...task,
+        order: index
+      }));
+      
+      // Merge with tasks from other columns
+      return [
+        ...prev.filter(t => t.status !== status),
+        ...reorderedColumnTasks
+      ];
+    });
   };
 
   const handleTaskClick = (task: Task) => {
@@ -507,6 +592,7 @@ const Tasks: React.FC = () => {
             isLoading={isLoading}
             onDrop={handleTaskMove}
             onTaskClick={handleTaskClick}
+            onReorderTasks={handleReorderTasks}
           />
           <TaskColumn
             title="In Progress"
@@ -516,6 +602,7 @@ const Tasks: React.FC = () => {
             isLoading={isLoading}
             onDrop={handleTaskMove}
             onTaskClick={handleTaskClick}
+            onReorderTasks={handleReorderTasks}
           />
           <TaskColumn
             title="Completed"
@@ -525,6 +612,7 @@ const Tasks: React.FC = () => {
             isLoading={isLoading}
             onDrop={handleTaskMove}
             onTaskClick={handleTaskClick}
+            onReorderTasks={handleReorderTasks}
           />
         </div>
 
