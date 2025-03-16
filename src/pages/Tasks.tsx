@@ -178,7 +178,7 @@ const TaskColumn: React.FC<{
     const taskId = e.dataTransfer.getData('taskId');
     if (draggedIndex !== null && draggedTaskId) {
       // If we're dragging within the same column
-      onReorderTasks(draggedTaskId, draggedIndex, status);
+      onReorderTasks(draggedTaskId, dropPreviewIndex !== null ? dropPreviewIndex : tasks.length, status);
     } else {
       // If we're dragging between columns
       onDrop(taskId, status);
@@ -189,41 +189,29 @@ const TaskColumn: React.FC<{
 
   const handleDragStart = (e: React.DragEvent, task: Task, index: number) => {
     e.dataTransfer.setData('taskId', task.id);
+    e.dataTransfer.setData('sourceStatus', task.status);
+    e.dataTransfer.setData('sourceIndex', index.toString());
+    setDraggedIndex(index);
   };
 
   const handleDragEnter = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
     if (draggedTaskId) {
-      setDraggedIndex(index);
       setDropPreviewIndex(index);
     }
   };
   
-  const handleDragLeave = () => {
-    // Only reset the preview when mouse leaves column area
-    // We'll keep this commented to only hide when dragging stops
-    // setDropPreviewIndex(null);
+  const handleDragLeave = (e: React.DragEvent) => {
+    // Check if we're leaving the column area
+    const relatedTarget = e.relatedTarget as Element;
+    if (!relatedTarget || !e.currentTarget.contains(relatedTarget)) {
+      setDropPreviewIndex(null);
+    }
   };
 
   const handleDragEnd = () => {
+    setDraggedIndex(null);
     setDropPreviewIndex(null);
-  };
-
-  const columnStyle = {
-    todo: 'bg-gradient-to-b from-slate-50 to-slate-100 border-slate-200',
-    inprogress: 'bg-gradient-to-b from-slate-50 to-slate-100 border-slate-200',
-    done: 'bg-gradient-to-b from-slate-50 to-slate-100 border-slate-200'
-  };
-
-  const iconColor = {
-    todo: 'text-slate-600',
-    inprogress: 'text-amber-600',
-    done: 'text-teal-600'
-  };
-
-  const dropIndicatorColor = {
-    todo: 'bg-slate-300',
-    inprogress: 'bg-amber-300',
-    done: 'bg-teal-300'
   };
 
   // Add indicator if the column is empty and something is being dragged
@@ -238,7 +226,7 @@ const TaskColumn: React.FC<{
 
   return (
     <div 
-      className={`rounded-xl p-4 min-w-[300px] w-full ${columnStyle[status]} border shadow-sm relative`}
+      className="rounded-xl p-4 min-w-[300px] w-full bg-gradient-to-b from-slate-50 to-slate-100 border border-slate-200 shadow-sm relative"
       onDragOver={handleDragOver}
       onDrop={handleDrop}
       onDragLeave={handleDragLeave}
@@ -246,7 +234,7 @@ const TaskColumn: React.FC<{
     >
       <div className="flex items-center mb-5">
         <div className={`p-2 rounded-full ${status === 'todo' ? 'bg-slate-100' : status === 'inprogress' ? 'bg-amber-100' : 'bg-teal-100'}`}>
-          <div className={`${iconColor[status]}`}>
+          <div className={`${status === 'todo' ? 'text-slate-600' : status === 'inprogress' ? 'text-amber-600' : 'text-teal-600'}`}>
             {icon}
           </div>
         </div>
@@ -266,7 +254,7 @@ const TaskColumn: React.FC<{
           <div className="space-y-3 pr-3">
             {shouldShowEmptyColumnIndicator && (
               <div 
-                className={`h-2 w-full ${dropIndicatorColor[status]} rounded-full mb-2 transform transition-all duration-200 animate-pulse`}
+                className="h-2 w-full bg-slate-200 rounded-full mb-2 transform transition-all duration-200 animate-pulse"
               />
             )}
             
@@ -274,7 +262,7 @@ const TaskColumn: React.FC<{
               <React.Fragment key={task.id}>
                 {dropPreviewIndex === index && (
                   <div 
-                    className={`h-1 w-full ${dropIndicatorColor[status]} rounded-full mb-2 transform transition-all duration-200 animate-pulse`}
+                    className="h-1 w-full bg-slate-300 rounded-full mb-2 transform transition-all duration-200 animate-pulse"
                     style={{marginTop: index === 0 ? '0' : '8px'}}
                   />
                 )}
@@ -288,22 +276,24 @@ const TaskColumn: React.FC<{
                 />
                 {index === sortedTasks.length - 1 && dropPreviewIndex === sortedTasks.length && (
                   <div 
-                    className={`h-1 w-full ${dropIndicatorColor[status]} rounded-full mt-2 transform transition-all duration-200 animate-pulse`}
+                    className="h-1 w-full bg-slate-300 rounded-full mt-2 transform transition-all duration-200 animate-pulse"
                   />
                 )}
               </React.Fragment>
             ))}
+            
+            {tasks.length > 0 && dropPreviewIndex === tasks.length && (
+              <div 
+                className="h-1 w-full bg-slate-300 rounded-full mt-2 transform transition-all duration-200 animate-pulse"
+              />
+            )}
           </div>
         </ScrollArea>
       )}
       
       <Button 
         variant="outline" 
-        className={`w-full mt-4 border border-dashed ${
-          status === 'todo' ? 'border-slate-300 hover:bg-slate-50' : 
-          status === 'inprogress' ? 'border-amber-300 hover:bg-amber-50' : 
-          'border-teal-300 hover:bg-teal-50'
-        }`}
+        className="w-full mt-4 border border-dashed border-slate-300 hover:bg-slate-50"
       >
         <Plus className="h-4 w-4 mr-2" />
         Add Task
