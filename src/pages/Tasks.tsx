@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import Layout from '@/components/Layout';
 import AppMenu from '@/components/AppMenu';
@@ -95,17 +94,16 @@ const TaskCard: React.FC<{
 }) => {
 
   const statusColors = {
-    todo: 'bg-blue-100',
-    inprogress: 'bg-amber-100',
-    done: 'bg-emerald-100'
+    todo: 'bg-slate-50 border-l-slate-400',
+    inprogress: 'bg-slate-50 border-l-amber-400',
+    done: 'bg-slate-50 border-l-teal-400'
   };
 
   return (
     <Card 
       className={`mb-4 cursor-pointer hover:shadow-md transition-all duration-200 hover:-translate-y-1 border-l-4 ${
-        task.status === 'todo' ? 'border-l-blue-400' : 
-        task.status === 'inprogress' ? 'border-l-amber-400' : 'border-l-emerald-400'
-      } ${statusColors[task.status]} bg-opacity-30 ${isDragging ? 'opacity-50' : ''}`}
+        statusColors[task.status]
+      } ${isDragging ? 'opacity-50' : ''}`}
       draggable 
       onDragStart={(e) => onDragStart(e, task, index)}
       onDragEnter={(e) => onDragEnter(e, index)}
@@ -211,21 +209,21 @@ const TaskColumn: React.FC<{
   };
 
   const columnStyle = {
-    todo: 'from-blue-50 to-blue-100 border-blue-200',
-    inprogress: 'from-amber-50 to-amber-100 border-amber-200',
-    done: 'from-emerald-50 to-emerald-100 border-emerald-200'
+    todo: 'bg-gradient-to-b from-slate-50 to-slate-100 border-slate-200',
+    inprogress: 'bg-gradient-to-b from-slate-50 to-slate-100 border-slate-200',
+    done: 'bg-gradient-to-b from-slate-50 to-slate-100 border-slate-200'
   };
 
   const iconColor = {
-    todo: 'text-blue-600',
+    todo: 'text-slate-600',
     inprogress: 'text-amber-600',
-    done: 'text-emerald-600'
+    done: 'text-teal-600'
   };
 
   const dropIndicatorColor = {
-    todo: 'bg-blue-200',
-    inprogress: 'bg-amber-200',
-    done: 'bg-emerald-200'
+    todo: 'bg-slate-300',
+    inprogress: 'bg-amber-300',
+    done: 'bg-teal-300'
   };
 
   // Add indicator if the column is empty and something is being dragged
@@ -240,20 +238,20 @@ const TaskColumn: React.FC<{
 
   return (
     <div 
-      className={`rounded-xl p-4 min-w-[300px] w-full bg-gradient-to-b ${columnStyle[status]} border shadow-sm relative`}
+      className={`rounded-xl p-4 min-w-[300px] w-full ${columnStyle[status]} border shadow-sm relative`}
       onDragOver={handleDragOver}
       onDrop={handleDrop}
       onDragLeave={handleDragLeave}
       onDragEnd={handleDragEnd}
     >
       <div className="flex items-center mb-5">
-        <div className={`p-2 rounded-full ${status === 'todo' ? 'bg-blue-100' : status === 'inprogress' ? 'bg-amber-100' : 'bg-emerald-100'}`}>
+        <div className={`p-2 rounded-full ${status === 'todo' ? 'bg-slate-100' : status === 'inprogress' ? 'bg-amber-100' : 'bg-teal-100'}`}>
           <div className={`${iconColor[status]}`}>
             {icon}
           </div>
         </div>
         <h3 className="font-medium ml-2 text-lg">{title}</h3>
-        <div className={`ml-2 ${status === 'todo' ? 'bg-blue-200' : status === 'inprogress' ? 'bg-amber-200' : 'bg-emerald-200'} rounded-full w-6 h-6 flex items-center justify-center text-xs font-medium`}>
+        <div className={`ml-2 ${status === 'todo' ? 'bg-slate-200' : status === 'inprogress' ? 'bg-amber-200' : 'bg-teal-200'} rounded-full w-6 h-6 flex items-center justify-center text-xs font-medium`}>
           {tasks.length}
         </div>
       </div>
@@ -271,6 +269,7 @@ const TaskColumn: React.FC<{
                 className={`h-2 w-full ${dropIndicatorColor[status]} rounded-full mb-2 transform transition-all duration-200 animate-pulse`}
               />
             )}
+            
             {sortedTasks.map((task, index) => (
               <React.Fragment key={task.id}>
                 {dropPreviewIndex === index && (
@@ -287,7 +286,7 @@ const TaskColumn: React.FC<{
                   onDragEnter={handleDragEnter}
                   isDragging={draggedTaskId === task.id}
                 />
-                {dropPreviewIndex === sortedTasks.length && index === sortedTasks.length - 1 && (
+                {index === sortedTasks.length - 1 && dropPreviewIndex === sortedTasks.length && (
                   <div 
                     className={`h-1 w-full ${dropIndicatorColor[status]} rounded-full mt-2 transform transition-all duration-200 animate-pulse`}
                   />
@@ -301,9 +300,9 @@ const TaskColumn: React.FC<{
       <Button 
         variant="outline" 
         className={`w-full mt-4 border border-dashed ${
-          status === 'todo' ? 'border-blue-300 hover:bg-blue-50' : 
+          status === 'todo' ? 'border-slate-300 hover:bg-slate-50' : 
           status === 'inprogress' ? 'border-amber-300 hover:bg-amber-50' : 
-          'border-emerald-300 hover:bg-emerald-50'
+          'border-teal-300 hover:bg-teal-50'
         }`}
       >
         <Plus className="h-4 w-4 mr-2" />
@@ -352,9 +351,9 @@ const TaskEditDialog: React.FC<{
 
   const statusStyles = {
     todo: {
-      bg: 'bg-blue-50',
-      border: 'border-blue-200',
-      text: 'text-blue-700'
+      bg: 'bg-slate-50',
+      border: 'border-slate-200',
+      text: 'text-slate-700'
     },
     inprogress: {
       bg: 'bg-amber-50',
@@ -362,9 +361,9 @@ const TaskEditDialog: React.FC<{
       text: 'text-amber-700'
     },
     done: {
-      bg: 'bg-emerald-50',
-      border: 'border-emerald-200',
-      text: 'text-emerald-700'
+      bg: 'bg-teal-50',
+      border: 'border-teal-200',
+      text: 'text-teal-700'
     }
   };
 
@@ -623,7 +622,7 @@ const Tasks: React.FC = () => {
             <h2 className="text-xl font-semibold">Current Tasks</h2>
             <p className="text-muted-foreground">Track and manage your projects</p>
           </div>
-          <Button className="bg-gradient-to-r from-[#2D3B22] to-[#3c4f2d] hover:from-[#3c4f2d] hover:to-[#4a613a] text-white">
+          <Button className="bg-slate-800 hover:bg-slate-700 text-white">
             <Plus className="mr-2 h-4 w-4" />
             New Task
           </Button>
