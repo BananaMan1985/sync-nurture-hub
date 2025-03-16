@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import Layout from '@/components/Layout';
 import AppMenu from '@/components/AppMenu';
@@ -15,6 +16,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import TaskColumn from '@/components/projects/TaskColumn';
 import TaskForm from '@/components/projects/TaskForm';
 import TaskEditDialog from '@/components/projects/TaskEditDialog';
+import ColumnCarousel from '@/components/projects/ColumnCarousel';
 import { Task, TaskStatus, mockTasks, Comment as TaskComment, Column, defaultColumns } from '@/components/projects/types';
 
 const Projects = () => {
@@ -380,11 +382,11 @@ const Projects = () => {
           </div>
         </div>
 
-        <div className="flex overflow-x-auto pb-6 gap-6 snap-x">
+        <ColumnCarousel>
           {sortedColumns.map(column => (
             <div 
               key={column.id} 
-              className="min-w-[300px] w-[350px] max-w-md snap-start flex-shrink-0"
+              className="min-w-[300px] w-[350px] max-w-md flex-shrink-0"
               draggable={true}
               onDragStart={(e) => handleColumnDragStart(e, column.id)}
               onDragOver={handleColumnDragOver}
@@ -412,7 +414,7 @@ const Projects = () => {
               />
             </div>
           ))}
-        </div>
+        </ColumnCarousel>
         
         {/* Project Edit Dialog */}
         {selectedTask && (
