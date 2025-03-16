@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import Layout from '@/components/Layout';
 import AppMenu from '@/components/AppMenu';
@@ -176,13 +177,16 @@ const TaskColumn: React.FC<{
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     const taskId = e.dataTransfer.getData('taskId');
-    if (draggedIndex !== null && draggedTaskId) {
+    const sourceStatus = e.dataTransfer.getData('sourceStatus') as TaskStatus;
+    
+    if (sourceStatus === status && draggedIndex !== null) {
       // If we're dragging within the same column
-      onReorderTasks(draggedTaskId, dropPreviewIndex !== null ? dropPreviewIndex : tasks.length, status);
+      onReorderTasks(taskId, dropPreviewIndex !== null ? dropPreviewIndex : tasks.length, status);
     } else {
       // If we're dragging between columns
       onDrop(taskId, status);
     }
+    
     setDraggedIndex(null);
     setDropPreviewIndex(null);
   };
@@ -196,9 +200,7 @@ const TaskColumn: React.FC<{
 
   const handleDragEnter = (e: React.DragEvent, index: number) => {
     e.preventDefault();
-    if (draggedTaskId) {
-      setDropPreviewIndex(index);
-    }
+    setDropPreviewIndex(index);
   };
   
   const handleDragLeave = (e: React.DragEvent) => {
@@ -233,13 +235,13 @@ const TaskColumn: React.FC<{
       onDragEnd={handleDragEnd}
     >
       <div className="flex items-center mb-5">
-        <div className={`p-2 rounded-full ${status === 'todo' ? 'bg-slate-100' : status === 'inprogress' ? 'bg-amber-100' : 'bg-teal-100'}`}>
-          <div className={`${status === 'todo' ? 'text-slate-600' : status === 'inprogress' ? 'text-amber-600' : 'text-teal-600'}`}>
+        <div className={`p-2 rounded-full bg-slate-100`}>
+          <div className="text-slate-600">
             {icon}
           </div>
         </div>
         <h3 className="font-medium ml-2 text-lg">{title}</h3>
-        <div className={`ml-2 ${status === 'todo' ? 'bg-slate-200' : status === 'inprogress' ? 'bg-amber-200' : 'bg-teal-200'} rounded-full w-6 h-6 flex items-center justify-center text-xs font-medium`}>
+        <div className="ml-2 bg-slate-200 rounded-full w-6 h-6 flex items-center justify-center text-xs font-medium">
           {tasks.length}
         </div>
       </div>
@@ -263,7 +265,6 @@ const TaskColumn: React.FC<{
                 {dropPreviewIndex === index && (
                   <div 
                     className="h-1 w-full bg-slate-300 rounded-full mb-2 transform transition-all duration-200 animate-pulse"
-                    style={{marginTop: index === 0 ? '0' : '8px'}}
                   />
                 )}
                 <TaskCard 
@@ -538,27 +539,48 @@ const Tasks: React.FC = () => {
   };
 
   const handleReorderTasks = (draggedTaskId: string, targetIndex: number, status: TaskStatus) => {
+    console.log(`Reordering task ${draggedTaskId} to index ${targetIndex} in ${status}`);
+    
     setTasks(prev => {
+      // Find the task being dragged
       const draggedTask = prev.find(t => t.id === draggedTaskId);
       if (!draggedTask) return prev;
       
+      // Get the current column tasks in order
       const columnTasks = [...prev.filter(t => t.status === status)]
         .sort((a, b) => (a.order || 0) - (b.order || 0));
       
-      const withoutDraggedTask = columnTasks.filter(t => t.id !== draggedTaskId);
+      // Get tasks not in the current column
+      const otherTasks = prev.filter(t => t.status !== status);
       
-      withoutDraggedTask.splice(targetIndex, 0, draggedTask);
+      // Remove the dragged task if it's already in this column
+      const tasksWithoutDragged = columnTasks.filter(t => t.id !== draggedTaskId);
       
-      const reorderedColumnTasks = withoutDraggedTask.map((task, index) => ({
+      // Create a new array with the task inserted at the target position
+      const reorderedTasks = [...tasksWithoutDragged];
+      
+      // Calculate the correct insertion index
+      const insertIndex = Math.min(targetIndex, tasksWithoutDragged.length);
+      
+      // Update task status if coming from another column
+      const updatedDraggedTask = {
+        ...draggedTask,
+        status: status
+      };
+      
+      // Insert the task at the target position
+      reorderedTasks.splice(insertIndex, 0, updatedDraggedTask);
+      
+      // Reassign order numbers
+      const tasksWithNewOrders = reorderedTasks.map((task, idx) => ({
         ...task,
-        order: index
+        order: idx
       }));
       
-      return [
-        ...prev.filter(t => t.status !== status),
-        ...reorderedColumnTasks
-      ];
+      // Combine with tasks from other columns
+      return [...otherTasks, ...tasksWithNewOrders];
     });
+    
     setDraggedTaskId(null);
     setDragOverColumn(null);
   };
