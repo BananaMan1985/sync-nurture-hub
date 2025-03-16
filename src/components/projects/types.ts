@@ -1,3 +1,4 @@
+
 export type TaskStatus = string;
 
 export interface Column {
@@ -36,6 +37,7 @@ export interface Task {
   title: string;
   description: string;
   content?: string;
+  purpose?: string; // Added purpose field
   status: TaskStatus;
   dueDate?: string;
   priority: 'low' | 'medium' | 'high';
@@ -55,6 +57,7 @@ export const mockTasks: Task[] = [
     id: '1',
     title: 'Prepare quarterly report',
     description: 'Compile data from Q3 for executive meeting',
+    purpose: 'Provide executives with data needed for strategic planning',
     status: 'todo',
     dueDate: '2023-11-15',
     priority: 'high',

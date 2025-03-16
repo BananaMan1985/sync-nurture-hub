@@ -8,7 +8,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { FileText, Tag, MessageSquare, CalendarDays, X, Check, ChevronLeft, ChevronRight, ArrowRight, ArrowLeft } from 'lucide-react';
+import { FileText, Target, Flag, CalendarDays, X, Check, ArrowRight, ArrowLeft } from 'lucide-react';
 import { Task, TaskStatus } from './types';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -35,6 +35,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
     dueDate: task?.dueDate || format(new Date(), 'yyyy-MM-dd'),
     priority: task?.priority || 'medium',
     content: task?.content || '',
+    purpose: task?.purpose || '',
   });
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(
     task?.dueDate ? new Date(task.dueDate) : new Date()
@@ -58,18 +59,22 @@ const TaskForm: React.FC<TaskFormProps> = ({
   return (
     <Card className="p-6 overflow-auto max-h-[75vh]">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid grid-cols-3 mb-6">
+        <TabsList className="grid grid-cols-4 mb-6">
           <TabsTrigger value="details">
             <FileText className="h-4 w-4 mr-2" />
             Basic Info
           </TabsTrigger>
-          <TabsTrigger value="description">
-            <MessageSquare className="h-4 w-4 mr-2" />
+          <TabsTrigger value="purpose">
+            <Target className="h-4 w-4 mr-2" />
+            Purpose
+          </TabsTrigger>
+          <TabsTrigger value="endstate">
+            <Flag className="h-4 w-4 mr-2" />
             End State
           </TabsTrigger>
-          <TabsTrigger value="content">
-            <Tag className="h-4 w-4 mr-2" />
-            Details
+          <TabsTrigger value="task">
+            <FileText className="h-4 w-4 mr-2" />
+            Task
           </TabsTrigger>
         </TabsList>
         
@@ -91,7 +96,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
           {/* Status */}
           <div className="space-y-2">
             <div className="flex items-center gap-2 mb-1 text-sm font-medium text-gray-700">
-              <Tag className="h-4 w-4 text-gray-500" />
+              <FileText className="h-4 w-4 text-gray-500" />
               <span>Status</span>
             </div>
             <Select 
@@ -181,25 +186,25 @@ const TaskForm: React.FC<TaskFormProps> = ({
 
           <div className="flex justify-end mt-4">
             <Button 
-              onClick={() => setActiveTab("description")} 
+              onClick={() => setActiveTab("purpose")} 
               className="flex items-center"
             >
-              Next: End State
+              Next: Purpose
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           </div>
         </TabsContent>
         
-        <TabsContent value="description" className="space-y-6">
+        <TabsContent value="purpose" className="space-y-6">
           <div className="space-y-2">
             <div className="flex items-center gap-2 mb-1 text-sm font-medium text-gray-700">
-              <MessageSquare className="h-4 w-4 text-gray-500" />
-              <span>End State Description</span>
+              <Target className="h-4 w-4 text-gray-500" />
+              <span>Project Purpose</span>
             </div>
             <Textarea
-              placeholder="Describe the end state of this project..."
-              value={newTask.description}
-              onChange={(e) => handleChange('description', e.target.value)}
+              placeholder="Describe the purpose of this project..."
+              value={newTask.purpose || ''}
+              onChange={(e) => handleChange('purpose', e.target.value)}
               className="min-h-[200px] resize-none"
             />
           </div>
@@ -214,23 +219,56 @@ const TaskForm: React.FC<TaskFormProps> = ({
               Back: Basic Info
             </Button>
             <Button 
-              onClick={() => setActiveTab("content")} 
+              onClick={() => setActiveTab("endstate")} 
               className="flex items-center"
             >
-              Next: Details
+              Next: End State
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           </div>
         </TabsContent>
         
-        <TabsContent value="content" className="space-y-6">
+        <TabsContent value="endstate" className="space-y-6">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 mb-1 text-sm font-medium text-gray-700">
+              <Flag className="h-4 w-4 text-gray-500" />
+              <span>End State Description</span>
+            </div>
+            <Textarea
+              placeholder="Describe the end state of this project..."
+              value={newTask.description}
+              onChange={(e) => handleChange('description', e.target.value)}
+              className="min-h-[200px] resize-none"
+            />
+          </div>
+
+          <div className="flex justify-between mt-4">
+            <Button 
+              variant="outline" 
+              onClick={() => setActiveTab("purpose")} 
+              className="flex items-center"
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back: Purpose
+            </Button>
+            <Button 
+              onClick={() => setActiveTab("task")} 
+              className="flex items-center"
+            >
+              Next: Task
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+          </div>
+        </TabsContent>
+        
+        <TabsContent value="task" className="space-y-6">
           <div className="space-y-2">
             <div className="flex items-center gap-2 mb-1 text-sm font-medium text-gray-700">
               <FileText className="h-4 w-4 text-gray-500" />
-              <span>Project Details</span>
+              <span>Task Details</span>
             </div>
             <Textarea
-              placeholder="Add detailed information about this project..."
+              placeholder="Add detailed information about this task..."
               value={newTask.content || ''}
               onChange={(e) => handleChange('content', e.target.value)}
               className="min-h-[200px] resize-none"
@@ -240,7 +278,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
           <div className="flex justify-between mt-4">
             <Button 
               variant="outline" 
-              onClick={() => setActiveTab("description")} 
+              onClick={() => setActiveTab("endstate")} 
               className="flex items-center"
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
