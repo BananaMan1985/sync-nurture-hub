@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { Send } from 'lucide-react';
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 interface ReportFormData {
   date: string;
@@ -14,6 +15,7 @@ interface ReportFormData {
   outstandingTasks: string;
   needFromManager: string;
   tomorrowPlans: string;
+  busynessLevel: string;
 }
 
 const initialFormData: ReportFormData = {
@@ -21,7 +23,8 @@ const initialFormData: ReportFormData = {
   completedTasks: '',
   outstandingTasks: '',
   needFromManager: '',
-  tomorrowPlans: ''
+  tomorrowPlans: '',
+  busynessLevel: '3'
 };
 
 const ReportForm: React.FC = () => {
@@ -31,6 +34,10 @@ const ReportForm: React.FC = () => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleRadioChange = (value: string) => {
+    setFormData((prev) => ({ ...prev, busynessLevel: value }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -138,6 +145,26 @@ const ReportForm: React.FC = () => {
           placeholder="What are your priorities for tomorrow?"
           className="min-h-24 resize-none"
         />
+      </motion.div>
+
+      <motion.div variants={itemVariants} className="space-y-2">
+        <Label>Busyness Level</Label>
+        <RadioGroup 
+          value={formData.busynessLevel} 
+          onValueChange={handleRadioChange}
+          className="flex space-x-4 pt-2"
+        >
+          {[1, 2, 3, 4, 5, 6].map((level) => (
+            <div key={level} className="flex items-center space-x-2">
+              <RadioGroupItem value={level.toString()} id={`level-${level}`} />
+              <Label htmlFor={`level-${level}`} className="cursor-pointer">{level}</Label>
+            </div>
+          ))}
+        </RadioGroup>
+        <div className="flex justify-between text-sm text-muted-foreground mt-1">
+          <span>Light day</span>
+          <span>Very busy</span>
+        </div>
       </motion.div>
 
       <motion.div 
