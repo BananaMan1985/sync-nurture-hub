@@ -30,7 +30,7 @@ const mockTasks: Task[] = [
   {
     id: '2',
     title: 'Client follow-up',
-    description: 'Send follow-up emails to clients from Monday's meeting',
+    description: 'Send follow-up emails to clients from Monday\'s meeting',
     status: 'inprogress',
     priority: 'medium',
     dueDate: '2023-11-10',
