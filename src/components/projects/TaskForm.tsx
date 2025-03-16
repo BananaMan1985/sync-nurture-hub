@@ -15,13 +15,21 @@ interface TaskFormProps {
   task?: Task | null;
   onSave: (task: Partial<Task>) => void;
   onCancel: () => void;
+  statuses?: { id: string; name: string }[];
+  initialStatus?: string;
 }
 
-const TaskForm: React.FC<TaskFormProps> = ({ task, onSave, onCancel }) => {
+const TaskForm: React.FC<TaskFormProps> = ({ 
+  task, 
+  onSave, 
+  onCancel, 
+  statuses, 
+  initialStatus 
+}) => {
   const [newTask, setNewTask] = useState<Partial<Task>>({
     title: task?.title || '',
     description: task?.description || '',
-    status: task?.status || 'todo',
+    status: task?.status || initialStatus || 'todo',
     dueDate: task?.dueDate || format(new Date(), 'yyyy-MM-dd'),
     priority: task?.priority || 'medium',
   });
@@ -59,7 +67,7 @@ const TaskForm: React.FC<TaskFormProps> = ({ task, onSave, onCancel }) => {
         />
       </div>
       
-      {/* Status - Kept the same */}
+      {/* Status - Updated to use passed statuses if available */}
       <div className="space-y-2">
         <div className="flex items-center gap-2 mb-1 text-sm font-medium text-gray-700">
           <Tag className="h-4 w-4 text-gray-500" />
@@ -73,18 +81,29 @@ const TaskForm: React.FC<TaskFormProps> = ({ task, onSave, onCancel }) => {
             <SelectValue placeholder="Select status" />
           </SelectTrigger>
           <SelectContent className="w-full">
-            <SelectItem value="todo" className="flex items-center gap-2">
-              <span className="flex h-2 w-2 rounded-full bg-blue-500"></span>
-              <span>To Do</span>
-            </SelectItem>
-            <SelectItem value="inprogress" className="flex items-center gap-2">
-              <span className="flex h-2 w-2 rounded-full bg-amber-500"></span>
-              <span>In Progress</span>
-            </SelectItem>
-            <SelectItem value="done" className="flex items-center gap-2">
-              <span className="flex h-2 w-2 rounded-full bg-emerald-500"></span>
-              <span>Done</span>
-            </SelectItem>
+            {statuses ? (
+              statuses.map(status => (
+                <SelectItem key={status.id} value={status.id} className="flex items-center gap-2">
+                  <span className="flex h-2 w-2 rounded-full bg-blue-500"></span>
+                  <span>{status.name}</span>
+                </SelectItem>
+              ))
+            ) : (
+              <>
+                <SelectItem value="todo" className="flex items-center gap-2">
+                  <span className="flex h-2 w-2 rounded-full bg-blue-500"></span>
+                  <span>To Do</span>
+                </SelectItem>
+                <SelectItem value="inprogress" className="flex items-center gap-2">
+                  <span className="flex h-2 w-2 rounded-full bg-amber-500"></span>
+                  <span>In Progress</span>
+                </SelectItem>
+                <SelectItem value="done" className="flex items-center gap-2">
+                  <span className="flex h-2 w-2 rounded-full bg-emerald-500"></span>
+                  <span>Done</span>
+                </SelectItem>
+              </>
+            )}
           </SelectContent>
         </Select>
       </div>

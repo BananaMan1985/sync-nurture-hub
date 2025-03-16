@@ -1,4 +1,3 @@
-
 export type TaskStatus = string;
 
 export interface Column {
