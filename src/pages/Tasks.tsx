@@ -5,7 +5,7 @@ import AppMenu from '@/components/AppMenu';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
-import { ListChecks, Plus, Clock, CalendarDays, PaperclipIcon, MessageSquare, Trash2, Upload, Check, X, Tag, FileText } from 'lucide-react';
+import { ListChecks, Plus, Clock, CalendarDays, PaperclipIcon, MessageSquare, Trash2, Upload, Check, X, Tag, FileText, Send } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -17,8 +17,18 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Form, FormControl, FormField, FormItem } from '@/components/ui/form';
+import { useForm } from 'react-hook-form';
 
 type TaskStatus = 'todo' | 'inprogress' | 'done';
+
+interface Comment {
+  id: string;
+  text: string;
+  authorName: string;
+  timestamp: string;
+}
 
 interface Task {
   id: string;
@@ -28,7 +38,7 @@ interface Task {
   dueDate: string;
   priority: 'low' | 'medium' | 'high';
   attachments?: number;
-  comments?: number;
+  comments?: Comment[];
   order?: number; // Added order property for sorting within columns
 }
 
@@ -41,7 +51,20 @@ const mockTasks: Task[] = [
     dueDate: '2023-11-15',
     priority: 'high',
     attachments: 2,
-    comments: 3,
+    comments: [
+      {
+        id: '1-1',
+        text: 'I\'ve gathered most of the data needed for this report.',
+        authorName: 'Alex Murphy',
+        timestamp: '2023-11-08T14:32:00Z'
+      },
+      {
+        id: '1-2',
+        text: 'Could you include the Q2 comparison data as well?',
+        authorName: 'Jamie Smith',
+        timestamp: '2023-11-09T09:15:00Z'
+      }
+    ],
   },
   {
     id: '2',
@@ -50,7 +73,14 @@ const mockTasks: Task[] = [
     status: 'inprogress',
     priority: 'medium',
     dueDate: '2023-11-10',
-    comments: 1,
+    comments: [
+      {
+        id: '2-1',
+        text: 'I\'ve drafted the first few emails, will finish tomorrow.',
+        authorName: 'Sagan',
+        timestamp: '2023-11-07T16:45:00Z'
+      }
+    ],
   },
   {
     id: '3',
@@ -59,6 +89,7 @@ const mockTasks: Task[] = [
     status: 'todo',
     priority: 'low',
     dueDate: '2023-11-20',
+    comments: [],
   },
   {
     id: '4',
@@ -67,6 +98,7 @@ const mockTasks: Task[] = [
     status: 'inprogress',
     priority: 'medium',
     dueDate: '2023-11-12',
+    comments: [],
   },
   {
     id: '5',
@@ -75,6 +107,7 @@ const mockTasks: Task[] = [
     status: 'done',
     priority: 'high',
     dueDate: '2023-11-05',
+    comments: [],
   },
 ];
 
@@ -153,6 +186,7 @@ const TaskColumn: React.FC<{
   onReorderTasks: (draggedTaskId: string, targetIndex: number, status: TaskStatus) => void;
   draggedTaskId: string | null;
   onDragOver: (e: React.DragEvent, status: TaskStatus) => void;
+  onAddTask: (status: TaskStatus) => void;
 }> = ({
   title,
   icon,
@@ -164,6 +198,7 @@ const TaskColumn: React.FC<{
   onReorderTasks,
   draggedTaskId,
   onDragOver,
+  onAddTask,
 }) => {
   
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
@@ -295,10 +330,238 @@ const TaskColumn: React.FC<{
       <Button 
         variant="outline" 
         className="w-full mt-4 border border-dashed border-slate-300 hover:bg-slate-50"
+        onClick={() => onAddTask(status)}
       >
         <Plus className="h-4 w-4 mr-2" />
         Add Task
       </Button>
+    </div>
+  );
+};
+
+interface CommentFormProps {
+  taskId: string;
+  onAddComment: (taskId: string, comment: Omit<Comment, 'id'>) => void;
+}
+
+const CommentForm: React.FC<CommentFormProps> = ({ taskId, onAddComment }) => {
+  const form = useForm({
+    defaultValues: {
+      comment: '',
+    },
+  });
+  
+  const handleSubmit = form.handleSubmit((data) => {
+    onAddComment(taskId, {
+      text: data.comment,
+      authorName: 'Sagan', // In a real app, this would be the logged-in user's name
+      timestamp: new Date().toISOString()
+    });
+    form.reset();
+  });
+  
+  return (
+    <Form {...form}>
+      <form onSubmit={handleSubmit} className="flex items-end space-x-2">
+        <FormField
+          control={form.control}
+          name="comment"
+          render={({ field }) => (
+            <FormItem className="flex-1">
+              <FormControl>
+                <Textarea 
+                  placeholder="Add a comment..." 
+                  className="min-h-[80px] resize-none"
+                  {...field}
+                />
+              </FormControl>
+            </FormItem>
+          )}
+        />
+        <Button 
+          type="submit" 
+          size="sm" 
+          className="mb-1"
+          disabled={!form.getValues().comment.trim()}
+        >
+          <Send className="h-4 w-4" />
+        </Button>
+      </form>
+    </Form>
+  );
+};
+
+interface CommentListProps {
+  comments: Comment[];
+}
+
+const CommentList: React.FC<CommentListProps> = ({ comments }) => {
+  if (comments.length === 0) {
+    return (
+      <div className="text-center py-6 text-muted-foreground">
+        No comments yet. Be the first to comment!
+      </div>
+    );
+  }
+  
+  return (
+    <div className="space-y-4">
+      {comments.map((comment) => (
+        <div key={comment.id} className="flex space-x-3">
+          <Avatar className="h-8 w-8">
+            <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${comment.authorName}`} />
+            <AvatarFallback className="text-xs">
+              {comment.authorName.split(' ').map(n => n[0]).join('')}
+            </AvatarFallback>
+          </Avatar>
+          <div className="flex-1">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-medium">{comment.authorName}</p>
+              <p className="text-xs text-muted-foreground">
+                {new Date(comment.timestamp).toLocaleString()}
+              </p>
+            </div>
+            <p className="mt-1 text-sm">{comment.text}</p>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+interface TaskFormProps {
+  task?: Task | null;
+  onSave: (task: Partial<Task>) => void;
+  onCancel: () => void;
+}
+
+const TaskForm: React.FC<TaskFormProps> = ({ task, onSave, onCancel }) => {
+  const [newTask, setNewTask] = useState<Partial<Task>>({
+    title: task?.title || '',
+    description: task?.description || '',
+    status: task?.status || 'todo',
+    dueDate: task?.dueDate || format(new Date(), 'yyyy-MM-dd'),
+    priority: task?.priority || 'medium',
+  });
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(
+    task?.dueDate ? new Date(task.dueDate) : new Date()
+  );
+
+  const handleChange = (field: keyof Task, value: any) => {
+    setNewTask(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleSubmit = () => {
+    onSave(newTask);
+  };
+
+  return (
+    <div className="space-y-5">
+      <div className="space-y-2">
+        <div className="flex items-center gap-2 mb-1 text-sm font-medium text-gray-700">
+          <FileText className="h-4 w-4 text-gray-500" />
+          <span>Task Title</span>
+        </div>
+        <Input
+          value={newTask.title}
+          onChange={(e) => handleChange('title', e.target.value)}
+          placeholder="Task title"
+          className="text-lg font-medium"
+        />
+      </div>
+      
+      <div className="space-y-2">
+        <div className="flex items-center gap-2 mb-1 text-sm font-medium text-gray-700">
+          <Tag className="h-4 w-4 text-gray-500" />
+          <span>Status</span>
+        </div>
+        <Select 
+          defaultValue={newTask.status}
+          onValueChange={(value) => handleChange('status', value as TaskStatus)}
+        >
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Select status" />
+          </SelectTrigger>
+          <SelectContent className="w-full">
+            <SelectItem value="todo" className="flex items-center gap-2">
+              <span className="flex h-2 w-2 rounded-full bg-blue-500"></span>
+              <span>To Do</span>
+            </SelectItem>
+            <SelectItem value="inprogress" className="flex items-center gap-2">
+              <span className="flex h-2 w-2 rounded-full bg-amber-500"></span>
+              <span>In Progress</span>
+            </SelectItem>
+            <SelectItem value="done" className="flex items-center gap-2">
+              <span className="flex h-2 w-2 rounded-full bg-emerald-500"></span>
+              <span>Done</span>
+            </SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      
+      <div className="space-y-2">
+        <div className="flex items-center gap-2 mb-1 text-sm font-medium text-gray-700">
+          <MessageSquare className="h-4 w-4 text-gray-500" />
+          <span>Description</span>
+        </div>
+        <Textarea
+          placeholder="Add a detailed description..."
+          value={newTask.description}
+          onChange={(e) => handleChange('description', e.target.value)}
+          className="min-h-[120px] resize-none"
+        />
+      </div>
+      
+      <div className="space-y-2">
+        <div className="flex items-center gap-2 mb-1 text-sm font-medium text-gray-700">
+          <CalendarDays className="h-4 w-4 text-gray-500" />
+          <span>Due Date</span>
+        </div>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              className={cn(
+                "w-full justify-start text-left font-normal",
+                !selectedDate && "text-muted-foreground"
+              )}
+            >
+              <CalendarDays className="mr-2 h-4 w-4" />
+              {selectedDate ? format(selectedDate, "PPP") : "Select a date"}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0">
+            <Calendar
+              mode="single"
+              selected={selectedDate}
+              onSelect={(date) => {
+                setSelectedDate(date);
+                if (date) {
+                  handleChange('dueDate', format(date, 'yyyy-MM-dd'));
+                }
+              }}
+              initialFocus
+              className="p-3 pointer-events-auto"
+            />
+          </PopoverContent>
+        </Popover>
+      </div>
+      
+      <div className="flex justify-end gap-2 pt-4">
+        <Button variant="outline" onClick={onCancel} size="sm">
+          <X className="h-4 w-4 mr-1" />
+          Cancel
+        </Button>
+        <Button 
+          onClick={handleSubmit} 
+          size="sm" 
+          className="bg-[#2D3B22] hover:bg-[#3c4f2d] text-white"
+          disabled={!newTask.title?.trim()}
+        >
+          <Check className="h-4 w-4 mr-1" />
+          {task ? 'Save Changes' : 'Create Task'}
+        </Button>
+      </div>
     </div>
   );
 };
@@ -309,9 +572,11 @@ const TaskEditDialog: React.FC<{
   onClose: () => void;
   onSave: (updatedTask: Task) => void;
   onDelete: (taskId: string) => void;
-}> = ({ isOpen, task, onClose, onSave, onDelete }) => {
+  onAddComment: (taskId: string, comment: Omit<Comment, 'id'>) => void;
+}> = ({ isOpen, task, onClose, onSave, onDelete, onAddComment }) => {
   const [editedTask, setEditedTask] = useState<Task | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+  const [activeTab, setActiveTab] = useState<'details' | 'comments'>('details');
   const { toast } = useToast();
 
   React.useEffect(() => {
@@ -358,132 +623,179 @@ const TaskEditDialog: React.FC<{
     }
   };
 
+  const comments = editedTask.comments || [];
+
   return (
     <Dialog open={isOpen} onOpenChange={open => !open && onClose()}>
       <DialogContent className="sm:max-w-[600px] p-0 gap-0 overflow-hidden rounded-xl bg-white">
         <div className={`sticky top-0 z-20 bg-white/95 backdrop-blur-sm border-b ${statusStyles[editedTask.status].border}`}>
           <DialogHeader className="px-6 pt-6 pb-4">
             <div className="flex justify-between items-center mb-1">
-              <DialogTitle className="text-xl">Edit Task</DialogTitle>
+              <DialogTitle className="text-xl">Task Details</DialogTitle>
               <span className={`px-2.5 py-1.5 rounded-full text-xs font-medium ${statusStyles[editedTask.status].bg} ${statusStyles[editedTask.status].text}`}>
                 {editedTask.status === 'todo' ? 'To Do' : 
                  editedTask.status === 'inprogress' ? 'In Progress' : 'Completed'}
               </span>
             </div>
             <DialogDescription className="text-muted-foreground">
-              Update the details of this task to keep your project organized.
+              {editedTask.title}
             </DialogDescription>
           </DialogHeader>
+          
+          <div className="flex border-b px-6">
+            <button
+              className={`py-2 px-4 font-medium text-sm relative ${
+                activeTab === 'details' 
+                  ? 'text-slate-900 after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-slate-900' 
+                  : 'text-slate-500 hover:text-slate-700'
+              }`}
+              onClick={() => setActiveTab('details')}
+            >
+              Details
+            </button>
+            <button
+              className={`py-2 px-4 font-medium text-sm relative flex items-center ${
+                activeTab === 'comments' 
+                  ? 'text-slate-900 after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-slate-900' 
+                  : 'text-slate-500 hover:text-slate-700'
+              }`}
+              onClick={() => setActiveTab('comments')}
+            >
+              Comments
+              {comments.length > 0 && (
+                <span className="ml-2 bg-slate-200 text-xs rounded-full px-2 py-0.5">
+                  {comments.length}
+                </span>
+              )}
+            </button>
+          </div>
         </div>
         
-        <div className="p-6 pt-2 overflow-y-auto max-h-[70vh] space-y-5">
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 mb-1 text-sm font-medium text-gray-700">
-              <FileText className="h-4 w-4 text-gray-500" />
-              <span>Task Title</span>
-            </div>
-            <Input
-              value={editedTask.title}
-              onChange={(e) => handleChange('title', e.target.value)}
-              placeholder="Task title"
-              className="text-lg font-medium"
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 mb-1 text-sm font-medium text-gray-700">
-              <Tag className="h-4 w-4 text-gray-500" />
-              <span>Status</span>
-            </div>
-            <Select 
-              defaultValue={editedTask.status}
-              onValueChange={(value) => handleChange('status', value as TaskStatus)}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select status" />
-              </SelectTrigger>
-              <SelectContent className="w-full">
-                <SelectItem value="todo" className="flex items-center gap-2">
-                  <span className="flex h-2 w-2 rounded-full bg-blue-500"></span>
-                  <span>To Do</span>
-                </SelectItem>
-                <SelectItem value="inprogress" className="flex items-center gap-2">
-                  <span className="flex h-2 w-2 rounded-full bg-amber-500"></span>
-                  <span>In Progress</span>
-                </SelectItem>
-                <SelectItem value="done" className="flex items-center gap-2">
-                  <span className="flex h-2 w-2 rounded-full bg-emerald-500"></span>
-                  <span>Done</span>
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 mb-1 text-sm font-medium text-gray-700">
-              <MessageSquare className="h-4 w-4 text-gray-500" />
-              <span>Description</span>
-            </div>
-            <Textarea
-              placeholder="Add a detailed description..."
-              value={editedTask.description}
-              onChange={(e) => handleChange('description', e.target.value)}
-              className="min-h-[120px] resize-none"
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 mb-1 text-sm font-medium text-gray-700">
-              <CalendarDays className="h-4 w-4 text-gray-500" />
-              <span>Due Date</span>
-            </div>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "w-full justify-start text-left font-normal",
-                    !selectedDate && "text-muted-foreground"
-                  )}
-                >
-                  <CalendarDays className="mr-2 h-4 w-4" />
-                  {selectedDate ? format(selectedDate, "PPP") : "Select a date"}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
-                <Calendar
-                  mode="single"
-                  selected={selectedDate}
-                  onSelect={(date) => {
-                    setSelectedDate(date);
-                    if (date) {
-                      handleChange('dueDate', format(date, 'yyyy-MM-dd'));
-                    }
-                  }}
-                  initialFocus
-                  className="p-3 pointer-events-auto"
+        <div className="p-6 pt-4 overflow-y-auto max-h-[70vh]">
+          {activeTab === 'details' ? (
+            <div className="space-y-5">
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 mb-1 text-sm font-medium text-gray-700">
+                  <FileText className="h-4 w-4 text-gray-500" />
+                  <span>Task Title</span>
+                </div>
+                <Input
+                  value={editedTask.title}
+                  onChange={(e) => handleChange('title', e.target.value)}
+                  placeholder="Task title"
+                  className="text-lg font-medium"
                 />
-              </PopoverContent>
-            </Popover>
-          </div>
-          
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 mb-1 text-sm font-medium text-gray-700">
-              <PaperclipIcon className="h-4 w-4 text-gray-500" />
-              <span>Attachments</span>
-            </div>
-            <div className="border rounded-lg p-6 bg-gray-50 text-center">
-              <div className="mb-2">
-                <Button variant="outline" className="w-auto">
-                  <Upload className="mr-2 h-4 w-4" />
-                  Upload Files
-                </Button>
               </div>
-              <p className="text-xs text-muted-foreground">
-                Drag and drop files or click to browse
-              </p>
+              
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 mb-1 text-sm font-medium text-gray-700">
+                  <Tag className="h-4 w-4 text-gray-500" />
+                  <span>Status</span>
+                </div>
+                <Select 
+                  defaultValue={editedTask.status}
+                  onValueChange={(value) => handleChange('status', value as TaskStatus)}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent className="w-full">
+                    <SelectItem value="todo" className="flex items-center gap-2">
+                      <span className="flex h-2 w-2 rounded-full bg-blue-500"></span>
+                      <span>To Do</span>
+                    </SelectItem>
+                    <SelectItem value="inprogress" className="flex items-center gap-2">
+                      <span className="flex h-2 w-2 rounded-full bg-amber-500"></span>
+                      <span>In Progress</span>
+                    </SelectItem>
+                    <SelectItem value="done" className="flex items-center gap-2">
+                      <span className="flex h-2 w-2 rounded-full bg-emerald-500"></span>
+                      <span>Done</span>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 mb-1 text-sm font-medium text-gray-700">
+                  <MessageSquare className="h-4 w-4 text-gray-500" />
+                  <span>Description</span>
+                </div>
+                <Textarea
+                  placeholder="Add a detailed description..."
+                  value={editedTask.description}
+                  onChange={(e) => handleChange('description', e.target.value)}
+                  className="min-h-[120px] resize-none"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 mb-1 text-sm font-medium text-gray-700">
+                  <CalendarDays className="h-4 w-4 text-gray-500" />
+                  <span>Due Date</span>
+                </div>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !selectedDate && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarDays className="mr-2 h-4 w-4" />
+                      {selectedDate ? format(selectedDate, "PPP") : "Select a date"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0">
+                    <Calendar
+                      mode="single"
+                      selected={selectedDate}
+                      onSelect={(date) => {
+                        setSelectedDate(date);
+                        if (date) {
+                          handleChange('dueDate', format(date, 'yyyy-MM-dd'));
+                        }
+                      }}
+                      initialFocus
+                      className="p-3 pointer-events-auto"
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 mb-1 text-sm font-medium text-gray-700">
+                  <PaperclipIcon className="h-4 w-4 text-gray-500" />
+                  <span>Attachments</span>
+                </div>
+                <div className="border rounded-lg p-6 bg-gray-50 text-center">
+                  <div className="mb-2">
+                    <Button variant="outline" className="w-auto">
+                      <Upload className="mr-2 h-4 w-4" />
+                      Upload Files
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Drag and drop files or click to browse
+                  </p>
+                </div>
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="space-y-6">
+              <ScrollArea className="pr-4 max-h-[400px]">
+                <CommentList comments={comments} />
+              </ScrollArea>
+              
+              <div className="pt-4 border-t">
+                <CommentForm 
+                  taskId={editedTask.id} 
+                  onAddComment={onAddComment} 
+                />
+              </div>
+            </div>
+          )}
         </div>
         
         <DialogFooter className="bg-gray-50 px-6 py-4 gap-2 border-t flex items-center justify-between">
@@ -508,6 +820,46 @@ const TaskEditDialog: React.FC<{
   );
 };
 
+const AddTaskDialog: React.FC<{
+  isOpen: boolean;
+  initialStatus: TaskStatus;
+  onClose: () => void;
+  onAddTask: (task: Partial<Task>) => void;
+}> = ({ isOpen, initialStatus, onClose, onAddTask }) => {
+  const handleSave = (taskData: Partial<Task>) => {
+    onAddTask({ ...taskData, status: initialStatus });
+    onClose();
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-[600px] p-6 rounded-xl">
+        <DialogHeader className="pb-4">
+          <DialogTitle className="text-xl">Add New Task</DialogTitle>
+          <DialogDescription>
+            Create a new task in the {initialStatus === 'todo' ? 'To Do' : 
+              initialStatus === 'inprogress' ? 'In Progress' : 'Completed'} column.
+          </DialogDescription>
+        </DialogHeader>
+        
+        <TaskForm 
+          task={{ 
+            id: '', 
+            title: '', 
+            description: '', 
+            status: initialStatus, 
+            dueDate: format(new Date(), 'yyyy-MM-dd'),
+            priority: 'medium', 
+            comments: [] 
+          }}
+          onSave={handleSave}
+          onCancel={onClose}
+        />
+      </DialogContent>
+    </Dialog>
+  );
+};
+
 const Tasks: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [tasks, setTasks] = useState<Task[]>(mockTasks.map((task, index) => ({
@@ -516,8 +868,11 @@ const Tasks: React.FC = () => {
   })));
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [addDialogStatus, setAddDialogStatus] = useState<TaskStatus>('todo');
   const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
   const [dragOverColumn, setDragOverColumn] = useState<TaskStatus | null>(null);
+  const { toast } = useToast();
   
   const todoTasks = tasks.filter(task => task.status === 'todo');
   const inProgressTasks = tasks.filter(task => task.status === 'inprogress');
@@ -604,6 +959,56 @@ const Tasks: React.FC = () => {
     setTasks(prev => prev.filter(task => task.id !== taskId));
     setIsEditDialogOpen(false);
     setSelectedTask(null);
+    toast({
+      title: "Task deleted",
+      description: "The task has been permanently removed."
+    });
+  };
+
+  const handleAddTask = (newTaskData: Partial<Task>) => {
+    const newTask: Task = {
+      id: `task-${Date.now()}`,
+      title: newTaskData.title || 'Untitled Task',
+      description: newTaskData.description || '',
+      status: newTaskData.status || 'todo',
+      dueDate: newTaskData.dueDate || format(new Date(), 'yyyy-MM-dd'),
+      priority: newTaskData.priority || 'medium',
+      comments: [],
+      order: tasks.filter(t => t.status === newTaskData.status).length
+    };
+    
+    setTasks(prev => [...prev, newTask]);
+    toast({
+      title: "Task created",
+      description: "New task has been successfully added."
+    });
+  };
+
+  const handleColumnAddTask = (status: TaskStatus) => {
+    setAddDialogStatus(status);
+    setIsAddDialogOpen(true);
+  };
+
+  const handleAddComment = (taskId: string, comment: Omit<Comment, 'id'>) => {
+    setTasks(prev => 
+      prev.map(task => {
+        if (task.id === taskId) {
+          const newComment = {
+            id: `comment-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+            ...comment
+          };
+          
+          const updatedComments = [...(task.comments || []), newComment];
+          return { ...task, comments: updatedComments };
+        }
+        return task;
+      })
+    );
+    
+    toast({
+      title: "Comment added",
+      description: "Your comment has been posted."
+    });
   };
 
   const handleDragStart = (taskId: string) => {
@@ -634,7 +1039,13 @@ const Tasks: React.FC = () => {
             <h2 className="text-xl font-semibold">Current Tasks</h2>
             <p className="text-muted-foreground">Track and manage your projects</p>
           </div>
-          <Button className="bg-slate-800 hover:bg-slate-700 text-white">
+          <Button 
+            className="bg-slate-800 hover:bg-slate-700 text-white"
+            onClick={() => {
+              setAddDialogStatus('todo');
+              setIsAddDialogOpen(true);
+            }}
+          >
             <Plus className="mr-2 h-4 w-4" />
             New Task
           </Button>
@@ -652,6 +1063,7 @@ const Tasks: React.FC = () => {
             onReorderTasks={handleReorderTasks}
             draggedTaskId={draggedTaskId}
             onDragOver={handleDragOver}
+            onAddTask={handleColumnAddTask}
           />
           <TaskColumn
             title="In Progress"
@@ -664,6 +1076,7 @@ const Tasks: React.FC = () => {
             onReorderTasks={handleReorderTasks}
             draggedTaskId={draggedTaskId}
             onDragOver={handleDragOver}
+            onAddTask={handleColumnAddTask}
           />
           <TaskColumn
             title="Completed"
@@ -676,6 +1089,7 @@ const Tasks: React.FC = () => {
             onReorderTasks={handleReorderTasks}
             draggedTaskId={draggedTaskId}
             onDragOver={handleDragOver}
+            onAddTask={handleColumnAddTask}
           />
         </div>
 
@@ -688,6 +1102,14 @@ const Tasks: React.FC = () => {
           }}
           onSave={handleTaskSave}
           onDelete={handleTaskDelete}
+          onAddComment={handleAddComment}
+        />
+
+        <AddTaskDialog
+          isOpen={isAddDialogOpen}
+          initialStatus={addDialogStatus}
+          onClose={() => setIsAddDialogOpen(false)}
+          onAddTask={handleAddTask}
         />
 
         <div className="text-xs text-center text-muted-foreground mt-12 pb-6">
