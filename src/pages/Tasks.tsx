@@ -1,11 +1,20 @@
+
 import React, { useState } from 'react';
 import Layout from '@/components/Layout';
 import AppMenu from '@/components/AppMenu';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
-import { ListChecks, Plus, Clock, CalendarDays, PaperclipIcon, MessageSquare } from 'lucide-react';
+import { ListChecks, Plus, Clock, CalendarDays, PaperclipIcon, MessageSquare, Trash2, Upload } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 type TaskStatus = 'todo' | 'inprogress' | 'done';
 
@@ -66,28 +75,30 @@ const mockTasks: Task[] = [
   },
 ];
 
-const TaskCard: React.FC<{ task: Task }> = ({ task }) => {
+const TaskCard: React.FC<{ task: Task; onClick: () => void }> = ({ task, onClick }) => {
   const priorityColor = {
     low: 'bg-blue-100 text-blue-800',
     medium: 'bg-yellow-100 text-yellow-800',
     high: 'bg-red-100 text-red-800',
   }[task.priority];
 
-  const handleEditClick = () => {
-    console.log(`Editing task: ${task.id} - ${task.title}`);
-    alert(`Editing task: ${task.title}`);
-    // In a real application, you would open a modal or navigate to an edit page
-  };
-
   const handleDragStart = (e: React.DragEvent, taskId: string) => {
     e.dataTransfer.setData('taskId', taskId);
   };
 
+  const handleClick = (e: React.MouseEvent) => {
+    // Only trigger click if not dragging
+    if (!e.currentTarget.classList.contains('dragging')) {
+      onClick();
+    }
+  };
+
   return (
     <Card 
-      className="mb-4 cursor-move hover:shadow-md transition-shadow" 
+      className="mb-4 cursor-pointer hover:shadow-md transition-shadow" 
       draggable 
       onDragStart={(e) => handleDragStart(e, task.id)}
+      onClick={handleClick}
     >
       <CardHeader className="pb-2">
         <div className="flex justify-between items-start">
@@ -119,10 +130,6 @@ const TaskCard: React.FC<{ task: Task }> = ({ task }) => {
           )}
         </div>
       </CardContent>
-      <CardFooter className="flex justify-between pt-0">
-        <Button variant="ghost" size="sm" onClick={handleEditClick}>Edit</Button>
-        <Button variant="outline" size="sm">Open</Button>
-      </CardFooter>
     </Card>
   );
 };
@@ -134,6 +141,7 @@ const TaskColumn: React.FC<{
   status: TaskStatus; 
   isLoading: boolean;
   onDrop: (taskId: string, newStatus: TaskStatus) => void;
+  onTaskClick: (task: Task) => void;
 }> = ({
   title,
   icon,
@@ -141,6 +149,7 @@ const TaskColumn: React.FC<{
   status,
   isLoading,
   onDrop,
+  onTaskClick,
 }) => {
   
   const handleDragOver = (e: React.DragEvent) => {
@@ -175,7 +184,11 @@ const TaskColumn: React.FC<{
       ) : (
         <div className="space-y-3">
           {tasks.map((task) => (
-            <TaskCard key={task.id} task={task} />
+            <TaskCard 
+              key={task.id} 
+              task={task} 
+              onClick={() => onTaskClick(task)}
+            />
           ))}
         </div>
       )}
@@ -188,9 +201,164 @@ const TaskColumn: React.FC<{
   );
 };
 
+const TaskEditDialog: React.FC<{
+  isOpen: boolean;
+  task: Task | null;
+  onClose: () => void;
+  onSave: (updatedTask: Task) => void;
+  onDelete: (taskId: string) => void;
+}> = ({ isOpen, task, onClose, onSave, onDelete }) => {
+  const [editedTask, setEditedTask] = useState<Task | null>(null);
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+
+  React.useEffect(() => {
+    if (task) {
+      setEditedTask({ ...task });
+      setSelectedDate(task.dueDate ? new Date(task.dueDate) : undefined);
+    }
+  }, [task]);
+
+  if (!editedTask) return null;
+
+  const handleSave = () => {
+    if (editedTask) {
+      onSave(editedTask);
+    }
+  };
+
+  const handleChange = (field: keyof Task, value: any) => {
+    setEditedTask(prev => {
+      if (!prev) return prev;
+      return { ...prev, [field]: value };
+    });
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={open => !open && onClose()}>
+      <DialogContent className="sm:max-w-[500px]">
+        <DialogHeader>
+          <DialogTitle>Edit Task</DialogTitle>
+          <DialogDescription>
+            Update the details of this task.
+          </DialogDescription>
+        </DialogHeader>
+        
+        <div className="grid gap-4 py-4">
+          <div className="space-y-2">
+            <h3 className="text-md font-medium">Task</h3>
+            <Input
+              value={editedTask.title}
+              onChange={(e) => handleChange('title', e.target.value)}
+              placeholder="Task title"
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <h3 className="text-md font-medium">End State</h3>
+            <Input
+              placeholder="What does done look like?"
+              value={editedTask.description}
+              onChange={(e) => handleChange('description', e.target.value)}
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <h3 className="text-md font-medium">Details</h3>
+            <Textarea
+              placeholder="Additional details"
+              value={editedTask.description}
+              onChange={(e) => handleChange('description', e.target.value)}
+              className="min-h-[100px]"
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <h3 className="text-md font-medium">Status</h3>
+            <Select 
+              defaultValue={editedTask.status}
+              onValueChange={(value) => handleChange('status', value as TaskStatus)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todo">To Do</SelectItem>
+                <SelectItem value="inprogress">In Progress</SelectItem>
+                <SelectItem value="done">Done</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div className="space-y-2">
+            <h3 className="text-md font-medium">Attachments</h3>
+            <div className="border rounded-md p-2">
+              <Button variant="outline" className="w-auto">
+                <Upload className="mr-2 h-4 w-4" />
+                Upload Files
+              </Button>
+              <span className="text-sm text-muted-foreground ml-2">
+                Upload documents, images, or other files
+              </span>
+            </div>
+          </div>
+          
+          <div className="space-y-2">
+            <h3 className="text-md font-medium">Due Date (Optional)</h3>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-full justify-start text-left font-normal",
+                    !selectedDate && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarDays className="mr-2 h-4 w-4" />
+                  {selectedDate ? format(selectedDate, "PP") : "mm/dd/yyyy"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0">
+                <Calendar
+                  mode="single"
+                  selected={selectedDate}
+                  onSelect={(date) => {
+                    setSelectedDate(date);
+                    if (date) {
+                      handleChange('dueDate', format(date, 'yyyy-MM-dd'));
+                    }
+                  }}
+                  initialFocus
+                  className="p-3 pointer-events-auto"
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+        </div>
+        
+        <DialogFooter className="flex sm:justify-between">
+          <Button variant="destructive" onClick={() => onDelete(editedTask.id)}>
+            <Trash2 className="mr-2 h-4 w-4" />
+            Delete Task
+          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button onClick={handleSave} className="bg-[#2D3B22] hover:bg-[#3c4f2d] text-white">
+              Save Changes
+            </Button>
+          </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
 const Tasks: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [tasks, setTasks] = useState<Task[]>(mockTasks);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   
   const todoTasks = tasks.filter(task => task.status === 'todo');
   const inProgressTasks = tasks.filter(task => task.status === 'inprogress');
@@ -202,6 +370,27 @@ const Tasks: React.FC = () => {
         task.id === taskId ? { ...task, status: newStatus } : task
       )
     );
+  };
+
+  const handleTaskClick = (task: Task) => {
+    setSelectedTask(task);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleTaskSave = (updatedTask: Task) => {
+    setTasks(prev => 
+      prev.map(task => 
+        task.id === updatedTask.id ? updatedTask : task
+      )
+    );
+    setIsEditDialogOpen(false);
+    setSelectedTask(null);
+  };
+
+  const handleTaskDelete = (taskId: string) => {
+    setTasks(prev => prev.filter(task => task.id !== taskId));
+    setIsEditDialogOpen(false);
+    setSelectedTask(null);
   };
 
   return (
@@ -237,6 +426,7 @@ const Tasks: React.FC = () => {
             status="todo"
             isLoading={isLoading}
             onDrop={handleTaskMove}
+            onTaskClick={handleTaskClick}
           />
           <TaskColumn
             title="In Progress"
@@ -245,6 +435,7 @@ const Tasks: React.FC = () => {
             status="inprogress"
             isLoading={isLoading}
             onDrop={handleTaskMove}
+            onTaskClick={handleTaskClick}
           />
           <TaskColumn
             title="Completed"
@@ -253,8 +444,20 @@ const Tasks: React.FC = () => {
             status="done"
             isLoading={isLoading}
             onDrop={handleTaskMove}
+            onTaskClick={handleTaskClick}
           />
         </div>
+
+        <TaskEditDialog
+          isOpen={isEditDialogOpen}
+          task={selectedTask}
+          onClose={() => {
+            setIsEditDialogOpen(false);
+            setSelectedTask(null);
+          }}
+          onSave={handleTaskSave}
+          onDelete={handleTaskDelete}
+        />
 
         <div className="text-xs text-center text-muted-foreground mt-12 pb-6">
           Built by Sagan
