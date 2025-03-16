@@ -5,9 +5,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { Slider } from '@/components/ui/slider';
 import { toast } from 'sonner';
 import { Send } from 'lucide-react';
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 interface ReportFormData {
   date: string;
@@ -24,7 +24,7 @@ const initialFormData: ReportFormData = {
   outstandingTasks: '',
   needFromManager: '',
   tomorrowPlans: '',
-  busynessLevel: '3'
+  busynessLevel: '5'
 };
 
 const ReportForm: React.FC = () => {
@@ -36,8 +36,8 @@ const ReportForm: React.FC = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleRadioChange = (value: string) => {
-    setFormData((prev) => ({ ...prev, busynessLevel: value }));
+  const handleSliderChange = (value: number[]) => {
+    setFormData((prev) => ({ ...prev, busynessLevel: value[0].toString() }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -147,23 +147,22 @@ const ReportForm: React.FC = () => {
         />
       </motion.div>
 
-      <motion.div variants={itemVariants} className="space-y-2">
-        <Label>Busyness Level</Label>
-        <RadioGroup 
-          value={formData.busynessLevel} 
-          onValueChange={handleRadioChange}
-          className="flex space-x-4 pt-2"
-        >
-          {[1, 2, 3, 4, 5, 6].map((level) => (
-            <div key={level} className="flex items-center space-x-2">
-              <RadioGroupItem value={level.toString()} id={`level-${level}`} />
-              <Label htmlFor={`level-${level}`} className="cursor-pointer">{level}</Label>
-            </div>
-          ))}
-        </RadioGroup>
-        <div className="flex justify-between text-sm text-muted-foreground mt-1">
-          <span>Light day</span>
-          <span>Very busy</span>
+      <motion.div variants={itemVariants} className="space-y-4">
+        <div className="space-y-2">
+          <Label>Busyness Level: {formData.busynessLevel}</Label>
+          <Slider
+            defaultValue={[parseInt(formData.busynessLevel)]}
+            value={[parseInt(formData.busynessLevel)]}
+            onValueChange={handleSliderChange}
+            max={10}
+            min={1}
+            step={1}
+            className="py-4"
+          />
+          <div className="flex justify-between text-sm text-muted-foreground mt-1">
+            <span>Light day (1)</span>
+            <span>Very busy (10)</span>
+          </div>
         </div>
       </motion.div>
 

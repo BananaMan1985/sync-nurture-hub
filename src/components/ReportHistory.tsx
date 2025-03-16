@@ -147,8 +147,8 @@ const ReportHistory: React.FC = () => {
 
   const getBusynessLabel = (level: string) => {
     const levelNum = parseInt(level);
-    if (levelNum <= 2) return "Light day";
-    if (levelNum <= 4) return "Moderate";
+    if (levelNum <= 3) return "Light day";
+    if (levelNum <= 7) return "Moderate";
     return "Very busy";
   };
 
