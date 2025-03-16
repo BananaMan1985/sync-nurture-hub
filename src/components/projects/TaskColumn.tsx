@@ -3,9 +3,11 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Plus } from 'lucide-react';
+import { Plus, Edit, Trash, Check, X } from 'lucide-react';
 import TaskCard from './TaskCard';
 import { Task, TaskStatus } from './types';
+import { Input } from '@/components/ui/input';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 interface TaskColumnProps {
   title: string; 
@@ -19,6 +21,10 @@ interface TaskColumnProps {
   draggedTaskId: string | null;
   onDragOver: (e: React.DragEvent, status: TaskStatus) => void;
   onAddTask: (status: TaskStatus) => void;
+  onEditColumnTitle?: (newTitle: string) => void;
+  onDeleteColumn?: () => void;
+  isEditing?: boolean;
+  setIsEditing?: (isEditing: boolean) => void;
 }
 
 const TaskColumn: React.FC<TaskColumnProps> = ({
@@ -33,9 +39,14 @@ const TaskColumn: React.FC<TaskColumnProps> = ({
   draggedTaskId,
   onDragOver,
   onAddTask,
+  onEditColumnTitle,
+  onDeleteColumn,
+  isEditing = false,
+  setIsEditing,
 }) => {
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dropPreviewIndex, setDropPreviewIndex] = useState<number | null>(null);
+  const [editedTitle, setEditedTitle] = useState(title);
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault(); // Allow drop
@@ -84,6 +95,15 @@ const TaskColumn: React.FC<TaskColumnProps> = ({
     setDropPreviewIndex(null);
   };
 
+  const handleSaveTitle = () => {
+    if (editedTitle.trim() && onEditColumnTitle) {
+      onEditColumnTitle(editedTitle);
+    }
+    if (setIsEditing) {
+      setIsEditing(false);
+    }
+  };
+
   // Add indicator if the column is empty and something is being dragged
   const shouldShowEmptyColumnIndicator = tasks.length === 0 && draggedTaskId !== null;
 
@@ -108,10 +128,79 @@ const TaskColumn: React.FC<TaskColumnProps> = ({
             {icon}
           </div>
         </div>
-        <h3 className="font-medium ml-2 text-lg">{title}</h3>
-        <div className="ml-2 bg-slate-200 rounded-full w-6 h-6 flex items-center justify-center text-xs font-medium">
-          {tasks.length}
-        </div>
+        
+        {isEditing ? (
+          <div className="flex items-center ml-2 gap-1 flex-1">
+            <Input
+              value={editedTitle}
+              onChange={(e) => setEditedTitle(e.target.value)}
+              className="h-8 text-sm"
+              autoFocus
+            />
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-7 w-7"
+              onClick={handleSaveTitle}
+            >
+              <Check className="h-4 w-4" />
+            </Button>
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-7 w-7"
+              onClick={() => {
+                setEditedTitle(title);
+                if (setIsEditing) setIsEditing(false);
+              }}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        ) : (
+          <>
+            <h3 className="font-medium ml-2 text-lg flex-1">{title}</h3>
+            <div className="ml-2 bg-slate-200 rounded-full w-6 h-6 flex items-center justify-center text-xs font-medium">
+              {tasks.length}
+            </div>
+
+            {(onEditColumnTitle || onDeleteColumn) && (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-7 w-7 ml-1">
+                    <Edit className="h-3.5 w-3.5" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-2">
+                  <div className="flex flex-col gap-1">
+                    {onEditColumnTitle && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="justify-start"
+                        onClick={() => setIsEditing && setIsEditing(true)}
+                      >
+                        <Edit className="mr-2 h-4 w-4" />
+                        Edit name
+                      </Button>
+                    )}
+                    {onDeleteColumn && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="justify-start text-red-500 hover:text-red-600 hover:bg-red-50"
+                        onClick={onDeleteColumn}
+                      >
+                        <Trash className="mr-2 h-4 w-4" />
+                        Delete column
+                      </Button>
+                    )}
+                  </div>
+                </PopoverContent>
+              </Popover>
+            )}
+          </>
+        )}
       </div>
       
       {isLoading ? (

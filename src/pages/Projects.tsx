@@ -1,28 +1,35 @@
+
 import React, { useState } from 'react';
 import Layout from '@/components/Layout';
 import AppMenu from '@/components/AppMenu';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
-import { ListChecks, Plus, Clock, CalendarDays, Check } from 'lucide-react';
+import { ListChecks, Plus, Clock, CalendarDays, Check, Settings, Edit, X } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
+import { Input } from '@/components/ui/input';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 // Import the components with explicit type imports
 import TaskColumn from '@/components/projects/TaskColumn';
 import TaskForm from '@/components/projects/TaskForm';
 import TaskEditDialog from '@/components/projects/TaskEditDialog';
-import { Task, TaskStatus, mockTasks, Comment as TaskComment } from '@/components/projects/types';
+import { Task, TaskStatus, mockTasks, Comment as TaskComment, Column, defaultColumns } from '@/components/projects/types';
 
 const Projects = () => {
   const [tasks, setTasks] = useState<Task[]>(mockTasks);
+  const [columns, setColumns] = useState<Column[]>(defaultColumns);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
   const [isNewTaskDialogOpen, setIsNewTaskDialogOpen] = useState(false);
+  const [isColumnDialogOpen, setIsColumnDialogOpen] = useState(false);
   const [newTaskStatus, setNewTaskStatus] = useState<TaskStatus>('todo');
   const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
+  const [editingColumnId, setEditingColumnId] = useState<string | null>(null);
+  const [newColumnTitle, setNewColumnTitle] = useState('');
   const { toast } = useToast();
 
   const getTasksByStatus = (status: TaskStatus) => {
@@ -37,9 +44,11 @@ const Projects = () => {
     ));
     setDraggedTaskId(null);
     
+    const columnTitle = columns.find(col => col.id === newStatus)?.title || newStatus;
+    
     toast({
       title: "Project moved",
-      description: `Project moved to ${newStatus === 'todo' ? 'To Do' : newStatus === 'inprogress' ? 'In Progress' : 'Done'}.`,
+      description: `Project moved to ${columnTitle}.`,
     });
   };
 
@@ -215,6 +224,78 @@ const Projects = () => {
     e.preventDefault();
   };
 
+  // Column management functions
+  const handleEditColumnTitle = (id: string, newTitle: string) => {
+    setColumns(prev => prev.map(col => 
+      col.id === id ? { ...col, title: newTitle } : col
+    ));
+    setEditingColumnId(null);
+    
+    toast({
+      title: "Column updated",
+      description: `Column name changed to "${newTitle}".`,
+    });
+  };
+
+  const handleAddColumn = () => {
+    if (!newColumnTitle.trim()) {
+      toast({
+        title: "Error",
+        description: "Column name cannot be empty.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    const newColumnId = `column-${Date.now()}`;
+    setColumns(prev => [...prev, { 
+      id: newColumnId, 
+      title: newColumnTitle,
+    }]);
+    setNewColumnTitle('');
+    setIsColumnDialogOpen(false);
+    
+    toast({
+      title: "Column added",
+      description: `New column "${newColumnTitle}" has been added.`,
+    });
+  };
+
+  const handleDeleteColumn = (id: string) => {
+    // Check if there are tasks in this column
+    const hasTasksInColumn = tasks.some(task => task.status === id);
+    
+    if (hasTasksInColumn) {
+      toast({
+        title: "Cannot delete column",
+        description: "This column contains projects. Move them to another column first.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setColumns(prev => prev.filter(col => col.id !== id));
+    
+    toast({
+      title: "Column deleted",
+      description: "The column has been removed.",
+    });
+  };
+
+  // Function to get the appropriate icon for a column
+  const getColumnIcon = (columnId: string) => {
+    switch (columnId) {
+      case 'todo':
+        return <ListChecks className="h-5 w-5" />;
+      case 'inprogress':
+        return <Clock className="h-5 w-5" />;
+      case 'done':
+        return <Check className="h-5 w-5" />;
+      default:
+        return <ListChecks className="h-5 w-5" />;
+    }
+  };
+
   return (
     <Layout>
       <motion.div 
@@ -228,51 +309,42 @@ const Projects = () => {
             <ListChecks className="mr-2 h-6 w-6" />
             Projects Board
           </h1>
-          <AppMenu />
+          <div className="flex items-center gap-2">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => setIsColumnDialogOpen(true)}
+              className="flex items-center gap-1"
+            >
+              <Plus className="h-4 w-4" />
+              Add Column
+            </Button>
+            <AppMenu />
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <TaskColumn
-            title="To Do"
-            icon={<ListChecks className="h-5 w-5" />}
-            tasks={getTasksByStatus('todo')}
-            status="todo"
-            isLoading={isLoading}
-            onDrop={handleDrop}
-            onTaskClick={handleTaskClick}
-            onReorderTasks={handleReorderTasks}
-            draggedTaskId={draggedTaskId}
-            onDragOver={handleDragOver}
-            onAddTask={handleAddTask}
-          />
-          
-          <TaskColumn
-            title="In Progress"
-            icon={<Clock className="h-5 w-5" />}
-            tasks={getTasksByStatus('inprogress')}
-            status="inprogress"
-            isLoading={isLoading}
-            onDrop={handleDrop}
-            onTaskClick={handleTaskClick}
-            onReorderTasks={handleReorderTasks}
-            draggedTaskId={draggedTaskId}
-            onDragOver={handleDragOver}
-            onAddTask={handleAddTask}
-          />
-          
-          <TaskColumn
-            title="Done"
-            icon={<Check className="h-5 w-5" />}
-            tasks={getTasksByStatus('done')}
-            status="done"
-            isLoading={isLoading}
-            onDrop={handleDrop}
-            onTaskClick={handleTaskClick}
-            onReorderTasks={handleReorderTasks}
-            draggedTaskId={draggedTaskId}
-            onDragOver={handleDragOver}
-            onAddTask={handleAddTask}
-          />
+        <div className="grid grid-cols-1 auto-cols-fr gap-6 overflow-x-auto flex-nowrap whitespace-nowrap md:grid-flow-col">
+          {columns.map(column => (
+            <div key={column.id} className="min-w-[300px]">
+              <TaskColumn
+                title={column.title}
+                icon={getColumnIcon(column.id)}
+                tasks={getTasksByStatus(column.id)}
+                status={column.id}
+                isLoading={isLoading}
+                onDrop={handleDrop}
+                onTaskClick={handleTaskClick}
+                onReorderTasks={handleReorderTasks}
+                draggedTaskId={draggedTaskId}
+                onDragOver={handleDragOver}
+                onAddTask={handleAddTask}
+                onEditColumnTitle={(newTitle) => handleEditColumnTitle(column.id, newTitle)}
+                onDeleteColumn={() => handleDeleteColumn(column.id)}
+                isEditing={editingColumnId === column.id}
+                setIsEditing={(isEditing) => setEditingColumnId(isEditing ? column.id : null)}
+              />
+            </div>
+          ))}
         </div>
         
         {/* Project Edit Dialog */}
@@ -304,8 +376,45 @@ const Projects = () => {
             
             <TaskForm 
               onSave={handleCreateTask} 
-              onCancel={() => setIsNewTaskDialogOpen(false)} 
+              onCancel={() => setIsNewTaskDialogOpen(false)}
+              availableStatuses={columns.map(col => ({ id: col.id, name: col.title }))}
+              initialStatus={newTaskStatus}
             />
+          </DialogContent>
+        </Dialog>
+
+        {/* Add Column Dialog */}
+        <Dialog open={isColumnDialogOpen} onOpenChange={setIsColumnDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Add New Column</DialogTitle>
+              <DialogDescription>
+                Create a new column for your projects board.
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-4 pt-4">
+              <div className="space-y-2">
+                <label htmlFor="columnTitle" className="text-sm font-medium">
+                  Column Name
+                </label>
+                <Input
+                  id="columnTitle"
+                  value={newColumnTitle}
+                  onChange={(e) => setNewColumnTitle(e.target.value)}
+                  placeholder="Enter column name"
+                />
+              </div>
+              
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setIsColumnDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={handleAddColumn}>
+                  Add Column
+                </Button>
+              </div>
+            </div>
           </DialogContent>
         </Dialog>
       </motion.div>

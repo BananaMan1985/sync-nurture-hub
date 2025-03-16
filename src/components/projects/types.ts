@@ -1,5 +1,11 @@
 
-export type TaskStatus = 'todo' | 'inprogress' | 'done';
+export type TaskStatus = string;
+
+export interface Column {
+  id: string;
+  title: string;
+  icon?: React.ReactNode;
+}
 
 export interface CommentAttachment {
   id: string;
@@ -37,6 +43,12 @@ export interface Task {
   comments?: Comment[];
   order?: number;
 }
+
+export const defaultColumns: Column[] = [
+  { id: 'todo', title: 'To Do', },
+  { id: 'inprogress', title: 'In Progress', },
+  { id: 'done', title: 'Done', }
+];
 
 export const mockTasks: Task[] = [
   {
@@ -106,4 +118,3 @@ export const mockTasks: Task[] = [
     comments: [],
   },
 ];
-
