@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
 import AppMenu from '@/components/AppMenu';
@@ -407,9 +406,9 @@ const Library = () => {
 
         <AppMenu />
 
-        <div className="grid grid-cols-1 md:grid-cols-[1fr_3fr] gap-6 mt-8">
+        <div className="grid grid-cols-1 md:grid-cols-[1fr_3fr] gap-8 mt-8">
           {/* Sidebar with search and filters */}
-          <div className="space-y-4">
+          <div className="space-y-6">
             <div className="relative">
               <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
@@ -421,7 +420,7 @@ const Library = () => {
             </div>
             
             {/* Tags section */}
-            <div className="space-y-3">
+            <div className="space-y-4">
               <div className="flex justify-between items-center">
                 <h3 className="text-sm font-medium flex items-center">
                   <Tag className="h-4 w-4 mr-2" /> Tags
@@ -518,13 +517,13 @@ const Library = () => {
           
           {/* Main content area */}
           <div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {filteredItems.length > 0 ? (
                 filteredItems.map((item) => {
                   const Icon = item.icon;
                   return (
                     <Card key={item.id} className="overflow-hidden hover:shadow-md transition-shadow">
-                      <CardHeader className="pb-2">
+                      <CardHeader className="pb-3">
                         <div className="flex items-center justify-between">
                           <div className="bg-primary/10 p-2 rounded-full">
                             <Icon className="h-5 w-5 text-primary" />
@@ -533,36 +532,36 @@ const Library = () => {
                             {item.updatedAt}
                           </div>
                         </div>
-                        <CardTitle className="mt-2 text-xl">{item.title}</CardTitle>
+                        <CardTitle className="mt-3 text-xl">{item.title}</CardTitle>
                       </CardHeader>
-                      <CardContent>
-                        <CardDescription className="mb-2">{item.description}</CardDescription>
+                      <CardContent className="space-y-4">
+                        <CardDescription>{item.description}</CardDescription>
                         {item.attachments && item.attachments.length > 0 && (
-                          <div className="mt-3 mb-1">
-                            <h4 className="text-xs font-medium text-muted-foreground mb-1">
+                          <div>
+                            <h4 className="text-xs font-medium text-muted-foreground mb-2">
                               Attachments ({item.attachments.length})
                             </h4>
-                            <div className="space-y-1">
+                            <div className="space-y-2">
                               {item.attachments.map(attachment => (
-                                <div key={attachment.id} className="flex items-center justify-between bg-gray-50 rounded p-2 text-xs">
+                                <div key={attachment.id} className="flex items-center justify-between bg-gray-50 rounded p-2.5 text-xs">
                                   <span className="truncate max-w-[180px]">{attachment.name}</span>
-                                  <div className="flex items-center space-x-1">
+                                  <div className="flex items-center space-x-2">
                                     <Button
                                       variant="ghost"
                                       size="sm"
-                                      className="h-6 w-6 p-0"
+                                      className="h-7 w-7 p-0"
                                       onClick={() => handlePreviewAttachment(attachment)}
                                     >
-                                      <Eye className="h-3 w-3" />
+                                      <Eye className="h-3.5 w-3.5" />
                                     </Button>
                                     <Button
                                       variant="ghost"
                                       size="sm"
-                                      className="h-6 w-6 p-0"
+                                      className="h-7 w-7 p-0"
                                       asChild
                                     >
                                       <a href={attachment.url} download={attachment.name}>
-                                        <Download className="h-3 w-3" />
+                                        <Download className="h-3.5 w-3.5" />
                                       </a>
                                     </Button>
                                   </div>
@@ -571,19 +570,19 @@ const Library = () => {
                             </div>
                           </div>
                         )}
-                        <div className="flex flex-wrap gap-1 mt-2">
+                        <div className="flex flex-wrap gap-1.5 pt-1">
                           {item.tags.map(tag => (
                             <Badge 
                               key={tag} 
                               variant="outline"
-                              className="text-xs"
+                              className="text-xs py-0.5"
                             >
                               {tag}
                             </Badge>
                           ))}
                         </div>
                       </CardContent>
-                      <CardFooter className="pt-0 pb-3 flex justify-between">
+                      <CardFooter className="pt-2 pb-4 flex justify-between">
                         <div className="flex gap-2">
                           <Button 
                             variant="outline" 
@@ -928,35 +927,4 @@ const Library = () => {
                     className="max-w-full max-h-[60vh] object-contain"
                   />
                 ) : (
-                  <div className="text-center p-10 bg-slate-50 rounded-lg">
-                    <FileText className="h-16 w-16 mx-auto mb-4 text-slate-400" />
-                    <p className="mb-4">This file type cannot be previewed directly.</p>
-                    <Button asChild>
-                      <a href={selectedAttachment.url} target="_blank" rel="noopener noreferrer">
-                        <Eye className="h-4 w-4 mr-2" />
-                        Open File
-                      </a>
-                    </Button>
-                  </div>
-                )}
-              </div>
-              
-              <DialogFooter>
-                <Button asChild variant="outline">
-                  <a href={selectedAttachment.url} download={selectedAttachment.name}>
-                    <Download className="h-4 w-4 mr-2" />
-                    Download
-                  </a>
-                </Button>
-                <Button onClick={() => setIsAttachmentPreviewOpen(false)}>Close</Button>
-              </DialogFooter>
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
-    </Layout>
-  );
-};
-
-export default Library;
-
+                  <div className="text-center p-10 bg-slate-
