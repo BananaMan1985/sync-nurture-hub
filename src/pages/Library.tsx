@@ -451,9 +451,9 @@ const Library = () => {
                   </Button>
                 </div>
               </div>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2.5">
                 {availableTags.map(tag => (
-                  <div key={tag} className="flex items-center">
+                  <div key={tag} className="flex items-center mb-1">
                     {editingTag === tag ? (
                       <div className="flex items-center">
                         <Input
@@ -482,25 +482,25 @@ const Library = () => {
                     ) : (
                       <Badge 
                         variant={selectedTags.includes(tag) ? "default" : "outline"}
-                        className="text-xs py-1 px-2 cursor-pointer flex items-center gap-1"
+                        className="text-xs py-1.5 px-3 cursor-pointer flex items-center gap-1.5"
                       >
                         <span onClick={() => toggleTag(tag)}>{tag}</span>
-                        <div className="flex items-center ml-1">
+                        <div className="flex items-center ml-1.5">
                           <Button 
                             size="sm" 
                             variant="ghost" 
-                            className="h-4 w-4 p-0"
+                            className="h-5 w-5 p-0"
                             onClick={() => startEditTag(tag)}
                           >
-                            <Edit className="h-2 w-2" />
+                            <Edit className="h-2.5 w-2.5" />
                           </Button>
                           <Button 
                             size="sm" 
                             variant="ghost" 
-                            className="h-4 w-4 p-0 text-destructive"
+                            className="h-5 w-5 p-0 text-destructive"
                             onClick={() => deleteTag(tag)}
                           >
-                            <X className="h-2 w-2" />
+                            <X className="h-2.5 w-2.5" />
                           </Button>
                         </div>
                       </Badge>
@@ -524,45 +524,45 @@ const Library = () => {
                   const Icon = item.icon;
                   return (
                     <Card key={item.id} className="overflow-hidden hover:shadow-md transition-shadow">
-                      <CardHeader className="pb-3">
+                      <CardHeader className="pb-2">
                         <div className="flex items-center justify-between">
-                          <div className="bg-primary/10 p-2 rounded-full">
+                          <div className="bg-primary/10 p-2.5 rounded-full">
                             <Icon className="h-5 w-5 text-primary" />
                           </div>
                           <div className="text-xs text-muted-foreground">
                             {item.updatedAt}
                           </div>
                         </div>
-                        <CardTitle className="mt-3 text-xl">{item.title}</CardTitle>
+                        <CardTitle className="mt-4 text-xl">{item.title}</CardTitle>
+                        <CardDescription className="mt-1.5">{item.description}</CardDescription>
                       </CardHeader>
-                      <CardContent className="space-y-4">
-                        <CardDescription>{item.description}</CardDescription>
+                      <CardContent className="space-y-4 pt-2">
                         {item.attachments && item.attachments.length > 0 && (
-                          <div>
-                            <h4 className="text-xs font-medium text-muted-foreground mb-2">
+                          <div className="mt-2">
+                            <h4 className="text-xs font-medium text-muted-foreground mb-2.5">
                               Attachments ({item.attachments.length})
                             </h4>
-                            <div className="space-y-2">
+                            <div className="space-y-2.5">
                               {item.attachments.map(attachment => (
                                 <div key={attachment.id} className="flex items-center justify-between bg-gray-50 rounded p-2.5 text-xs">
                                   <span className="truncate max-w-[180px]">{attachment.name}</span>
-                                  <div className="flex items-center space-x-2">
+                                  <div className="flex items-center space-x-2.5">
                                     <Button
                                       variant="ghost"
                                       size="sm"
-                                      className="h-7 w-7 p-0"
+                                      className="h-8 w-8 p-0"
                                       onClick={() => handlePreviewAttachment(attachment)}
                                     >
-                                      <Eye className="h-3.5 w-3.5" />
+                                      <Eye className="h-4 w-4" />
                                     </Button>
                                     <Button
                                       variant="ghost"
                                       size="sm"
-                                      className="h-7 w-7 p-0"
+                                      className="h-8 w-8 p-0"
                                       asChild
                                     >
                                       <a href={attachment.url} download={attachment.name}>
-                                        <Download className="h-3.5 w-3.5" />
+                                        <Download className="h-4 w-4" />
                                       </a>
                                     </Button>
                                   </div>
@@ -571,26 +571,26 @@ const Library = () => {
                             </div>
                           </div>
                         )}
-                        <div className="flex flex-wrap gap-1.5 pt-1">
+                        <div className="flex flex-wrap gap-2 pt-2">
                           {item.tags.map(tag => (
                             <Badge 
                               key={tag} 
                               variant="outline"
-                              className="text-xs py-0.5"
+                              className="text-xs py-0.5 px-2"
                             >
                               {tag}
                             </Badge>
                           ))}
                         </div>
                       </CardContent>
-                      <CardFooter className="pt-2 pb-4 flex justify-between">
-                        <div className="flex gap-2">
+                      <CardFooter className="pt-3 pb-5 flex justify-between">
+                        <div className="flex gap-2.5">
                           <Button 
                             variant="outline" 
                             size="sm" 
                             onClick={() => handleEditItem(item)}
                           >
-                            <Edit className="h-4 w-4 mr-1" /> Edit
+                            <Edit className="h-4 w-4 mr-1.5" /> Edit
                           </Button>
                           <Button 
                             variant="outline" 
@@ -598,7 +598,7 @@ const Library = () => {
                             className="text-destructive"
                             onClick={() => handleDeleteItem(item.id)}
                           >
-                            <Trash className="h-4 w-4 mr-1" /> Delete
+                            <Trash className="h-4 w-4 mr-1.5" /> Delete
                           </Button>
                         </div>
                         <Dialog>
