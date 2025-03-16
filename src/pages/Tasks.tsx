@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from 'react';
 import Layout from '@/components/Layout';
 import AppMenu from '@/components/AppMenu';
@@ -914,3 +915,378 @@ const TaskEditDialog: React.FC<{
   };
 
   const statusStyles = {
+    todo: {
+      label: 'To Do',
+      color: 'bg-blue-500',
+      borderColor: 'border-blue-500'
+    },
+    inprogress: {
+      label: 'In Progress',
+      color: 'bg-amber-500',
+      borderColor: 'border-amber-500'
+    },
+    done: {
+      label: 'Done',
+      color: 'bg-emerald-500',
+      borderColor: 'border-emerald-500'
+    }
+  };
+
+  const currentStatus = statusStyles[editedTask.status];
+
+  const handleDelete = () => {
+    if (editedTask) {
+      onDelete(editedTask.id);
+      onClose();
+      toast({
+        title: "Task deleted",
+        description: "Your task has been successfully deleted.",
+      });
+    }
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-auto">
+        <DialogHeader>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <div className={`h-3 w-3 rounded-full ${currentStatus.color} mr-2`}></div>
+              <DialogTitle className="text-xl">
+                {editedTask.title}
+              </DialogTitle>
+            </div>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-8 w-8 text-destructive" 
+              onClick={handleDelete}
+            >
+              <Trash2 className="h-5 w-5" />
+            </Button>
+          </div>
+          <DialogDescription className="pt-2">
+            <div className="flex space-x-8 border-b">
+              <button
+                className={`pb-2 pt-1 px-1 ${activeTab === 'details' ? 'border-b-2 border-primary font-medium' : 'text-muted-foreground'}`}
+                onClick={() => setActiveTab('details')}
+              >
+                Task Details
+              </button>
+              <button
+                className={`pb-2 pt-1 px-1 ${activeTab === 'comments' ? 'border-b-2 border-primary font-medium' : 'text-muted-foreground'}`}
+                onClick={() => setActiveTab('comments')}
+              >
+                Comments {editedTask.comments && editedTask.comments.length > 0 && 
+                  `(${editedTask.comments.length})`}
+              </button>
+            </div>
+          </DialogDescription>
+        </DialogHeader>
+        
+        <div className="py-4">
+          {activeTab === 'details' ? (
+            <TaskForm 
+              task={editedTask} 
+              onSave={handleSave} 
+              onCancel={onClose} 
+            />
+          ) : (
+            <div className="space-y-6">
+              <CommentList 
+                comments={editedTask.comments || []} 
+                onEditComment={handleEditComment}
+                taskId={editedTask.id}
+              />
+              <div className="border-t pt-4">
+                <CommentForm 
+                  taskId={editedTask.id} 
+                  onAddComment={handleAddComment} 
+                />
+              </div>
+            </div>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+const Tasks = () => {
+  const [tasks, setTasks] = useState<Task[]>(mockTasks);
+  const [isLoading, setIsLoading] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
+  const [isNewTaskDialogOpen, setIsNewTaskDialogOpen] = useState(false);
+  const [newTaskStatus, setNewTaskStatus] = useState<TaskStatus>('todo');
+  const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
+  const { toast } = useToast();
+
+  const getTasksByStatus = (status: TaskStatus) => {
+    return tasks.filter(task => task.status === status);
+  };
+
+  const handleDrop = (taskId: string, newStatus: TaskStatus) => {
+    setTasks(prev => prev.map(task => 
+      task.id === taskId 
+        ? { ...task, status: newStatus } 
+        : task
+    ));
+    setDraggedTaskId(null);
+    
+    toast({
+      title: "Task moved",
+      description: `Task moved to ${newStatus === 'todo' ? 'To Do' : newStatus === 'inprogress' ? 'In Progress' : 'Done'}.`,
+    });
+  };
+
+  const handleReorderTasks = (draggedTaskId: string, targetIndex: number, status: TaskStatus) => {
+    const statusTasks = [...getTasksByStatus(status)];
+    const draggedTaskIndex = statusTasks.findIndex(task => task.id === draggedTaskId);
+    
+    if (draggedTaskIndex === -1) return;
+    
+    // Reorder the tasks
+    const draggedTask = statusTasks[draggedTaskIndex];
+    statusTasks.splice(draggedTaskIndex, 1);
+    statusTasks.splice(targetIndex, 0, draggedTask);
+    
+    // Update the orders
+    const updatedTasks = statusTasks.map((task, index) => ({
+      ...task,
+      order: index
+    }));
+    
+    // Merge with tasks of other statuses
+    setTasks(prev => {
+      const otherTasks = prev.filter(task => task.status !== status);
+      return [...otherTasks, ...updatedTasks];
+    });
+    
+    setDraggedTaskId(null);
+  };
+
+  const handleDragStart = (taskId: string) => {
+    setDraggedTaskId(taskId);
+  };
+
+  const handleTaskClick = (task: Task) => {
+    setSelectedTask(task);
+    setIsTaskDialogOpen(true);
+  };
+
+  const handleSaveTask = (updatedTask: Task) => {
+    setTasks(prev => prev.map(task => 
+      task.id === updatedTask.id 
+        ? { ...updatedTask } 
+        : task
+    ));
+    setIsTaskDialogOpen(false);
+    setSelectedTask(null);
+  };
+
+  const handleDeleteTask = (taskId: string) => {
+    setTasks(prev => prev.filter(task => task.id !== taskId));
+  };
+
+  const handleAddTask = (status: TaskStatus) => {
+    setNewTaskStatus(status);
+    setIsNewTaskDialogOpen(true);
+  };
+
+  const handleCreateTask = (newTask: Partial<Task>) => {
+    const taskToAdd: Task = {
+      id: `task-${Date.now()}`,
+      title: newTask.title || 'Untitled Task',
+      description: newTask.description || '',
+      status: newTask.status || newTaskStatus,
+      dueDate: newTask.dueDate || format(new Date(), 'yyyy-MM-dd'),
+      priority: newTask.priority || 'medium',
+      comments: [],
+      order: getTasksByStatus(newTask.status || newTaskStatus).length
+    };
+    
+    setTasks(prev => [...prev, taskToAdd]);
+    setIsNewTaskDialogOpen(false);
+    
+    toast({
+      title: "Task created",
+      description: "Your new task has been created.",
+    });
+  };
+
+  const handleAddComment = (taskId: string, comment: Omit<Comment, 'id'>) => {
+    const newComment: Comment = {
+      id: `comment-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      ...comment
+    };
+    
+    console.log("Adding comment:", newComment, "to task:", taskId);
+    
+    setTasks(prev => {
+      const updatedTasks = prev.map(task => {
+        if (task.id === taskId) {
+          return {
+            ...task,
+            comments: [...(task.comments || []), newComment]
+          };
+        }
+        return task;
+      });
+      
+      console.log("Updated tasks:", updatedTasks);
+      return updatedTasks;
+    });
+    
+    // Update the selectedTask if it's the one we're adding a comment to
+    if (selectedTask && selectedTask.id === taskId) {
+      setSelectedTask(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          comments: [...(prev.comments || []), newComment]
+        };
+      });
+    }
+    
+    toast({
+      title: "Comment added",
+      description: "Your comment has been added to the task.",
+    });
+  };
+
+  const handleEditComment = (taskId: string, commentId: string, updatedComment: Comment) => {
+    setTasks(prev => {
+      const updatedTasks = prev.map(task => {
+        if (task.id === taskId) {
+          return {
+            ...task,
+            comments: task.comments?.map(comment => 
+              comment.id === commentId ? updatedComment : comment
+            )
+          };
+        }
+        return task;
+      });
+      
+      console.log("Updated tasks after comment edit:", updatedTasks);
+      return updatedTasks;
+    });
+    
+    // Also update selectedTask if it's the same task
+    if (selectedTask && selectedTask.id === taskId) {
+      setSelectedTask(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          comments: prev.comments?.map(comment => 
+            comment.id === commentId ? updatedComment : comment
+          )
+        };
+      });
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent, status: TaskStatus) => {
+    // Prevent default to allow drop
+    e.preventDefault();
+  };
+
+  return (
+    <Layout>
+      <motion.div 
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        className="container mx-auto px-4 py-6"
+      >
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-2xl font-bold flex items-center">
+            <ListChecks className="mr-2 h-6 w-6" />
+            Tasks
+          </h1>
+          <AppMenu />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <TaskColumn
+            title="To Do"
+            icon={<ListChecks className="h-5 w-5" />}
+            tasks={getTasksByStatus('todo')}
+            status="todo"
+            isLoading={isLoading}
+            onDrop={handleDrop}
+            onTaskClick={handleTaskClick}
+            onReorderTasks={handleReorderTasks}
+            draggedTaskId={draggedTaskId}
+            onDragOver={handleDragOver}
+            onAddTask={handleAddTask}
+          />
+          
+          <TaskColumn
+            title="In Progress"
+            icon={<Clock className="h-5 w-5" />}
+            tasks={getTasksByStatus('inprogress')}
+            status="inprogress"
+            isLoading={isLoading}
+            onDrop={handleDrop}
+            onTaskClick={handleTaskClick}
+            onReorderTasks={handleReorderTasks}
+            draggedTaskId={draggedTaskId}
+            onDragOver={handleDragOver}
+            onAddTask={handleAddTask}
+          />
+          
+          <TaskColumn
+            title="Done"
+            icon={<Check className="h-5 w-5" />}
+            tasks={getTasksByStatus('done')}
+            status="done"
+            isLoading={isLoading}
+            onDrop={handleDrop}
+            onTaskClick={handleTaskClick}
+            onReorderTasks={handleReorderTasks}
+            draggedTaskId={draggedTaskId}
+            onDragOver={handleDragOver}
+            onAddTask={handleAddTask}
+          />
+        </div>
+        
+        {/* Task Edit Dialog */}
+        {selectedTask && (
+          <TaskEditDialog
+            isOpen={isTaskDialogOpen}
+            task={selectedTask}
+            onClose={() => {
+              setIsTaskDialogOpen(false);
+              setSelectedTask(null);
+            }}
+            onSave={handleSaveTask}
+            onDelete={handleDeleteTask}
+            onAddComment={handleAddComment}
+            onEditComment={handleEditComment}
+          />
+        )}
+        
+        {/* New Task Dialog */}
+        <Dialog open={isNewTaskDialogOpen} onOpenChange={setIsNewTaskDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Create New Task</DialogTitle>
+              <DialogDescription>
+                Fill in the details for your new task.
+              </DialogDescription>
+            </DialogHeader>
+            
+            <TaskForm 
+              onSave={handleCreateTask} 
+              onCancel={() => setIsNewTaskDialogOpen(false)} 
+            />
+          </DialogContent>
+        </Dialog>
+      </motion.div>
+    </Layout>
+  );
+};
+
+export default Tasks;
