@@ -5,6 +5,7 @@ export interface Column {
   id: string;
   title: string;
   icon?: React.ReactNode;
+  order?: number; // Added order field for column sorting
 }
 
 export interface CommentAttachment {
@@ -45,9 +46,9 @@ export interface Task {
 }
 
 export const defaultColumns: Column[] = [
-  { id: 'todo', title: 'To Do', },
-  { id: 'inprogress', title: 'In Progress', },
-  { id: 'done', title: 'Done', }
+  { id: 'todo', title: 'To Do', order: 0 },
+  { id: 'inprogress', title: 'In Progress', order: 1 },
+  { id: 'done', title: 'Done', order: 2 }
 ];
 
 export const mockTasks: Task[] = [

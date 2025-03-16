@@ -1,11 +1,10 @@
-
 import React, { useState } from 'react';
 import Layout from '@/components/Layout';
 import AppMenu from '@/components/AppMenu';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
-import { ListChecks, Plus, Clock, CalendarDays, Check, Settings, Edit, X } from 'lucide-react';
+import { ListChecks, Plus, Clock, CalendarDays, Check, Settings, Edit, X, GripVertical } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
@@ -30,7 +29,15 @@ const Projects = () => {
   const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
   const [editingColumnId, setEditingColumnId] = useState<string | null>(null);
   const [newColumnTitle, setNewColumnTitle] = useState('');
+  const [draggedColumnId, setDraggedColumnId] = useState<string | null>(null);
   const { toast } = useToast();
+
+  // Sort columns by order property
+  const sortedColumns = [...columns].sort((a, b) => {
+    const orderA = a.order !== undefined ? a.order : 0;
+    const orderB = b.order !== undefined ? b.order : 0;
+    return orderA - orderB;
+  });
 
   const getTasksByStatus = (status: TaskStatus) => {
     return tasks.filter(task => task.status === status);
@@ -220,7 +227,6 @@ const Projects = () => {
   };
 
   const handleDragOver = (e: React.DragEvent, status: TaskStatus) => {
-    // Prevent default to allow drop
     e.preventDefault();
   };
 
@@ -248,9 +254,15 @@ const Projects = () => {
     }
     
     const newColumnId = `column-${Date.now()}`;
+    const maxOrder = columns.reduce((max, col) => {
+      const colOrder = col.order !== undefined ? col.order : 0;
+      return colOrder > max ? colOrder : max;
+    }, 0);
+    
     setColumns(prev => [...prev, { 
       id: newColumnId, 
       title: newColumnTitle,
+      order: maxOrder + 1
     }]);
     setNewColumnTitle('');
     setIsColumnDialogOpen(false);
@@ -262,7 +274,6 @@ const Projects = () => {
   };
 
   const handleDeleteColumn = (id: string) => {
-    // Check if there are tasks in this column
     const hasTasksInColumn = tasks.some(task => task.status === id);
     
     if (hasTasksInColumn) {
@@ -280,6 +291,52 @@ const Projects = () => {
       title: "Column deleted",
       description: "The column has been removed.",
     });
+  };
+
+  // Column reordering functions
+  const handleColumnDragStart = (e: React.DragEvent, columnId: string) => {
+    e.dataTransfer.setData('columnId', columnId);
+    setDraggedColumnId(columnId);
+  };
+
+  const handleColumnDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
+
+  const handleColumnDrop = (e: React.DragEvent, targetColumnId: string) => {
+    e.preventDefault();
+    const sourceColumnId = e.dataTransfer.getData('columnId');
+    if (!sourceColumnId || sourceColumnId === targetColumnId || !draggedColumnId) return;
+    
+    const sourceColumn = columns.find(col => col.id === sourceColumnId);
+    const targetColumn = columns.find(col => col.id === targetColumnId);
+    
+    if (!sourceColumn || !targetColumn) return;
+    
+    // Update column orders
+    setColumns(prev => {
+      const updated = prev.map(col => {
+        if (col.id === sourceColumnId) {
+          return { ...col, order: targetColumn.order };
+        }
+        if (col.id === targetColumnId) {
+          return { ...col, order: sourceColumn.order };
+        }
+        return col;
+      });
+      return updated;
+    });
+    
+    setDraggedColumnId(null);
+    
+    toast({
+      title: "Columns reordered",
+      description: "Column order has been updated.",
+    });
+  };
+
+  const handleColumnDragEnd = () => {
+    setDraggedColumnId(null);
   };
 
   // Function to get the appropriate icon for a column
@@ -323,9 +380,18 @@ const Projects = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 auto-cols-fr gap-6 overflow-x-auto flex-nowrap whitespace-nowrap md:grid-flow-col">
-          {columns.map(column => (
-            <div key={column.id} className="min-w-[300px]">
+        <div className="flex overflow-x-auto pb-6 gap-6 snap-x">
+          {sortedColumns.map(column => (
+            <div 
+              key={column.id} 
+              className="min-w-[300px] w-[350px] max-w-md snap-start flex-shrink-0"
+              draggable={true}
+              onDragStart={(e) => handleColumnDragStart(e, column.id)}
+              onDragOver={handleColumnDragOver}
+              onDrop={(e) => handleColumnDrop(e, column.id)}
+              onDragEnd={handleColumnDragEnd}
+              style={{ opacity: draggedColumnId === column.id ? 0.6 : 1 }}
+            >
               <TaskColumn
                 title={column.title}
                 icon={getColumnIcon(column.id)}
@@ -342,6 +408,7 @@ const Projects = () => {
                 onDeleteColumn={() => handleDeleteColumn(column.id)}
                 isEditing={editingColumnId === column.id}
                 setIsEditing={(isEditing) => setEditingColumnId(isEditing ? column.id : null)}
+                isDraggable={true}
               />
             </div>
           ))}
@@ -377,7 +444,7 @@ const Projects = () => {
             <TaskForm 
               onSave={handleCreateTask} 
               onCancel={() => setIsNewTaskDialogOpen(false)}
-              availableStatuses={columns.map(col => ({ id: col.id, name: col.title }))}
+              statuses={columns.map(col => ({ id: col.id, name: col.title }))}
               initialStatus={newTaskStatus}
             />
           </DialogContent>

@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Plus, Edit, Trash, Check, X } from 'lucide-react';
+import { Plus, Edit, Trash, Check, X, GripVertical } from 'lucide-react';
 import TaskCard from './TaskCard';
 import { Task, TaskStatus } from './types';
 import { Input } from '@/components/ui/input';
@@ -25,6 +25,7 @@ interface TaskColumnProps {
   onDeleteColumn?: () => void;
   isEditing?: boolean;
   setIsEditing?: (isEditing: boolean) => void;
+  isDraggable?: boolean;
 }
 
 const TaskColumn: React.FC<TaskColumnProps> = ({
@@ -43,6 +44,7 @@ const TaskColumn: React.FC<TaskColumnProps> = ({
   onDeleteColumn,
   isEditing = false,
   setIsEditing,
+  isDraggable = false,
 }) => {
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dropPreviewIndex, setDropPreviewIndex] = useState<number | null>(null);
@@ -116,14 +118,20 @@ const TaskColumn: React.FC<TaskColumnProps> = ({
 
   return (
     <div 
-      className="rounded-xl p-4 min-w-[300px] w-full bg-gradient-to-b from-slate-50 to-slate-100 border border-slate-200 shadow-sm relative"
+      className="rounded-lg h-full flex flex-col overflow-hidden shadow-sm bg-white border border-slate-200 transition-all duration-200 hover:shadow-md"
       onDragOver={handleDragOver}
       onDrop={handleDrop}
       onDragLeave={handleDragLeave}
       onDragEnd={handleDragEnd}
     >
-      <div className="flex items-center mb-5">
-        <div className={`p-2 rounded-full bg-slate-100`}>
+      <div className="flex items-center p-4 border-b border-slate-100">
+        {isDraggable && (
+          <div className="cursor-move mr-1 text-slate-400 hover:text-slate-600">
+            <GripVertical className="h-5 w-5" />
+          </div>
+        )}
+        
+        <div className="p-1.5 rounded-full bg-slate-100">
           <div className="text-slate-600">
             {icon}
           </div>
@@ -159,8 +167,8 @@ const TaskColumn: React.FC<TaskColumnProps> = ({
           </div>
         ) : (
           <>
-            <h3 className="font-medium ml-2 text-lg flex-1">{title}</h3>
-            <div className="ml-2 bg-slate-200 rounded-full w-6 h-6 flex items-center justify-center text-xs font-medium">
+            <h3 className="font-medium ml-2 text-base flex-1 truncate">{title}</h3>
+            <div className="ml-2 bg-slate-100 rounded-full w-6 h-6 flex items-center justify-center text-xs font-medium text-slate-600">
               {tasks.length}
             </div>
 
@@ -204,13 +212,13 @@ const TaskColumn: React.FC<TaskColumnProps> = ({
       </div>
       
       {isLoading ? (
-        <>
-          <Skeleton className="h-[120px] mb-4" />
-          <Skeleton className="h-[120px] mb-4" />
-        </>
+        <div className="p-4 space-y-3">
+          <Skeleton className="h-[120px]" />
+          <Skeleton className="h-[120px]" />
+        </div>
       ) : (
-        <ScrollArea className="h-[calc(100vh-240px)]">
-          <div className="space-y-3 pr-3">
+        <ScrollArea className="flex-1 p-3">
+          <div className="space-y-3 pr-1">
             {shouldShowEmptyColumnIndicator && (
               <div 
                 className="h-2 w-full bg-slate-200 rounded-full mb-2 transform transition-all duration-200 animate-pulse"
@@ -249,14 +257,16 @@ const TaskColumn: React.FC<TaskColumnProps> = ({
         </ScrollArea>
       )}
       
-      <Button 
-        variant="outline" 
-        className="w-full mt-4 border border-dashed border-slate-300 hover:bg-slate-50"
-        onClick={() => onAddTask(status)}
-      >
-        <Plus className="h-4 w-4 mr-2" />
-        Add Project
-      </Button>
+      <div className="p-3 border-t border-slate-100">
+        <Button 
+          variant="outline" 
+          className="w-full border border-dashed border-slate-300 hover:bg-slate-50"
+          onClick={() => onAddTask(status)}
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          Add Project
+        </Button>
+      </div>
     </div>
   );
 };
