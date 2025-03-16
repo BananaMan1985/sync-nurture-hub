@@ -2,17 +2,10 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { 
-  Pagination, 
-  PaginationContent, 
-  PaginationItem, 
-  PaginationLink, 
-  PaginationNext, 
-  PaginationPrevious 
-} from '@/components/ui/pagination';
-import { CalendarDays, Eye } from 'lucide-react';
-import { Button } from './ui/button';
+import { Calendar } from '@/components/ui/calendar';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
+import { CalendarDays, Eye } from 'lucide-react';
+import { format } from 'date-fns';
 
 // Sample data for demonstration
 const reportHistoryData = [
@@ -99,42 +92,26 @@ const reportHistoryData = [
 ];
 
 const ReportHistory: React.FC = () => {
-  const [currentPage, setCurrentPage] = useState(1);
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [selectedReport, setSelectedReport] = useState<typeof reportHistoryData[0] | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   
-  const reportsPerPage = 5;
+  // Convert report dates to Date objects for comparison
+  const reportDates = reportHistoryData.map(report => new Date(report.date));
   
-  // Calculate page counts
-  const totalPages = Math.ceil(reportHistoryData.length / reportsPerPage);
-  const indexOfLastReport = currentPage * reportsPerPage;
-  const indexOfFirstReport = indexOfLastReport - reportsPerPage;
-  const currentReports = reportHistoryData.slice(indexOfFirstReport, indexOfLastReport);
-  
-  const handlePageChange = (pageNumber: number) => {
-    setCurrentPage(pageNumber);
-  };
-
-  const handleViewReport = (report: typeof reportHistoryData[0]) => {
-    setSelectedReport(report);
-    setDialogOpen(true);
-  };
-
-  const renderPageNumbers = () => {
-    const pageNumbers = [];
-    for (let i = 1; i <= totalPages; i++) {
-      pageNumbers.push(
-        <PaginationItem key={i}>
-          <PaginationLink 
-            onClick={() => handlePageChange(i)} 
-            isActive={i === currentPage}
-          >
-            {i}
-          </PaginationLink>
-        </PaginationItem>
-      );
+  // Handle date selection in calendar
+  const handleDateSelect = (date: Date | undefined) => {
+    setSelectedDate(date);
+    
+    if (date) {
+      const formattedDate = date.toISOString().split('T')[0];
+      const report = reportHistoryData.find(r => r.date === formattedDate);
+      
+      if (report) {
+        setSelectedReport(report);
+        setDialogOpen(true);
+      }
     }
-    return pageNumbers;
   };
 
   const formatDate = (dateString: string) => {
@@ -148,8 +125,18 @@ const ReportHistory: React.FC = () => {
   const getBusynessLabel = (level: string) => {
     const levelNum = parseInt(level);
     if (levelNum <= 3) return "Light day";
-    if (levelNum <= 7) return "Moderate";
+    if (levelNum <= 6) return "Moderate";
+    if (levelNum === 7) return null; // Skip 7
     return "Very busy";
+  };
+
+  // Function to highlight dates with reports
+  const isDayWithReport = (date: Date) => {
+    return reportDates.some(reportDate => 
+      reportDate.getDate() === date.getDate() && 
+      reportDate.getMonth() === date.getMonth() && 
+      reportDate.getFullYear() === date.getFullYear()
+    );
   };
 
   return (
@@ -167,58 +154,25 @@ const ReportHistory: React.FC = () => {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {currentReports.length > 0 ? (
-              <>
-                <div className="space-y-3">
-                  {currentReports.map((report) => (
-                    <div 
-                      key={report.id} 
-                      className="flex items-center justify-between p-3 rounded-lg hover:bg-secondary/50 transition-colors"
-                    >
-                      <div className="flex flex-col gap-1">
-                        <div className="text-sm font-medium">
-                          {formatDate(report.date)}
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          Busyness: {getBusynessLabel(report.busynessLevel)}
-                        </div>
-                      </div>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="gap-1"
-                        onClick={() => handleViewReport(report)}
-                      >
-                        <Eye className="h-4 w-4" />
-                        View
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-                
-                <Pagination>
-                  <PaginationContent>
-                    {currentPage > 1 && (
-                      <PaginationItem>
-                        <PaginationPrevious onClick={() => handlePageChange(currentPage - 1)} />
-                      </PaginationItem>
-                    )}
-                    
-                    {renderPageNumbers()}
-                    
-                    {currentPage < totalPages && (
-                      <PaginationItem>
-                        <PaginationNext onClick={() => handlePageChange(currentPage + 1)} />
-                      </PaginationItem>
-                    )}
-                  </PaginationContent>
-                </Pagination>
-              </>
-            ) : (
-              <div className="text-center py-8 text-muted-foreground">
-                No reports found
-              </div>
-            )}
+            <Calendar 
+              mode="single"
+              selected={selectedDate}
+              onSelect={handleDateSelect}
+              className="rounded-md border pointer-events-auto"
+              modifiers={{
+                hasReport: isDayWithReport
+              }}
+              modifiersStyles={{
+                hasReport: { 
+                  fontWeight: 'bold', 
+                  backgroundColor: 'var(--primary-50)',
+                  border: '1px solid var(--primary)'
+                }
+              }}
+            />
+            <p className="text-sm text-muted-foreground text-center">
+              Click on a highlighted date to view the report
+            </p>
           </div>
         </CardContent>
       </Card>

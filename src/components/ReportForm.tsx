@@ -37,7 +37,16 @@ const ReportForm: React.FC = () => {
   };
 
   const handleSliderChange = (value: number[]) => {
-    setFormData((prev) => ({ ...prev, busynessLevel: value[0].toString() }));
+    let selectedValue = value[0];
+    
+    // Skip the value 7
+    if (selectedValue === 7) {
+      // If coming from a lower value, go to 6, otherwise go to 8
+      const previousValue = parseInt(formData.busynessLevel);
+      selectedValue = previousValue < 7 ? 6 : 8;
+    }
+    
+    setFormData((prev) => ({ ...prev, busynessLevel: selectedValue.toString() }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
