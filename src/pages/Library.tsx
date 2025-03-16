@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
 import AppMenu from '@/components/AppMenu';
@@ -927,4 +928,29 @@ const Library = () => {
                     className="max-w-full max-h-[60vh] object-contain"
                   />
                 ) : (
-                  <div className="text-center p-10 bg-slate-
+                  <div className="text-center p-10 bg-slate-50 rounded-md w-full">
+                    <FileArchive className="h-16 w-16 mx-auto text-slate-400 mb-4" />
+                    <p className="font-medium">Preview not available</p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      This file type cannot be previewed directly.
+                    </p>
+                    <Button 
+                      className="mt-4" 
+                      asChild
+                    >
+                      <a href={selectedAttachment.url} download={selectedAttachment.name}>
+                        <Download className="h-4 w-4 mr-2" /> Download File
+                      </a>
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+    </Layout>
+  );
+};
+
+export default Library;
