@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import Layout from '@/components/Layout';
 import AppMenu from '@/components/AppMenu';
@@ -151,6 +152,8 @@ const TaskColumn: React.FC<{
   onDrop: (taskId: string, newStatus: TaskStatus) => void;
   onTaskClick: (task: Task) => void;
   onReorderTasks: (draggedTaskId: string, targetIndex: number, status: TaskStatus) => void;
+  draggedTaskId: string | null;
+  onDragOver: (e: React.DragEvent, status: TaskStatus) => void;
 }> = ({
   title,
   icon,
@@ -160,14 +163,16 @@ const TaskColumn: React.FC<{
   onDrop,
   onTaskClick,
   onReorderTasks,
+  draggedTaskId,
+  onDragOver,
 }) => {
   
-  const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dropPreviewIndex, setDropPreviewIndex] = useState<number | null>(null);
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault(); // Allow drop
+    onDragOver(e, status);
   };
   
   const handleDrop = (e: React.DragEvent) => {
@@ -180,14 +185,12 @@ const TaskColumn: React.FC<{
       // If we're dragging between columns
       onDrop(taskId, status);
     }
-    setDraggedTaskId(null);
     setDraggedIndex(null);
     setDropPreviewIndex(null);
   };
 
   const handleDragStart = (e: React.DragEvent, task: Task, index: number) => {
     e.dataTransfer.setData('taskId', task.id);
-    setDraggedTaskId(task.id);
   };
 
   const handleDragEnter = (e: React.DragEvent, index: number) => {
@@ -225,6 +228,9 @@ const TaskColumn: React.FC<{
     done: 'bg-emerald-200'
   };
 
+  // Add indicator if the column is empty and something is being dragged
+  const shouldShowEmptyColumnIndicator = tasks.length === 0 && draggedTaskId !== null;
+
   const sortedTasks = [...tasks].sort((a, b) => {
     if (a.order !== undefined && b.order !== undefined) {
       return a.order - b.order;
@@ -234,7 +240,7 @@ const TaskColumn: React.FC<{
 
   return (
     <div 
-      className={`rounded-xl p-4 min-w-[300px] w-full bg-gradient-to-b ${columnStyle[status]} border shadow-sm`}
+      className={`rounded-xl p-4 min-w-[300px] w-full bg-gradient-to-b ${columnStyle[status]} border shadow-sm relative`}
       onDragOver={handleDragOver}
       onDrop={handleDrop}
       onDragLeave={handleDragLeave}
@@ -260,6 +266,11 @@ const TaskColumn: React.FC<{
       ) : (
         <ScrollArea className="h-[calc(100vh-240px)]">
           <div className="space-y-3 pr-3">
+            {shouldShowEmptyColumnIndicator && (
+              <div 
+                className={`h-2 w-full ${dropIndicatorColor[status]} rounded-full mb-2 transform transition-all duration-200 animate-pulse`}
+              />
+            )}
             {sortedTasks.map((task, index) => (
               <React.Fragment key={task.id}>
                 {dropPreviewIndex === index && (
@@ -283,11 +294,6 @@ const TaskColumn: React.FC<{
                 )}
               </React.Fragment>
             ))}
-            {sortedTasks.length === 0 && dropPreviewIndex === 0 && (
-              <div 
-                className={`h-1 w-full ${dropIndicatorColor[status]} rounded-full mb-2 transform transition-all duration-200 animate-pulse`}
-              />
-            )}
           </div>
         </ScrollArea>
       )}
@@ -520,6 +526,8 @@ const Tasks: React.FC = () => {
   })));
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
+  const [dragOverColumn, setDragOverColumn] = useState<TaskStatus | null>(null);
   
   const todoTasks = tasks.filter(task => task.status === 'todo');
   const inProgressTasks = tasks.filter(task => task.status === 'inprogress');
@@ -536,6 +544,8 @@ const Tasks: React.FC = () => {
         return task;
       })
     );
+    setDraggedTaskId(null);
+    setDragOverColumn(null);
   };
 
   const handleReorderTasks = (draggedTaskId: string, targetIndex: number, status: TaskStatus) => {
@@ -560,6 +570,8 @@ const Tasks: React.FC = () => {
         ...reorderedColumnTasks
       ];
     });
+    setDraggedTaskId(null);
+    setDragOverColumn(null);
   };
 
   const handleTaskClick = (task: Task) => {
@@ -581,6 +593,15 @@ const Tasks: React.FC = () => {
     setTasks(prev => prev.filter(task => task.id !== taskId));
     setIsEditDialogOpen(false);
     setSelectedTask(null);
+  };
+
+  const handleDragStart = (taskId: string) => {
+    setDraggedTaskId(taskId);
+  };
+
+  const handleDragOver = (e: React.DragEvent, columnStatus: TaskStatus) => {
+    e.preventDefault();
+    setDragOverColumn(columnStatus);
   };
 
   return (
@@ -618,6 +639,8 @@ const Tasks: React.FC = () => {
             onDrop={handleTaskMove}
             onTaskClick={handleTaskClick}
             onReorderTasks={handleReorderTasks}
+            draggedTaskId={draggedTaskId}
+            onDragOver={handleDragOver}
           />
           <TaskColumn
             title="In Progress"
@@ -628,6 +651,8 @@ const Tasks: React.FC = () => {
             onDrop={handleTaskMove}
             onTaskClick={handleTaskClick}
             onReorderTasks={handleReorderTasks}
+            draggedTaskId={draggedTaskId}
+            onDragOver={handleDragOver}
           />
           <TaskColumn
             title="Completed"
@@ -638,6 +663,8 @@ const Tasks: React.FC = () => {
             onDrop={handleTaskMove}
             onTaskClick={handleTaskClick}
             onReorderTasks={handleReorderTasks}
+            draggedTaskId={draggedTaskId}
+            onDragOver={handleDragOver}
           />
         </div>
 
