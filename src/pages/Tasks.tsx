@@ -1,11 +1,10 @@
-
 import React, { useState, useRef } from 'react';
 import Layout from '@/components/Layout';
 import AppMenu from '@/components/AppMenu';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
-import { ListChecks, Plus, Clock, CalendarDays, PaperclipIcon, MessageSquare, Trash2, Upload, Check, X, Tag, FileText, Send, Pencil } from 'lucide-react';
+import { ListChecks, Plus, Clock, CalendarDays, PaperclipIcon, MessageSquare, Trash2, Upload, Check, X, Tag, FileText, Send, Pencil, ExternalLink, Eye } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -612,6 +611,8 @@ interface CommentListProps {
 
 const CommentList: React.FC<CommentListProps> = ({ comments, onEditComment, taskId }) => {
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+  const [selectedAttachment, setSelectedAttachment] = useState<CommentAttachment | null>(null);
+  const [isAttachmentPreviewOpen, setIsAttachmentPreviewOpen] = useState(false);
   
   if (comments.length === 0) {
     return (
@@ -630,6 +631,11 @@ const CommentList: React.FC<CommentListProps> = ({ comments, onEditComment, task
       onEditComment(updatedComment.id, updatedComment);
     }
     setEditingCommentId(null);
+  };
+
+  const openAttachmentPreview = (attachment: CommentAttachment) => {
+    setSelectedAttachment(attachment);
+    setIsAttachmentPreviewOpen(true);
   };
   
   return (
@@ -675,16 +681,25 @@ const CommentList: React.FC<CommentListProps> = ({ comments, onEditComment, task
                 {comment.attachments && comment.attachments.length > 0 && (
                   <div className="mt-2 space-y-1">
                     {comment.attachments.map(attachment => (
-                      <a 
-                        key={attachment.id}
-                        href={attachment.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center text-xs text-blue-600 hover:underline"
-                      >
-                        <PaperclipIcon className="h-3 w-3 mr-1" />
-                        {attachment.name}
-                      </a>
+                      <div key={attachment.id} className="flex items-center justify-between bg-gray-50 rounded p-2 text-xs">
+                        <a 
+                          href={attachment.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center text-blue-600 hover:underline max-w-[80%] truncate"
+                        >
+                          <PaperclipIcon className="h-3 w-3 mr-1 flex-shrink-0" />
+                          <span className="truncate">{attachment.name}</span>
+                        </a>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 w-6 p-0"
+                          onClick={() => openAttachmentPreview(attachment)}
+                        >
+                          <Eye className="h-3 w-3" />
+                        </Button>
+                      </div>
                     ))}
                   </div>
                 )}
@@ -693,7 +708,78 @@ const CommentList: React.FC<CommentListProps> = ({ comments, onEditComment, task
           </div>
         </div>
       ))}
+
+      <AttachmentPreviewDialog
+        attachment={selectedAttachment}
+        isOpen={isAttachmentPreviewOpen}
+        onClose={() => {
+          setIsAttachmentPreviewOpen(false);
+          setSelectedAttachment(null);
+        }}
+      />
     </div>
+  );
+};
+
+interface AttachmentPreviewDialogProps {
+  attachment: CommentAttachment | null;
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+const AttachmentPreviewDialog: React.FC<AttachmentPreviewDialogProps> = ({ 
+  attachment, 
+  isOpen, 
+  onClose 
+}) => {
+  if (!attachment) return null;
+  
+  const isImage = attachment.type.startsWith('image/');
+
+  return (
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <PaperclipIcon className="h-5 w-5" />
+            {attachment.name}
+          </DialogTitle>
+          <DialogDescription>
+            {(attachment.size / 1024).toFixed(2)} KB - {attachment.type}
+          </DialogDescription>
+        </DialogHeader>
+        
+        <div className="flex-1 overflow-auto my-6 flex items-center justify-center">
+          {isImage ? (
+            <img 
+              src={attachment.url} 
+              alt={attachment.name} 
+              className="max-w-full max-h-[60vh] object-contain"
+            />
+          ) : (
+            <div className="text-center p-10 bg-slate-50 rounded-lg">
+              <FileText className="h-16 w-16 mx-auto mb-4 text-slate-400" />
+              <p className="mb-4">This file type cannot be previewed directly.</p>
+              <Button asChild>
+                <a href={attachment.url} target="_blank" rel="noopener noreferrer">
+                  <ExternalLink className="h-4 w-4 mr-2" />
+                  Open File
+                </a>
+              </Button>
+            </div>
+          )}
+        </div>
+        
+        <DialogFooter>
+          <Button asChild variant="outline">
+            <a href={attachment.url} download={attachment.name}>
+              Download
+            </a>
+          </Button>
+          <Button onClick={onClose}>Close</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 };
 
@@ -834,7 +920,7 @@ const TaskForm: React.FC<TaskFormProps> = ({ task, onSave, onCancel }) => {
   );
 };
 
-const TaskEditDialog: React.FC<{
+interface TaskEditDialogProps {
   isOpen: boolean;
   task: Task | null;
   onClose: () => void;
@@ -842,7 +928,9 @@ const TaskEditDialog: React.FC<{
   onDelete: (taskId: string) => void;
   onAddComment: (taskId: string, comment: Omit<Comment, 'id'>) => void;
   onEditComment: (taskId: string, commentId: string, updatedComment: Comment) => void;
-}> = ({ isOpen, task, onClose, onSave, onDelete, onAddComment, onEditComment }) => {
+}
+
+const TaskEditDialog: React.FC<TaskEditDialogProps> = ({ isOpen, task, onClose, onSave, onDelete, onAddComment, onEditComment }) => {
   const [editedTask, setEditedTask] = useState<Task | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [activeTab, setActiveTab] = useState<'details' | 'comments'>('details');
@@ -892,9 +980,7 @@ const TaskEditDialog: React.FC<{
     });
   };
 
-  // Update this function to match the expected signature
   const handleEditComment = (commentId: string, updatedComment: Comment) => {
-    // Call the parent function with the task ID
     onEditComment(editedTask.id, commentId, updatedComment);
     
     setEditedTask(prev => {
