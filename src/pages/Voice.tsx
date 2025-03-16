@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import Layout from '@/components/Layout';
+import AppMenu from '@/components/AppMenu';
 import { Mic } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
@@ -21,39 +22,10 @@ const Voice: React.FC = () => {
         className="container mx-auto px-4 md:px-6"
       >
         <div className="mb-8">
-          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Voice Tasks</h1>
         </div>
 
-        <div className="flex border-b border-border/30 mb-8">
-          <Button 
-            variant="link" 
-            className="text-foreground font-medium px-0 py-3 mr-6 border-b-2 border-primary"
-          >
-            <Mic className="mr-2 h-5 w-5" />
-            Voice Task
-          </Button>
-          <Button 
-            variant="link" 
-            className="text-muted-foreground px-0 py-3 mr-6 border-b-2 border-transparent"
-            onClick={() => window.location.href = '/tasks'}
-          >
-            Project Tracker
-          </Button>
-          <Button 
-            variant="link" 
-            className="text-muted-foreground px-0 py-3 mr-6 border-b-2 border-transparent"
-            onClick={() => window.location.href = '/reports'}
-          >
-            End of Day Reports
-          </Button>
-          <Button 
-            variant="link" 
-            className="text-muted-foreground px-0 py-3 mr-6 border-b-2 border-transparent"
-            onClick={() => window.location.href = '/library'}
-          >
-            Reference
-          </Button>
-        </div>
+        <AppMenu />
 
         <div className="flex justify-center items-center my-12">
           <div className="bg-white rounded-lg shadow-sm border border-border/30 p-12 max-w-md w-full flex flex-col items-center">

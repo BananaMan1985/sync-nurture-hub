@@ -1,10 +1,10 @@
-
 import React, { useState } from 'react';
 import Layout from '@/components/Layout';
+import AppMenu from '@/components/AppMenu';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
-import { ListChecks, Plus, Clock, CalendarDays } from 'lucide-react';
+import { ListChecks, Plus, Clock, CalendarDays, PaperclipIcon, MessageSquare } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
 type TaskStatus = 'todo' | 'inprogress' | 'done';
@@ -16,6 +16,8 @@ interface Task {
   status: TaskStatus;
   dueDate: string;
   priority: 'low' | 'medium' | 'high';
+  attachments?: number;
+  comments?: number;
 }
 
 const mockTasks: Task[] = [
@@ -26,6 +28,8 @@ const mockTasks: Task[] = [
     status: 'todo',
     dueDate: '2023-11-15',
     priority: 'high',
+    attachments: 2,
+    comments: 3,
   },
   {
     id: '2',
@@ -34,6 +38,7 @@ const mockTasks: Task[] = [
     status: 'inprogress',
     priority: 'medium',
     dueDate: '2023-11-10',
+    comments: 1,
   },
   {
     id: '3',
@@ -68,8 +73,16 @@ const TaskCard: React.FC<{ task: Task }> = ({ task }) => {
     high: 'bg-red-100 text-red-800',
   }[task.priority];
 
+  const handleDragStart = (e: React.DragEvent, taskId: string) => {
+    e.dataTransfer.setData('taskId', taskId);
+  };
+
   return (
-    <Card className="mb-4">
+    <Card 
+      className="mb-4 cursor-move hover:shadow-md transition-shadow" 
+      draggable 
+      onDragStart={(e) => handleDragStart(e, task.id)}
+    >
       <CardHeader className="pb-2">
         <div className="flex justify-between items-start">
           <CardTitle className="text-lg">{task.title}</CardTitle>
@@ -84,23 +97,62 @@ const TaskCard: React.FC<{ task: Task }> = ({ task }) => {
           <CalendarDays className="mr-2 h-4 w-4" />
           <span>Due: {new Date(task.dueDate).toLocaleDateString()}</span>
         </div>
+        
+        <div className="flex items-center mt-2 space-x-4">
+          {task.attachments && (
+            <div className="flex items-center text-xs text-muted-foreground">
+              <PaperclipIcon className="mr-1 h-3 w-3" />
+              <span>{task.attachments}</span>
+            </div>
+          )}
+          {task.comments && (
+            <div className="flex items-center text-xs text-muted-foreground">
+              <MessageSquare className="mr-1 h-3 w-3" />
+              <span>{task.comments}</span>
+            </div>
+          )}
+        </div>
       </CardContent>
       <CardFooter className="flex justify-between pt-0">
         <Button variant="ghost" size="sm">Edit</Button>
-        <Button variant="outline" size="sm">Move</Button>
+        <Button variant="outline" size="sm">Open</Button>
       </CardFooter>
     </Card>
   );
 };
 
-const TaskColumn: React.FC<{ title: string; icon: React.ReactNode; tasks: Task[]; status: TaskStatus; isLoading: boolean }> = ({
+const TaskColumn: React.FC<{ 
+  title: string; 
+  icon: React.ReactNode; 
+  tasks: Task[]; 
+  status: TaskStatus; 
+  isLoading: boolean;
+  onDrop: (taskId: string, newStatus: TaskStatus) => void;
+}> = ({
   title,
   icon,
   tasks,
+  status,
   isLoading,
+  onDrop,
 }) => {
+  
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault(); // Allow drop
+  };
+  
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    const taskId = e.dataTransfer.getData('taskId');
+    onDrop(taskId, status);
+  };
+
   return (
-    <div className="bg-secondary/40 rounded-lg p-4 min-w-[300px] w-full">
+    <div 
+      className="bg-secondary/40 rounded-lg p-4 min-w-[300px] w-full"
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
+    >
       <div className="flex items-center mb-4">
         {icon}
         <h3 className="font-medium ml-2">{title}</h3>
@@ -132,9 +184,19 @@ const TaskColumn: React.FC<{ title: string; icon: React.ReactNode; tasks: Task[]
 
 const Tasks: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
-  const todoTasks = mockTasks.filter(task => task.status === 'todo');
-  const inProgressTasks = mockTasks.filter(task => task.status === 'inprogress');
-  const doneTasks = mockTasks.filter(task => task.status === 'done');
+  const [tasks, setTasks] = useState<Task[]>(mockTasks);
+  
+  const todoTasks = tasks.filter(task => task.status === 'todo');
+  const inProgressTasks = tasks.filter(task => task.status === 'inprogress');
+  const doneTasks = tasks.filter(task => task.status === 'done');
+
+  const handleTaskMove = (taskId: string, newStatus: TaskStatus) => {
+    setTasks(prev => 
+      prev.map(task => 
+        task.id === taskId ? { ...task, status: newStatus } : task
+      )
+    );
+  };
 
   return (
     <Layout>
@@ -148,36 +210,7 @@ const Tasks: React.FC = () => {
           <h1 className="text-3xl font-bold tracking-tight">Project Tracker</h1>
         </div>
 
-        <div className="flex border-b border-border/30 mb-8">
-          <Button 
-            variant="link" 
-            className="text-foreground font-medium px-0 py-3 mr-6 border-b-2 border-primary"
-          >
-            <ListChecks className="mr-2 h-5 w-5" />
-            Task Board
-          </Button>
-          <Button 
-            variant="link" 
-            className="text-muted-foreground px-0 py-3 mr-6 border-b-2 border-transparent"
-            onClick={() => window.location.href = '/voice'}
-          >
-            Voice Tasks
-          </Button>
-          <Button 
-            variant="link" 
-            className="text-muted-foreground px-0 py-3 mr-6 border-b-2 border-transparent"
-            onClick={() => window.location.href = '/reports'}
-          >
-            End of Day Reports
-          </Button>
-          <Button 
-            variant="link" 
-            className="text-muted-foreground px-0 py-3 mr-6 border-b-2 border-transparent"
-            onClick={() => window.location.href = '/library'}
-          >
-            Reference
-          </Button>
-        </div>
+        <AppMenu />
 
         <div className="mb-6 flex justify-between items-center">
           <div>
@@ -197,6 +230,7 @@ const Tasks: React.FC = () => {
             tasks={todoTasks}
             status="todo"
             isLoading={isLoading}
+            onDrop={handleTaskMove}
           />
           <TaskColumn
             title="In Progress"
@@ -204,6 +238,7 @@ const Tasks: React.FC = () => {
             tasks={inProgressTasks}
             status="inprogress"
             isLoading={isLoading}
+            onDrop={handleTaskMove}
           />
           <TaskColumn
             title="Completed"
@@ -211,6 +246,7 @@ const Tasks: React.FC = () => {
             tasks={doneTasks}
             status="done"
             isLoading={isLoading}
+            onDrop={handleTaskMove}
           />
         </div>
 
