@@ -154,7 +154,7 @@ const TaskCard: React.FC<{
           <span>Due: {new Date(task.dueDate).toLocaleDateString()}</span>
         </div>
         
-        {(task.attachments || task.comments) && (
+        {(task.attachments || task.comments?.length) && (
           <div className="flex items-center mt-2 space-x-4">
             {task.attachments && (
               <div className="flex items-center text-xs text-muted-foreground">
@@ -162,10 +162,10 @@ const TaskCard: React.FC<{
                 <span>{task.attachments}</span>
               </div>
             )}
-            {task.comments && (
+            {task.comments && task.comments.length > 0 && (
               <div className="flex items-center text-xs text-muted-foreground">
                 <MessageSquare className="mr-1 h-3 w-3" />
-                <span>{task.comments}</span>
+                <span>{task.comments.length}</span>
               </div>
             )}
           </div>
