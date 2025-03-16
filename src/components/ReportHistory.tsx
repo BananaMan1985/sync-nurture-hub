@@ -110,6 +110,10 @@ const ReportHistory: React.FC = () => {
       if (report) {
         setSelectedReport(report);
         setDialogOpen(true);
+      } else {
+        // Show "No report submitted" message if there's no report for the selected date
+        setSelectedReport(null);
+        setDialogOpen(true);
       }
     }
   };
@@ -130,7 +134,17 @@ const ReportHistory: React.FC = () => {
     return "Very busy";
   };
 
-  // Function to highlight dates with reports
+  // Custom day cell renderer to bold dates with reports
+  const dayContent = (day: Date) => {
+    const hasReport = isDayWithReport(day);
+    return (
+      <div className={`${hasReport ? 'font-bold' : 'font-normal'}`}>
+        {day.getDate()}
+      </div>
+    );
+  };
+
+  // Function to check if a day has a report
   const isDayWithReport = (date: Date) => {
     return reportDates.some(reportDate => 
       reportDate.getDate() === date.getDate() && 
@@ -159,19 +173,21 @@ const ReportHistory: React.FC = () => {
               selected={selectedDate}
               onSelect={handleDateSelect}
               className="rounded-md border pointer-events-auto"
+              components={{
+                DayContent: ({ date }) => dayContent(date)
+              }}
               modifiers={{
                 hasReport: isDayWithReport
               }}
               modifiersStyles={{
                 hasReport: { 
-                  fontWeight: 'bold', 
                   backgroundColor: 'var(--primary-50)',
                   border: '1px solid var(--primary)'
                 }
               }}
             />
             <p className="text-sm text-muted-foreground text-center">
-              Click on a highlighted date to view the report
+              Click on a date to view or check report status
             </p>
           </div>
         </CardContent>
@@ -181,14 +197,22 @@ const ReportHistory: React.FC = () => {
         <DialogContent className="sm:max-w-[610px]">
           <DialogHeader>
             <DialogTitle>
-              Report for {selectedReport ? formatDate(selectedReport.date) : ''}
+              {selectedDate ? (
+                `Report for ${format(selectedDate, 'MMM dd, yyyy')}`
+              ) : ''}
             </DialogTitle>
-            <DialogDescription>
-              Busyness level: {selectedReport ? getBusynessLabel(selectedReport.busynessLevel) : ''}
-            </DialogDescription>
+            {selectedReport ? (
+              <DialogDescription>
+                Busyness level: {getBusynessLabel(selectedReport.busynessLevel)}
+              </DialogDescription>
+            ) : (
+              <DialogDescription className="text-destructive font-medium">
+                No report submitted for this date
+              </DialogDescription>
+            )}
           </DialogHeader>
           
-          {selectedReport && (
+          {selectedReport ? (
             <div className="space-y-4 mt-4">
               <div>
                 <h4 className="text-sm font-medium mb-1">Completed Tasks</h4>
@@ -210,7 +234,13 @@ const ReportHistory: React.FC = () => {
                 <p className="text-sm">{selectedReport.tomorrowPlans}</p>
               </div>
             </div>
-          )}
+          ) : selectedDate ? (
+            <div className="py-6 text-center">
+              <p className="text-muted-foreground">
+                No report has been submitted for this date.
+              </p>
+            </div>
+          ) : null}
         </DialogContent>
       </Dialog>
     </motion.div>
