@@ -64,6 +64,10 @@ const TaskForm: React.FC<TaskFormProps> = ({
             <FileText className="h-4 w-4 mr-2" />
             Basic Info
           </TabsTrigger>
+          <TabsTrigger value="task">
+            <FileText className="h-4 w-4 mr-2" />
+            Task
+          </TabsTrigger>
           <TabsTrigger value="purpose">
             <Target className="h-4 w-4 mr-2" />
             Purpose
@@ -71,10 +75,6 @@ const TaskForm: React.FC<TaskFormProps> = ({
           <TabsTrigger value="endstate">
             <Flag className="h-4 w-4 mr-2" />
             End State
-          </TabsTrigger>
-          <TabsTrigger value="task">
-            <FileText className="h-4 w-4 mr-2" />
-            Task
           </TabsTrigger>
         </TabsList>
         
@@ -186,6 +186,42 @@ const TaskForm: React.FC<TaskFormProps> = ({
 
           <div className="flex justify-end mt-4">
             <Button 
+              onClick={() => setActiveTab("task")} 
+              className="flex items-center"
+            >
+              Next: Task
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+          </div>
+        </TabsContent>
+        
+        <TabsContent value="task" className="space-y-6">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 mb-1 text-sm font-medium text-gray-700">
+              <FileText className="h-4 w-4 text-gray-500" />
+              <span>Task Details</span>
+            </div>
+            <div className="text-sm text-gray-500 mb-3">
+              Add specific actions and tasks needed to complete this project. What needs to be done and in what order?
+            </div>
+            <Textarea
+              placeholder="List specific actions required to complete this project..."
+              value={newTask.content || ''}
+              onChange={(e) => handleChange('content', e.target.value)}
+              className="min-h-[200px] resize-none"
+            />
+          </div>
+
+          <div className="flex justify-between mt-4">
+            <Button 
+              variant="outline" 
+              onClick={() => setActiveTab("details")} 
+              className="flex items-center"
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back: Basic Info
+            </Button>
+            <Button 
               onClick={() => setActiveTab("purpose")} 
               className="flex items-center"
             >
@@ -201,8 +237,11 @@ const TaskForm: React.FC<TaskFormProps> = ({
               <Target className="h-4 w-4 text-gray-500" />
               <span>Project Purpose</span>
             </div>
+            <div className="text-sm text-gray-500 mb-3">
+              Explain why this project exists. What problem does it solve? Why is it important?
+            </div>
             <Textarea
-              placeholder="Describe the purpose of this project..."
+              placeholder="Describe the purpose and importance of this project..."
               value={newTask.purpose || ''}
               onChange={(e) => handleChange('purpose', e.target.value)}
               className="min-h-[200px] resize-none"
@@ -212,11 +251,11 @@ const TaskForm: React.FC<TaskFormProps> = ({
           <div className="flex justify-between mt-4">
             <Button 
               variant="outline" 
-              onClick={() => setActiveTab("details")} 
+              onClick={() => setActiveTab("task")} 
               className="flex items-center"
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Back: Basic Info
+              Back: Task
             </Button>
             <Button 
               onClick={() => setActiveTab("endstate")} 
@@ -234,8 +273,11 @@ const TaskForm: React.FC<TaskFormProps> = ({
               <Flag className="h-4 w-4 text-gray-500" />
               <span>End State Description</span>
             </div>
+            <div className="text-sm text-gray-500 mb-3">
+              Describe what success looks like. How will you know when this project is complete? What is the desired outcome?
+            </div>
             <Textarea
-              placeholder="Describe the end state of this project..."
+              placeholder="Describe the desired end result of this project..."
               value={newTask.description}
               onChange={(e) => handleChange('description', e.target.value)}
               className="min-h-[200px] resize-none"
@@ -250,39 +292,6 @@ const TaskForm: React.FC<TaskFormProps> = ({
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back: Purpose
-            </Button>
-            <Button 
-              onClick={() => setActiveTab("task")} 
-              className="flex items-center"
-            >
-              Next: Task
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-          </div>
-        </TabsContent>
-        
-        <TabsContent value="task" className="space-y-6">
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 mb-1 text-sm font-medium text-gray-700">
-              <FileText className="h-4 w-4 text-gray-500" />
-              <span>Task Details</span>
-            </div>
-            <Textarea
-              placeholder="Add detailed information about this task..."
-              value={newTask.content || ''}
-              onChange={(e) => handleChange('content', e.target.value)}
-              className="min-h-[200px] resize-none"
-            />
-          </div>
-
-          <div className="flex justify-between mt-4">
-            <Button 
-              variant="outline" 
-              onClick={() => setActiveTab("endstate")} 
-              className="flex items-center"
-            >
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back: End State
             </Button>
           </div>
         </TabsContent>
