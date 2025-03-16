@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import Layout from '@/components/Layout';
+import AppMenu from '@/components/AppMenu';
 import { 
   Search, 
   Filter, 
@@ -108,7 +109,9 @@ const Library = () => {
           </Button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-[1fr_3fr] gap-6">
+        <AppMenu />
+
+        <div className="grid grid-cols-1 md:grid-cols-[1fr_3fr] gap-6 mt-8">
           {/* Sidebar with search and filters */}
           <div className="space-y-4">
             <div className="relative">
