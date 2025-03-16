@@ -40,13 +40,15 @@ const TaskCard: React.FC<TaskCardProps> = ({
     >
       <CardHeader className="pb-2">
         <CardTitle className="text-lg font-medium">{task.title}</CardTitle>
-        <CardDescription className="mt-1 line-clamp-2">{task.description}</CardDescription>
+        <CardDescription className="mt-2 line-clamp-3">{task.description}</CardDescription>
       </CardHeader>
       <CardContent className="pb-3 pt-0">
-        <div className="flex items-center text-sm text-muted-foreground mt-2">
-          <CalendarDays className="mr-2 h-4 w-4" />
-          <span>Due: {new Date(task.dueDate).toLocaleDateString()}</span>
-        </div>
+        {task.dueDate && (
+          <div className="flex items-center text-sm text-muted-foreground mt-2">
+            <CalendarDays className="mr-2 h-4 w-4" />
+            <span>Due: {new Date(task.dueDate).toLocaleDateString()}</span>
+          </div>
+        )}
         
         {(task.attachments || task.comments?.length) && (
           <div className="flex items-center mt-2 space-x-4">

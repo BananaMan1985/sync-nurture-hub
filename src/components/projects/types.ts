@@ -29,8 +29,9 @@ export interface Task {
   id: string;
   title: string;
   description: string;
+  content?: string;
   status: TaskStatus;
-  dueDate: string;
+  dueDate?: string;
   priority: 'low' | 'medium' | 'high';
   attachments?: number;
   comments?: Comment[];

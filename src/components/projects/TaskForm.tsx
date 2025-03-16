@@ -28,17 +28,24 @@ const TaskForm: React.FC<TaskFormProps> = ({ task, onSave, onCancel }) => {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(
     task?.dueDate ? new Date(task.dueDate) : new Date()
   );
+  const [includeDueDate, setIncludeDueDate] = useState<boolean>(!!task?.dueDate);
 
   const handleChange = (field: keyof Task, value: any) => {
     setNewTask(prev => ({ ...prev, [field]: value }));
   };
 
   const handleSubmit = () => {
-    onSave(newTask);
+    // If due date is not included, remove it from the task
+    const taskToSave = { ...newTask };
+    if (!includeDueDate) {
+      delete taskToSave.dueDate;
+    }
+    onSave(taskToSave);
   };
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
+      {/* Project Title - Kept the same */}
       <div className="space-y-2">
         <div className="flex items-center gap-2 mb-1 text-sm font-medium text-gray-700">
           <FileText className="h-4 w-4 text-gray-500" />
@@ -52,6 +59,7 @@ const TaskForm: React.FC<TaskFormProps> = ({ task, onSave, onCancel }) => {
         />
       </div>
       
+      {/* Status - Kept the same */}
       <div className="space-y-2">
         <div className="flex items-center gap-2 mb-1 text-sm font-medium text-gray-700">
           <Tag className="h-4 w-4 text-gray-500" />
@@ -81,52 +89,82 @@ const TaskForm: React.FC<TaskFormProps> = ({ task, onSave, onCancel }) => {
         </Select>
       </div>
       
+      {/* End State Description - Large text area */}
       <div className="space-y-2">
         <div className="flex items-center gap-2 mb-1 text-sm font-medium text-gray-700">
           <MessageSquare className="h-4 w-4 text-gray-500" />
-          <span>Description</span>
+          <span>End State Description</span>
         </div>
         <Textarea
-          placeholder="Add a detailed description..."
+          placeholder="Describe the end state of this project..."
           value={newTask.description}
           onChange={(e) => handleChange('description', e.target.value)}
-          className="min-h-[120px] resize-none"
+          className="min-h-[150px] resize-none"
         />
       </div>
       
+      {/* Details - New large text area */}
       <div className="space-y-2">
         <div className="flex items-center gap-2 mb-1 text-sm font-medium text-gray-700">
-          <CalendarDays className="h-4 w-4 text-gray-500" />
-          <span>Due Date</span>
+          <FileText className="h-4 w-4 text-gray-500" />
+          <span>Project Details</span>
         </div>
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              className={cn(
-                "w-full justify-start text-left font-normal",
-                !selectedDate && "text-muted-foreground"
-              )}
-            >
-              <CalendarDays className="mr-2 h-4 w-4" />
-              {selectedDate ? format(selectedDate, "PPP") : "Select a date"}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0">
-            <Calendar
-              mode="single"
-              selected={selectedDate}
-              onSelect={(date) => {
-                setSelectedDate(date);
-                if (date) {
-                  handleChange('dueDate', format(date, 'yyyy-MM-dd'));
-                }
-              }}
-              initialFocus
-              className="p-3 pointer-events-auto"
-            />
-          </PopoverContent>
-        </Popover>
+        <Textarea
+          placeholder="Add detailed information about this project..."
+          value={newTask.content || ''}
+          onChange={(e) => handleChange('content', e.target.value)}
+          className="min-h-[150px] resize-none"
+        />
+      </div>
+      
+      {/* Optional Due Date */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between mb-1">
+          <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
+            <CalendarDays className="h-4 w-4 text-gray-500" />
+            <span>Due Date (Optional)</span>
+          </div>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => setIncludeDueDate(!includeDueDate)}
+            className="text-xs h-7"
+          >
+            {includeDueDate ? "Remove date" : "Add date"}
+          </Button>
+        </div>
+        
+        {includeDueDate && (
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className={cn(
+                  "w-full justify-start text-left font-normal",
+                  !selectedDate && "text-muted-foreground"
+                )}
+              >
+                <CalendarDays className="mr-2 h-4 w-4" />
+                {selectedDate ? format(selectedDate, "PPP") : "Select a date"}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0">
+              <Calendar
+                mode="single"
+                selected={selectedDate}
+                onSelect={(date) => {
+                  setSelectedDate(date);
+                  if (date) {
+                    handleChange('dueDate', format(date, 'yyyy-MM-dd'));
+                  }
+                }}
+                initialFocus
+                className="p-3 pointer-events-auto"
+              />
+            </PopoverContent>
+          </Popover>
+        )}
       </div>
       
       <div className="flex justify-end gap-2 pt-4">
