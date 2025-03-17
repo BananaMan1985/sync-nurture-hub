@@ -193,6 +193,7 @@ const Library = () => {
   const [availableTags, setAvailableTags] = useState<string[]>([]);
   const [editingItem, setEditingItem] = useState<ReferenceItem | null>(null);
   const [isNewItemDialogOpen, setIsNewItemDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingTag, setEditingTag] = useState<string | null>(null);
   const [newTagValue, setNewTagValue] = useState('');
   const [selectedAttachment, setSelectedAttachment] = useState<ReferenceAttachment | null>(null);
@@ -289,6 +290,7 @@ const Library = () => {
   const handleEditItem = (item: ReferenceItem) => {
     setEditingItem(item);
     resetForm(item);
+    setIsEditDialogOpen(true);
   };
 
   const handleNewItem = () => {
@@ -433,6 +435,7 @@ const Library = () => {
     }
     
     setEditingItem(null);
+    setIsEditDialogOpen(false);
     setIsNewItemDialogOpen(false);
     resetForm();
   };
@@ -601,6 +604,284 @@ const Library = () => {
           </Button>
         </div>
 
+        <Dialog open={isNewItemDialogOpen} onOpenChange={setIsNewItemDialogOpen}>
+          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Add New Reference</DialogTitle>
+              <DialogDescription>Create a new reference item in your library.</DialogDescription>
+            </DialogHeader>
+            
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="title"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Title</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="description"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Description</FormLabel>
+                      <FormControl>
+                        <Textarea {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="content"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Content</FormLabel>
+                      <FormControl>
+                        <Textarea {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="tags"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Tags</FormLabel>
+                      <FormControl>
+                        <Select
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select tags" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {availableTags.map(tag => (
+                              <SelectItem key={tag} value={tag}>
+                                {tag}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="newTag"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>New Tag</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="attachments"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Attachments</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="file"
+                          accept="image/*,application/pdf"
+                          onChange={handleFileUpload}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="type"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Type</FormLabel>
+                      <FormControl>
+                        <Select
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="text">Text</SelectItem>
+                            <SelectItem value="image">Image</SelectItem>
+                            <SelectItem value="file">File</SelectItem>
+                            <SelectItem value="database">Database</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <DialogFooter>
+                  <Button type="submit">Save reference</Button>
+                </DialogFooter>
+              </form>
+            </Form>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Edit Reference</DialogTitle>
+              <DialogDescription>Update this reference item in your library.</DialogDescription>
+            </DialogHeader>
+            
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="title"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Title</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="description"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Description</FormLabel>
+                      <FormControl>
+                        <Textarea {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="content"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Content</FormLabel>
+                      <FormControl>
+                        <Textarea {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="tags"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Tags</FormLabel>
+                      <FormControl>
+                        <Select
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select tags" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {availableTags.map(tag => (
+                              <SelectItem key={tag} value={tag}>
+                                {tag}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="newTag"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>New Tag</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="attachments"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Attachments</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="file"
+                          accept="image/*,application/pdf"
+                          onChange={handleFileUpload}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="type"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Type</FormLabel>
+                      <FormControl>
+                        <Select
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="text">Text</SelectItem>
+                            <SelectItem value="image">Image</SelectItem>
+                            <SelectItem value="file">File</SelectItem>
+                            <SelectItem value="database">Database</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <DialogFooter>
+                  <Button type="submit">Update reference</Button>
+                </DialogFooter>
+              </form>
+            </Form>
+          </DialogContent>
+        </Dialog>
+
         <div className="grid grid-cols-1 lg:grid-cols-[250px_1fr] gap-6 mt-6">
           <div className="space-y-5">
             <div className="relative">
@@ -733,6 +1014,17 @@ const Library = () => {
                               {item.updatedAt}
                             </span>
                           </div>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-7 w-7 p-0"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEditItem(item);
+                            }}
+                          >
+                            <Edit className="h-3.5 w-3.5" />
+                          </Button>
                         </div>
                         <CardTitle className="text-base leading-tight">{item.title}</CardTitle>
                       </CardHeader>
@@ -905,6 +1197,35 @@ const Library = () => {
                             </DialogFooter>
                           </DialogContent>
                         </Dialog>
+
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              className="text-destructive border-destructive hover:bg-destructive/10 h-8"
+                            >
+                              <Trash className="h-4 w-4 mr-1" /> Delete
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete Reference Item</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Are you sure you want to delete "{item.title}"? This action cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction 
+                                onClick={() => handleDeleteItem(item.id)}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              >
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </CardFooter>
                     </Card>
                   );
@@ -927,3 +1248,4 @@ const Library = () => {
 };
 
 export default Library;
+
