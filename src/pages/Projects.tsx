@@ -4,7 +4,7 @@ import Layout from '@/components/Layout';
 import AppMenu from '@/components/AppMenu';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
-import { ListChecks, Plus, Clock, CalendarDays, Check, Settings, Archive, Inbox, FileCheck, PackageCheck, Clock4, ClockCountdown, FileSpreadsheet } from 'lucide-react';
+import { ListChecks, Plus, Clock, CalendarDays, Check, Settings, Archive, Inbox, FileCheck, PackageCheck, Clock4, FileSpreadsheet } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
@@ -240,7 +240,7 @@ const Projects = () => {
       case 'inprogress':
         return <Clock className="h-5 w-5" />;
       case 'waiting':
-        return <ClockCountdown className="h-5 w-5" />;
+        return <Clock4 className="h-5 w-5" />; // Changed from ClockCountdown to Clock4
       case 'review':
         return <FileSpreadsheet className="h-5 w-5" />;
       case 'archive':
