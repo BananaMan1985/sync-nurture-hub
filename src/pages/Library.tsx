@@ -85,16 +85,13 @@ const mockAttachments: ReferenceAttachment[] = [
   }
 ];
 
-// Define the type for the reference item
 type ReferenceItemType = 'text' | 'image' | 'file' | 'database';
 
-// Define the interface for table data
 interface TableData {
   headers: string[];
   rows: string[][];
 }
 
-// Extend the reference item interface
 interface ReferenceItem {
   id: number;
   title: string;
@@ -256,7 +253,7 @@ const Library = () => {
         setTableRows(item.tableData.rows);
       } else {
         setTableHeaders(['Column 1', 'Column 2', 'Column 3']);
-        setTableRows([['', '', ''], ['', '', '']]
+        setTableRows([['', '', ''], ['', '', '']]);
       }
     } else {
       form.reset({
@@ -274,7 +271,7 @@ const Library = () => {
         }
       });
       setTableHeaders(['Column 1', 'Column 2', 'Column 3']);
-      setTableRows([['', '', ''], ['', '', '']]
+      setTableRows([['', '', ''], ['', '', '']]);
     }
   };
 
@@ -324,7 +321,6 @@ const Library = () => {
     setIsAttachmentPreviewOpen(true);
   };
 
-  // Table manipulation functions
   const addTableColumn = () => {
     setTableHeaders([...tableHeaders, `Column ${tableHeaders.length + 1}`]);
     setTableRows(tableRows.map(row => [...row, '']));
@@ -376,7 +372,6 @@ const Library = () => {
       processedTags.push(data.newTag);
     }
     
-    // Prepare table data if type is database
     let tableData = undefined;
     if (data.type === 'database') {
       tableData = {
@@ -385,7 +380,6 @@ const Library = () => {
       };
     }
     
-    // Determine the icon based on the type
     let icon;
     switch (data.type) {
       case 'image':
@@ -589,7 +583,6 @@ const Library = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-[1fr_3fr] gap-8 mt-8">
-          {/* Left sidebar - search and filters */}
           <div className="space-y-6">
             <div className="relative">
               <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
@@ -695,7 +688,6 @@ const Library = () => {
             </div>
           </div>
           
-          {/* Main content - reference items grid */}
           <div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {filteredItems.length > 0 ? (
@@ -902,7 +894,6 @@ const Library = () => {
         </div>
       </motion.div>
 
-      {/* Form Dialog */}
       <Dialog 
         open={isNewItemDialogOpen || !!editingItem} 
         onOpenChange={(open) => {
@@ -914,3 +905,19 @@ const Library = () => {
       >
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
+            <DialogTitle>
+              {editingItem ? 'Edit Reference Item' : 'Add New Reference Item'}
+            </DialogTitle>
+            <DialogDescription>
+              {editingItem 
+                ? 'Update the information for this reference item.' 
+                : 'Create a new reference item to store important information.'}
+            </DialogDescription>
+          </DialogHeader>
+        </DialogContent>
+      </Dialog>
+    </Layout>
+  );
+};
+
+export default Library;
