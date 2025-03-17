@@ -27,15 +27,32 @@ const TaskCard: React.FC<TaskCardProps> = ({
     done: 'bg-slate-50 border-l-teal-400'
   };
 
+  // Handle drag start with stopPropagation to prevent column dragging
+  const handleDragStart = (e: React.DragEvent) => {
+    e.stopPropagation(); // Stop event from bubbling up to column
+    onDragStart(e, task, index);
+  };
+
+  // Prevent propagation on drag events
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.stopPropagation();
+    onDragEnter(e, index);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
   return (
     <Card 
       className={`mb-4 cursor-pointer hover:shadow-md transition-all duration-200 hover:-translate-y-1 border-l-4 ${
         statusColors[task.status]
       } ${isDragging ? 'opacity-50' : ''}`}
       draggable 
-      onDragStart={(e) => onDragStart(e, task, index)}
-      onDragEnter={(e) => onDragEnter(e, index)}
-      onDragOver={(e) => e.preventDefault()}
+      onDragStart={handleDragStart}
+      onDragEnter={handleDragEnter}
+      onDragOver={handleDragOver}
       onClick={onClick}
     >
       <CardHeader className="pb-2">
