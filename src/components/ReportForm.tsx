@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -19,6 +20,9 @@ interface ReportFormData {
   tomorrowPlans: string;
   busynessLevel: string;
 }
+
+// Define a type for the view mode
+type ViewMode = 'form' | 'view';
 
 const reportHistoryData = [
   { 
@@ -56,7 +60,7 @@ const ReportForm: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [showCalendar, setShowCalendar] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [viewMode, setViewMode] = useState<'form' | 'view'>('form');
+  const [viewMode, setViewMode] = useState<ViewMode>('form');
   const [reportExists, setReportExists] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
 
