@@ -5,6 +5,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Plus, Edit, Trash, Check, X } from 'lucide-react';
 import TaskCard from './TaskCard';
+import CollapsibleTaskCard from './CollapsibleTaskCard';
 import { Task, TaskStatus } from './types';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -229,14 +230,27 @@ const TaskColumn: React.FC<TaskColumnProps> = ({
                       className="h-1 w-full bg-primary rounded-full mb-2 transform transition-all duration-200 animate-pulse"
                     />
                   )}
-                  <TaskCard 
-                    task={task} 
-                    index={index}
-                    onClick={() => onTaskClick(task)}
-                    onDragStart={handleDragStart}
-                    onDragEnter={handleDragEnter}
-                    isDragging={draggedTaskId === task.id}
-                  />
+                  
+                  {status === 'archive' ? (
+                    <CollapsibleTaskCard
+                      task={task}
+                      index={index}
+                      onClick={() => onTaskClick(task)}
+                      onDragStart={handleDragStart}
+                      onDragEnter={handleDragEnter}
+                      isDragging={draggedTaskId === task.id}
+                    />
+                  ) : (
+                    <TaskCard 
+                      task={task} 
+                      index={index}
+                      onClick={() => onTaskClick(task)}
+                      onDragStart={handleDragStart}
+                      onDragEnter={handleDragEnter}
+                      isDragging={draggedTaskId === task.id}
+                    />
+                  )}
+                  
                   {index === sortedTasks.length - 1 && dropPreviewIndex === sortedTasks.length && (
                     <div 
                       className="h-1 w-full bg-primary rounded-full mt-2 transform transition-all duration-200 animate-pulse"
