@@ -1,8 +1,9 @@
+
 import React, { useState } from 'react';
 import Layout from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
-import { ListChecks, Plus } from 'lucide-react';
+import { ListChecks, Plus, Clock, ClipboardList, Timer, FileText, Archive, Inbox } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
@@ -228,13 +229,13 @@ const Projects = () => {
       case 'inbox':
         return <Inbox className="h-5 w-5" />;
       case 'confirmedreceived':
-        return <FileCheck className="h-5 w-5" />;
+        return <ClipboardList className="h-5 w-5" />;
       case 'inprogress':
         return <Clock className="h-5 w-5" />;
       case 'waiting':
-        return <Clock4 className="h-5 w-5" />;
+        return <Timer className="h-5 w-5" />;
       case 'review':
-        return <FileSpreadsheet className="h-5 w-5" />;
+        return <FileText className="h-5 w-5" />;
       case 'archive':
         return <Archive className="h-5 w-5" />;
       default:
