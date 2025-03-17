@@ -31,6 +31,12 @@ const CollapsibleTaskCard: React.FC<CollapsibleTaskCardProps> = ({
   const handleDragStart = (e: React.DragEvent) => {
     e.stopPropagation();
     e.dataTransfer.effectAllowed = 'move';
+    
+    // Explicitly set the data needed for dragging operations
+    e.dataTransfer.setData('taskId', task.id);
+    e.dataTransfer.setData('sourceStatus', task.status);
+    e.dataTransfer.setData('sourceIndex', index.toString());
+    
     onDragStart(e, task, index);
   };
 

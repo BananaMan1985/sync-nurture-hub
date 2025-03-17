@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
@@ -28,11 +28,34 @@ const Projects = () => {
   const [activeView, setActiveView] = useState<string>('kanban');
   const { toast } = useToast();
 
+  useEffect(() => {
+    const handleGlobalDragStart = (e: DragEvent) => {
+      const taskId = e.dataTransfer?.getData('taskId');
+      if (taskId) {
+        setDraggedTaskId(taskId);
+      }
+    };
+
+    const handleGlobalDragEnd = () => {
+      setDraggedTaskId(null);
+    };
+
+    document.addEventListener('dragstart', handleGlobalDragStart);
+    document.addEventListener('dragend', handleGlobalDragEnd);
+
+    return () => {
+      document.removeEventListener('dragstart', handleGlobalDragStart);
+      document.removeEventListener('dragend', handleGlobalDragEnd);
+    };
+  }, []);
+
   const getTasksByStatus = (status: TaskStatus) => {
     return tasks.filter(task => task.status === status);
   };
 
   const handleDrop = (taskId: string, newStatus: TaskStatus) => {
+    if (!taskId) return;
+    
     setTasks(prev => prev.map(task => 
       task.id === taskId 
         ? { ...task, status: newStatus } 
@@ -49,6 +72,8 @@ const Projects = () => {
   };
 
   const handleReorderTasks = (draggedTaskId: string, targetIndex: number, status: TaskStatus) => {
+    if (!draggedTaskId) return;
+    
     const statusTasks = [...getTasksByStatus(status)];
     const draggedTaskIndex = statusTasks.findIndex(task => task.id === draggedTaskId);
     
@@ -69,6 +94,16 @@ const Projects = () => {
     });
     
     setDraggedTaskId(null);
+  };
+
+  const handleDragOver = (e: React.DragEvent, status: TaskStatus) => {
+    e.preventDefault();
+    if (e.dataTransfer && e.dataTransfer.types.includes('taskId')) {
+      const taskId = e.dataTransfer.getData('taskId');
+      if (taskId && draggedTaskId !== taskId) {
+        setDraggedTaskId(taskId);
+      }
+    }
   };
 
   const handleTaskClick = (task: Task) => {
@@ -214,10 +249,6 @@ const Projects = () => {
     });
   };
 
-  const handleDragOver = (e: React.DragEvent, status: TaskStatus) => {
-    e.preventDefault();
-  };
-
   const handleEditColumnTitle = (id: string, newTitle: string) => {
     toast({
       title: "Column names are fixed",
@@ -359,3 +390,6 @@ const Projects = () => {
 };
 
 export default Projects;
+
+
+

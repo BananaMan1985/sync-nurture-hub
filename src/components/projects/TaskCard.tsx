@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { CalendarDays, PaperclipIcon, MessageSquare } from 'lucide-react';
@@ -24,12 +23,12 @@ const TaskCard: React.FC<TaskCardProps> = ({
   const statusColors = {
     inbox: 'bg-slate-50 border-l-slate-400',
     confirmed: 'bg-slate-50 border-l-green-400',
+    confirmedreceived: 'bg-slate-50 border-l-green-400',
     received: 'bg-slate-50 border-l-blue-400',
     inprogress: 'bg-slate-50 border-l-amber-400',
     waiting: 'bg-slate-50 border-l-orange-400',
     review: 'bg-slate-50 border-l-purple-400',
     archive: 'bg-slate-50 border-l-gray-400',
-    
     todo: 'bg-slate-50 border-l-slate-400',
     done: 'bg-slate-50 border-l-teal-400'
   };
@@ -41,6 +40,11 @@ const TaskCard: React.FC<TaskCardProps> = ({
   const handleDragStart = (e: React.DragEvent) => {
     e.stopPropagation();
     e.dataTransfer.effectAllowed = 'move';
+    
+    e.dataTransfer.setData('taskId', task.id);
+    e.dataTransfer.setData('sourceStatus', task.status);
+    e.dataTransfer.setData('sourceIndex', index.toString());
+    
     onDragStart(e, task, index);
   };
 

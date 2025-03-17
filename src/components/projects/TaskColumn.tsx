@@ -59,15 +59,17 @@ const TaskColumn: React.FC<TaskColumnProps> = ({
     e.preventDefault();
     setIsDraggedOver(false);
     
-    // Only process task-related drops
-    if (!e.dataTransfer.types.includes('taskId')) return;
-    
+    // Try to get the taskId and other data
     const taskId = e.dataTransfer.getData('taskId');
+    
+    // Only proceed if we have a taskId
+    if (!taskId) return;
+    
     const sourceStatus = e.dataTransfer.getData('sourceStatus') as TaskStatus;
     
-    if (sourceStatus === status && draggedIndex !== null) {
+    if (sourceStatus === status && draggedIndex !== null && dropPreviewIndex !== null) {
       // If we're dragging within the same column
-      onReorderTasks(taskId, dropPreviewIndex !== null ? dropPreviewIndex : tasks.length, status);
+      onReorderTasks(taskId, dropPreviewIndex, status);
     } else {
       // If we're dragging between columns
       onDrop(taskId, status);
@@ -79,9 +81,6 @@ const TaskColumn: React.FC<TaskColumnProps> = ({
 
   const handleDragStart = (e: React.DragEvent, task: Task, index: number) => {
     e.stopPropagation();
-    e.dataTransfer.setData('taskId', task.id);
-    e.dataTransfer.setData('sourceStatus', task.status);
-    e.dataTransfer.setData('sourceIndex', index.toString());
     setDraggedIndex(index);
   };
 
@@ -89,10 +88,10 @@ const TaskColumn: React.FC<TaskColumnProps> = ({
     e.preventDefault();
     e.stopPropagation();
     
-    // Only process if we have a task being dragged
-    if (!e.dataTransfer.types.includes('taskId')) return;
-    
-    setDropPreviewIndex(index);
+    // Only set the drop preview if we have a task being dragged
+    if (e.dataTransfer.types.includes('taskId')) {
+      setDropPreviewIndex(index);
+    }
   };
   
   const handleDragLeave = (e: React.DragEvent) => {
