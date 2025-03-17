@@ -1,364 +1,353 @@
-
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { z } from 'zod';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
+import { createClient } from '@supabase/supabase-js';
 import { Mic, User, Lock, Mail, Eye, EyeOff, ArrowRight } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
 
-import { Button } from '@/components/ui/button';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+// Initialize Supabase client (replace with your Supabase URL and anon key)
+const supabase = createClient(
+  'https://usrcnpbhbwtwnssprdfq.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVzcmNucGJoYnd0d25zc3ByZGZxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDIyMjg5ODQsImV4cCI6MjA1NzgwNDk4NH0.IT7ubjHU9Rqq23-LEvVxhbEuWsj5YWugxbGWtj6-rC4'    
+);
 
-// Login form schema
-const loginSchema = z.object({
-  email: z.string().email({ message: 'Please enter a valid email address' }),
-  password: z.string().min(6, { message: 'Password must be at least 6 characters' }),
-});
-
-// Signup form schema (extends login schema with additional fields)
-const signupSchema = loginSchema.extend({
-  name: z.string().min(2, { message: 'Name must be at least 2 characters' }),
-  confirmPassword: z.string().min(6, { message: 'Password must be at least 6 characters' }),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords don't match",
-  path: ["confirmPassword"],
-});
-
-// Type for login form data
-type LoginFormData = z.infer<typeof loginSchema>;
-
-// Type for signup form data
-type SignupFormData = z.infer<typeof signupSchema>;
-
-const Login: React.FC = () => {
-  // State to toggle between login and signup forms
+const Login = () => {
   const [isLogin, setIsLogin] = useState(true);
-  // State to toggle password visibility
   const [showPassword, setShowPassword] = useState(false);
-  // State for loading state during form submission
   const [isLoading, setIsLoading] = useState(false);
-  // State for authentication errors
-  const [authError, setAuthError] = useState<string | null>(null);
+  const [authError, setAuthError] = useState(null);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [resetMessage, setResetMessage] = useState(null);
+
+  // Form state for login
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+
+  // Form state for signup
+  const [signupName, setSignupName] = useState('');
+  const [signupEmail, setSignupEmail] = useState('');
+  const [signupPassword, setSignupPassword] = useState('');
+  const [signupConfirmPassword, setSignupConfirmPassword] = useState('');
 
   const navigate = useNavigate();
-  const { toast } = useToast();
 
-  // Initialize the login form
-  const loginForm = useForm<LoginFormData>({
-    resolver: zodResolver(loginSchema),
-    defaultValues: {
-      email: '',
-      password: '',
-    },
-  });
+  // Simple email validation
+  const isValidEmail = (email) => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+  };
 
-  // Initialize the signup form
-  const signupForm = useForm<SignupFormData>({
-    resolver: zodResolver(signupSchema),
-    defaultValues: {
-      name: '',
-      email: '',
-      password: '',
-      confirmPassword: '',
-    },
-  });
-
-  // Handle login form submission
-  const onLoginSubmit = async (data: LoginFormData) => {
+  // Handle login with Supabase
+  const handleLoginSubmit = async (e) => {
+    e.preventDefault();
     setIsLoading(true);
     setAuthError(null);
 
-    try {
-      // Simulate API call with timeout
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // For demo purposes, let's just log the data and navigate to home
-      console.log('Login data:', data);
-
-      // Show success toast
-      toast({
-        title: "Login successful",
-        description: "Welcome back to Sagan Command Center",
-      });
-
-      // Navigate to home page after successful login
-      navigate('/');
-    } catch (error) {
-      console.error('Login error:', error);
-      setAuthError('Invalid email or password. Please try again.');
-    } finally {
+    if (!isValidEmail(loginEmail)) {
+      setAuthError('Please enter a valid email address');
       setIsLoading(false);
+      return;
     }
+    if (loginPassword.length < 6) {
+      setAuthError('Password must be at least 6 characters');
+      setIsLoading(false);
+      return;
+    }
+
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: loginEmail,
+      password: loginPassword,
+    });
+
+    if (error) {
+      setAuthError(error.message || 'Login failed. Please try again.');
+      setIsLoading(false);
+      return;
+    }
+
+    console.log('Logged in user:', data.user);
+    navigate('/');
+    setIsLoading(false);
   };
 
-  // Handle signup form submission
-  const onSignupSubmit = async (data: SignupFormData) => {
+  // Handle signup with Supabase
+  const handleSignupSubmit = async (e) => {
+    e.preventDefault();
     setIsLoading(true);
     setAuthError(null);
 
-    try {
-      // Simulate API call with timeout
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // For demo purposes, let's just log the data and navigate to home
-      console.log('Signup data:', data);
-
-      // Show success toast
-      toast({
-        title: "Account created successfully",
-        description: "Welcome to Sagan Command Center",
-      });
-
-      // Navigate to home page after successful signup
-      navigate('/');
-    } catch (error) {
-      console.error('Signup error:', error);
-      setAuthError('Account creation failed. Please try again.');
-    } finally {
+    if (signupName.length < 2) {
+      setAuthError('Name must be at least 2 characters');
       setIsLoading(false);
+      return;
     }
+    if (!isValidEmail(signupEmail)) {
+      setAuthError('Please enter a valid email address');
+      setIsLoading(false);
+      return;
+    }
+    if (signupPassword.length < 6) {
+      setAuthError('Password must be at least 6 characters');
+      setIsLoading(false);
+      return;
+    }
+    if (signupPassword !== signupConfirmPassword) {
+      setAuthError('Passwords do not match');
+      setIsLoading(false);
+      return;
+    }
+
+    const { data, error } = await supabase.auth.signUp({
+      email: signupEmail,
+      password: signupPassword,
+      options: {
+        data: { full_name: signupName }, // Store full name in user metadata
+      },
+    });
+
+    if (error) {
+      setAuthError(error.message || 'Signup failed. Please try again.');
+      setIsLoading(false);
+      return;
+    }
+
+    console.log('Signed up user:', data.user);
+    setAuthError('Check your email to confirm your account!');
+    setIsLoading(false);
   };
 
-  // Toggle between login and signup forms
+  // Handle forgot password with Supabase
+  const handleForgotPasswordSubmit = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setAuthError(null);
+    setResetMessage(null);
+
+    if (!isValidEmail(forgotEmail)) {
+      setAuthError('Please enter a valid email address');
+      setIsLoading(false);
+      return;
+    }
+
+    // const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail, {
+    //   redirectTo: 'http://localhost:3000/reset-password', // Adjust this URL to your reset password page
+    // });
+
+    // if (error) {
+    //   setAuthError(error.message || 'Failed to send reset email. Please try again.');
+    //   setIsLoading(false);
+    //   return;
+    // }
+
+    setResetMessage('Password reset email sent! Check your inbox.');
+    setIsLoading(false);
+  };
+
+  // Toggle between login/signup/forgot password
   const toggleAuthMode = () => {
     setIsLogin(!isLogin);
+    setShowForgotPassword(false);
     setAuthError(null);
+    setResetMessage(null);
+    setLoginEmail('');
+    setLoginPassword('');
+    setSignupName('');
+    setSignupEmail('');
+    setSignupPassword('');
+    setSignupConfirmPassword('');
+    setForgotEmail('');
+  };
+
+  const showForgotPasswordForm = () => {
+    setShowForgotPassword(true);
+    setAuthError(null);
+    setResetMessage(null);
+    setForgotEmail('');
   };
 
   return (
-    <div className="min-h-screen flex flex-col justify-center items-center bg-background/50 p-4">
-      <div className="w-full max-w-md">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="text-center mb-8"
-        >
-          <div className="flex justify-center mb-2">
-            <Mic className="h-10 w-10 text-primary" />
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', padding: '16px', backgroundColor: '#f5f5f5' }}>
+      <div style={{ width: '100%', maxWidth: '400px' }}>
+        <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '8px' }}>
+            <Mic style={{ width: '40px', height: '40px', color: '#007bff' }} />
           </div>
-          <h1 className="text-3xl font-bold">Sagan Command Center</h1>
-          <p className="text-muted-foreground mt-2">Your mission control for productivity</p>
-        </motion.div>
+          <h1 style={{ fontSize: '28px', fontWeight: 'bold' }}>Sagan Command Center</h1>
+          <p style={{ color: '#666', marginTop: '8px' }}>Your mission control for productivity</p>
+        </div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-        >
-          <Card>
-            <CardHeader>
-              <CardTitle>{isLogin ? 'Login' : 'Create Account'}</CardTitle>
-              <CardDescription>
-                {isLogin 
-                  ? 'Enter your credentials to access your account' 
-                  : 'Fill in your details to get started'}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {authError && (
-                <Alert variant="destructive" className="mb-4">
-                  <AlertDescription>{authError}</AlertDescription>
-                </Alert>
-              )}
+        <div style={{ backgroundColor: '#fff', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', overflow: 'hidden' }}>
+          <div style={{ padding: '16px 24px', borderBottom: '1px solid #eee' }}>
+            <h2 style={{ fontSize: '20px', fontWeight: 'bold' }}>
+              {showForgotPassword ? 'Reset Password' : isLogin ? 'Login' : 'Create Account'}
+            </h2>
+            <p style={{ color: '#666', fontSize: '14px' }}>
+              {showForgotPassword
+                ? 'Enter your email to reset your password'
+                : isLogin
+                ? 'Enter your credentials to access your account'
+                : 'Fill in your details to get started'}
+            </p>
+          </div>
 
-              {isLogin ? (
-                <Form {...loginForm}>
-                  <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-4">
-                    <FormField
-                      control={loginForm.control}
-                      name="email"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Email</FormLabel>
-                          <FormControl>
-                            <div className="relative">
-                              <Mail className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                              <Input 
-                                placeholder="Your email address" 
-                                className="pl-10" 
-                                {...field} 
-                              />
-                            </div>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={loginForm.control}
-                      name="password"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Password</FormLabel>
-                          <FormControl>
-                            <div className="relative">
-                              <Lock className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                              <Input 
-                                type={showPassword ? "text" : "password"} 
-                                placeholder="Your password" 
-                                className="pl-10" 
-                                {...field} 
-                              />
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                className="absolute right-1 top-1.5 px-2"
-                                onClick={() => setShowPassword(!showPassword)}
-                              >
-                                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                              </Button>
-                            </div>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <Button 
-                      type="submit" 
-                      className="w-full" 
-                      disabled={isLoading}
-                    >
-                      {isLoading ? "Logging in..." : "Login"} <ArrowRight className="ml-1 h-4 w-4" />
-                    </Button>
-                  </form>
-                </Form>
-              ) : (
-                <Form {...signupForm}>
-                  <form onSubmit={signupForm.handleSubmit(onSignupSubmit)} className="space-y-4">
-                    <FormField
-                      control={signupForm.control}
-                      name="name"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Full Name</FormLabel>
-                          <FormControl>
-                            <div className="relative">
-                              <User className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                              <Input 
-                                placeholder="Your full name" 
-                                className="pl-10" 
-                                {...field} 
-                              />
-                            </div>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={signupForm.control}
-                      name="email"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Email</FormLabel>
-                          <FormControl>
-                            <div className="relative">
-                              <Mail className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                              <Input 
-                                placeholder="Your email address" 
-                                className="pl-10" 
-                                {...field} 
-                              />
-                            </div>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={signupForm.control}
-                      name="password"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Password</FormLabel>
-                          <FormControl>
-                            <div className="relative">
-                              <Lock className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                              <Input 
-                                type={showPassword ? "text" : "password"} 
-                                placeholder="Create a password" 
-                                className="pl-10" 
-                                {...field} 
-                              />
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                className="absolute right-1 top-1.5 px-2"
-                                onClick={() => setShowPassword(!showPassword)}
-                              >
-                                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                              </Button>
-                            </div>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={signupForm.control}
-                      name="confirmPassword"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Confirm Password</FormLabel>
-                          <FormControl>
-                            <div className="relative">
-                              <Lock className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                              <Input 
-                                type={showPassword ? "text" : "password"} 
-                                placeholder="Confirm your password" 
-                                className="pl-10" 
-                                {...field} 
-                              />
-                            </div>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <Button 
-                      type="submit" 
-                      className="w-full" 
-                      disabled={isLoading}
-                    >
-                      {isLoading ? "Creating account..." : "Create Account"} <ArrowRight className="ml-1 h-4 w-4" />
-                    </Button>
-                  </form>
-                </Form>
-              )}
-            </CardContent>
-            <CardFooter className="flex flex-col gap-4">
-              <div className="text-center w-full">
-                <Button 
-                  variant="link" 
-                  className="text-sm text-muted-foreground"
-                  onClick={toggleAuthMode}
+          <div style={{ padding: '24px' }}>
+            {authError && (
+              <div style={{ backgroundColor: '#fee2e2', color: '#dc2626', padding: '12px', borderRadius: '4px', marginBottom: '16px' }}>
+                {authError}
+              </div>
+            )}
+            {resetMessage && (
+              <div style={{ backgroundColor: '#d1fae5', color: '#16a34a', padding: '12px', borderRadius: '4px', marginBottom: '16px' }}>
+                {resetMessage}
+              </div>
+            )}
+
+            {showForgotPassword ? (
+              <form onSubmit={handleForgotPasswordSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div style={{ position: 'relative' }}>
+                  <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>Email</label>
+                  <Mail style={{ position: 'absolute', left: '12px', top: '36px', width: '16px', height: '16px', color: '#666' }} />
+                  <input
+                    type="email"
+                    placeholder="Your email address"
+                    value={forgotEmail}
+                    onChange={(e) => setForgotEmail(e.target.value)}
+                    style={{ width: '100%', padding: '8px 8px 8px 36px', border: '1px solid #ddd', borderRadius: '4px', fontSize: '14px' }}
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', width: '100%', padding: '10px', backgroundColor: '#007bff', color: '#fff', border: 'none', borderRadius: '4px', fontSize: '14px', cursor: isLoading ? 'not-allowed' : 'pointer', opacity: isLoading ? 0.7 : 1 }}
                 >
-                  {isLogin 
-                    ? "Don't have an account? Sign up" 
-                    : "Already have an account? Log in"}
-                </Button>
-              </div>
-              <div className="text-xs text-center text-muted-foreground w-full">
-                By continuing, you agree to Sagan's Terms of Service and Privacy Policy
-              </div>
-            </CardFooter>
-          </Card>
-        </motion.div>
+                  {isLoading ? 'Sending...' : 'Send Reset Email'} <ArrowRight style={{ width: '16px', height: '16px' }} />
+                </button>
+              </form>
+            ) : isLogin ? (
+              <form onSubmit={handleLoginSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div style={{ position: 'relative' }}>
+                  <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>Email</label>
+                  <Mail style={{ position: 'absolute', left: '12px', top: '36px', width: '16px', height: '16px', color: '#666' }} />
+                  <input
+                    type="email"
+                    placeholder="Your email address"
+                    value={loginEmail}
+                    onChange={(e) => setLoginEmail(e.target.value)}
+                    style={{ width: '100%', padding: '8px 8px 8px 36px', border: '1px solid #ddd', borderRadius: '4px', fontSize: '14px' }}
+                  />
+                </div>
+                <div style={{ position: 'relative' }}>
+                  <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>Password</label>
+                  <Lock style={{ position: 'absolute', left: '12px', top: '36px', width: '16px', height: '16px', color: '#666' }} />
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder="Your password"
+                    value={loginPassword}
+                    onChange={(e) => setLoginPassword(e.target.value)}
+                    style={{ width: '100%', padding: '8px 40px 8px 36px', border: '1px solid #ddd', borderRadius: '4px', fontSize: '14px' }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    style={{ position: 'absolute', right: '8px', top: '32px', background: 'none', border: 'none', cursor: 'pointer' }}
+                  >
+                    {showPassword ? <EyeOff style={{ width: '16px', height: '16px' }} /> : <Eye style={{ width: '16px', height: '16px' }} />}
+                  </button>
+                </div>
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', width: '100%', padding: '10px', backgroundColor: '#007bff', color: '#fff', border: 'none', borderRadius: '4px', fontSize: '14px', cursor: isLoading ? 'not-allowed' : 'pointer', opacity: isLoading ? 0.7 : 1 }}
+                >
+                  {isLoading ? 'Logging in...' : 'Login'} <ArrowRight style={{ width: '16px', height: '16px' }} />
+                </button>
+              </form>
+            ) : (
+              <form onSubmit={handleSignupSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div style={{ position: 'relative' }}>
+                  <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>Full Name</label>
+                  <User style={{ position: 'absolute', left: '12px', top: '36px', width: '16px', height: '16px', color: '#666' }} />
+                  <input
+                    type="text"
+                    placeholder="Your full name"
+                    value={signupName}
+                    onChange={(e) => setSignupName(e.target.value)}
+                    style={{ width: '100%', padding: '8px 8px 8px 36px', border: '1px solid #ddd', borderRadius: '4px', fontSize: '14px' }}
+                  />
+                </div>
+                <div style={{ position: 'relative' }}>
+                  <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>Email</label>
+                  <Mail style={{ position: 'absolute', left: '12px', top: '36px', width: '16px', height: '16px', color: '#666' }} />
+                  <input
+                    type="email"
+                    placeholder="Your email address"
+                    value={signupEmail}
+                    onChange={(e) => setSignupEmail(e.target.value)}
+                    style={{ width: '100%', padding: '8px 8px 8px 36px', border: '1px solid #ddd', borderRadius: '4px', fontSize: '14px' }}
+                  />
+                </div>
+                <div style={{ position: 'relative' }}>
+                  <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>Password</label>
+                  <Lock style={{ position: 'absolute', left: '12px', top: '36px', width: '16px', height: '16px', color: '#666' }} />
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder="Create a password"
+                    value={signupPassword}
+                    onChange={(e) => setSignupPassword(e.target.value)}
+                    style={{ width: '100%', padding: '8px 40px 8px 36px', border: '1px solid #ddd', borderRadius: '4px', fontSize: '14px' }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    style={{ position: 'absolute', right: '8px', top: '32px', background: 'none', border: 'none', cursor: 'pointer' }}
+                  >
+                    {showPassword ? <EyeOff style={{ width: '16px', height: '16px' }} /> : <Eye style={{ width: '16px', height: '16px' }} />}
+                  </button>
+                </div>
+                <div style={{ position: 'relative' }}>
+                  <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>Confirm Password</label>
+                  <Lock style={{ position: 'absolute', left: '12px', top: '36px', width: '16px', height: '16px', color: '#666' }} />
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder="Confirm your password"
+                    value={signupConfirmPassword}
+                    onChange={(e) => setSignupConfirmPassword(e.target.value)}
+                    style={{ width: '100%', padding: '8px 8px 8px 36px', border: '1px solid #ddd', borderRadius: '4px', fontSize: '14px' }}
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', width: '100%', padding: '10px', backgroundColor: '#007bff', color: '#fff', border: 'none', borderRadius: '4px', fontSize: '14px', cursor: isLoading ? 'not-allowed' : 'pointer', opacity: isLoading ? 0.7 : 1 }}
+                >
+                  {isLoading ? 'Creating account...' : 'Create Account'} <ArrowRight style={{ width: '16px', height: '16px' }} />
+                </button>
+              </form>
+            )}
+          </div>
+
+          <div style={{ padding: '16px 24px', display: 'flex', flexDirection: 'column', gap: '16px', textAlign: 'center' }}>
+            {!showForgotPassword && isLogin && (
+              <button
+                onClick={showForgotPasswordForm}
+                style={{ background: 'none', border: 'none', color: '#666', fontSize: '14px', cursor: 'pointer', textDecoration: 'underline' }}
+              >
+                Forgot Password?
+              </button>
+            )}
+            <button
+              onClick={toggleAuthMode}
+              style={{ background: 'none', border: 'none', color: '#666', fontSize: '14px', cursor: 'pointer', textDecoration: 'underline' }}
+            >
+              {showForgotPassword
+                ? 'Back to Login'
+                : isLogin
+                ? "Don't have an account? Sign up"
+                : 'Already have an account? Log in'}
+            </button>
+            <p style={{ color: '#666', fontSize: '12px' }}>
+              By continuing, you agree to Sagan's Terms of Service and Privacy Policy
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   );
