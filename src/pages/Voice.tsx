@@ -6,9 +6,8 @@ import { Mic, Square } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 import { useToast } from '@/hooks/use-toast';
-import { Input } from '@/components/ui/input';
 
-// This key will need to be replaced with a real OpenAI API key
+// This key will need to be replaced with a real OpenAI API key later
 const OPENAI_API_KEY = "your-openai-api-key-here";
 
 const Voice: React.FC = () => {
@@ -17,7 +16,6 @@ const Voice: React.FC = () => {
   const [audioURL, setAudioURL] = useState<string | null>(null);
   const [transcription, setTranscription] = useState<string | null>(null);
   const [isTranscribing, setIsTranscribing] = useState(false);
-  const [apiKey, setApiKey] = useState(OPENAI_API_KEY);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -49,8 +47,8 @@ const Voice: React.FC = () => {
         setAudioURL(url);
         setRecordingStatus('recorded');
         
-        // Auto-transcribe after recording
-        transcribeAudio(audioBlob);
+        // Auto-transcribe after recording will be implemented later
+        // transcribeAudio(audioBlob);
       };
 
       mediaRecorderRef.current.start();
@@ -93,59 +91,10 @@ const Voice: React.FC = () => {
     }
   };
 
+  // The transcribeAudio function will be implemented later
   const transcribeAudio = async (audioBlob: Blob) => {
-    if (!apiKey || apiKey === "your-openai-api-key-here") {
-      toast({
-        variant: "destructive",
-        title: "API Key Missing",
-        description: "Please enter your OpenAI API key to enable transcription.",
-      });
-      return;
-    }
-
-    setIsTranscribing(true);
-    
-    try {
-      const formData = new FormData();
-      formData.append('file', audioBlob, 'recording.mp3');
-      formData.append('model', 'whisper-1');
-      
-      const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${apiKey}`
-        },
-        body: formData
-      });
-      
-      if (!response.ok) {
-        throw new Error(`API request failed with status ${response.status}`);
-      }
-      
-      const data = await response.json();
-      setTranscription(data.text);
-      
-      toast({
-        title: "Transcription complete",
-        description: "Your voice has been transcribed to text",
-      });
-      
-      // Here you would add logic to create a task from the transcription
-      console.log("Task to create:", data.text);
-    } catch (error) {
-      console.error('Error transcribing audio:', error);
-      toast({
-        variant: "destructive",
-        title: "Transcription failed",
-        description: "There was an error transcribing your audio. Please try again.",
-      });
-    } finally {
-      setIsTranscribing(false);
-    }
-  };
-
-  const handleApiKeyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setApiKey(e.target.value);
+    // Implementation will be added later
+    console.log("Transcription functionality to be implemented");
   };
 
   return (
@@ -165,22 +114,6 @@ const Voice: React.FC = () => {
         <div className="flex justify-center items-center my-12">
           <div className="bg-white rounded-lg shadow-sm border border-border/30 p-8 max-w-md w-full flex flex-col items-center">
             <h2 className="text-2xl font-medium mb-6">Voice Recorder</h2>
-            
-            {/* API Key Input */}
-            <div className="w-full mb-6">
-              <label htmlFor="apiKey" className="text-sm font-medium mb-1 block">OpenAI API Key</label>
-              <Input
-                id="apiKey"
-                type="password"
-                value={apiKey}
-                onChange={handleApiKeyChange}
-                placeholder="Enter your OpenAI API key"
-                className="w-full"
-              />
-              <p className="text-xs text-muted-foreground mt-1">
-                Your API key is used only for voice transcription and is not stored on our servers.
-              </p>
-            </div>
             
             <div className="relative mb-8">
               <div className="w-32 h-32 rounded-full bg-gray-100 flex items-center justify-center">
