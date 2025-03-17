@@ -13,9 +13,7 @@ import {
   Trash,
   Check,
   X,
-  Upload,
   Download,
-  Eye,
   Image as ImageIcon,
   Table as TableIcon,
   Type as TypeIcon
@@ -196,8 +194,6 @@ const Library = () => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingTag, setEditingTag] = useState<string | null>(null);
   const [newTagValue, setNewTagValue] = useState('');
-  const [selectedAttachment, setSelectedAttachment] = useState<ReferenceAttachment | null>(null);
-  const [isAttachmentPreviewOpen, setIsAttachmentPreviewOpen] = useState(false);
   const [tableHeaders, setTableHeaders] = useState<string[]>(['Column 1', 'Column 2', 'Column 3']);
   const [tableRows, setTableRows] = useState<string[][]>([['', '', ''], ['', '', '']]);
 
@@ -321,17 +317,6 @@ const Library = () => {
     form.setValue('attachments', [...currentAttachments, ...newAttachments]);
     
     e.target.value = '';
-  };
-
-  const handleRemoveAttachment = (attachmentId: string) => {
-    const currentAttachments = form.getValues('attachments') || [];
-    const updatedAttachments = currentAttachments.filter(att => att.id !== attachmentId);
-    form.setValue('attachments', updatedAttachments);
-  };
-
-  const handlePreviewAttachment = (attachment: ReferenceAttachment) => {
-    setSelectedAttachment(attachment);
-    setIsAttachmentPreviewOpen(true);
   };
 
   const addTableColumn = () => {
@@ -1134,14 +1119,7 @@ const Library = () => {
                                             ({(attachment.size / 1024).toFixed(1)} KB)
                                           </span>
                                         </div>
-                                        <div className="flex gap-2">
-                                          <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => handlePreviewAttachment(attachment)}
-                                          >
-                                            <Eye className="h-4 w-4 mr-1" /> View
-                                          </Button>
+                                        <div>
                                           <Button
                                             variant="outline"
                                             size="sm"
