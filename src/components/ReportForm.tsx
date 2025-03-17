@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -21,7 +20,6 @@ interface ReportFormData {
   busynessLevel: string;
 }
 
-// Define a type for the view mode
 export type ViewMode = 'form' | 'view';
 
 const reportHistoryData = [
@@ -61,14 +59,13 @@ const ReportForm: React.FC = () => {
   const [showCalendar, setShowCalendar] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   
-  // Explicitly define the viewMode state with the ViewMode type
   const [viewMode, setViewMode] = useState<ViewMode>('form');
   
   const [reportExists, setReportExists] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [hasShownRangeDialog, setHasShownRangeDialog] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Calculate the earliest date for submission (7 days ago)
   const sevenDaysAgo = subDays(startOfDay(new Date()), 7);
 
   useEffect(() => {
@@ -90,13 +87,11 @@ const ReportForm: React.FC = () => {
           });
         }
       } else {
-        // Reset form data for new reports
         resetFormData(formattedDate);
       }
     }
   }, [selectedDate, viewMode]);
 
-  // Function to reset form data
   const resetFormData = (date: string) => {
     setFormData({
       date: date,
@@ -113,7 +108,6 @@ const ReportForm: React.FC = () => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
     
-    // Clear error for this field if it exists
     if (errors[name]) {
       setErrors(prev => {
         const newErrors = { ...prev };
@@ -152,17 +146,17 @@ const ReportForm: React.FC = () => {
           busynessLevel: existingReport.busynessLevel
         });
       } else {
-        // Reset form data for new reports
         resetFormData(formattedDate);
         
-        // Check if date is within allowed range for submission
         const isWithinSubmissionRange = !isBefore(date, sevenDaysAgo) && !isAfter(date, new Date());
         
         if (isWithinSubmissionRange) {
           setViewMode('form');
         } else {
-          // For dates outside submission range, show dialog but stay in form mode
-          setDialogOpen(true);
+          if (!hasShownRangeDialog) {
+            setDialogOpen(true);
+            setHasShownRangeDialog(true);
+          }
           setViewMode('form');
         }
       }
@@ -270,17 +264,16 @@ const ReportForm: React.FC = () => {
         busynessLevel: existingReport.busynessLevel
       });
     } else {
-      // Reset form data for the new date
       resetFormData(formattedDate);
       
-      // Always set to form mode but disable submission if needed based on date
-      setViewMode('form');
-      
-      // If outside submission range, show dialog to inform user
       const isWithinSubmissionRange = !isBefore(newDate, sevenDaysAgo) && !isAfter(newDate, new Date());
-      if (!isWithinSubmissionRange) {
+      
+      if (!isWithinSubmissionRange && !hasShownRangeDialog) {
         setDialogOpen(true);
+        setHasShownRangeDialog(true);
       }
+      
+      setViewMode('form');
     }
   };
 
@@ -327,12 +320,10 @@ const ReportForm: React.FC = () => {
     }
   };
 
-  // Check if selected date is within submission range
   const isDateWithinSubmissionRange = !isBefore(selectedDate, sevenDaysAgo) && !isAfter(selectedDate, new Date());
   const isToday = isEqual(startOfDay(selectedDate), startOfDay(new Date()));
   const showFormattedDate = format(selectedDate, 'MMM dd, yyyy');
 
-  // Helper function for comparing viewMode safely with TypeScript
   const isViewMode = (mode: ViewMode): boolean => viewMode === mode;
 
   return (
@@ -594,7 +585,12 @@ const ReportForm: React.FC = () => {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+      <Dialog open={dialogOpen} onOpenChange={(open) => {
+        setDialogOpen(open);
+        if (!open) {
+          setHasShownRangeDialog(true);
+        }
+      }}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>Date Out of Range</DialogTitle>
@@ -608,6 +604,7 @@ const ReportForm: React.FC = () => {
             </p>
             <Button onClick={() => {
               setDialogOpen(false);
+              setHasShownRangeDialog(true);
             }}>
               I Understand
             </Button>
