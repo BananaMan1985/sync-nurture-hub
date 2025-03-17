@@ -57,6 +57,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { ReferenceAttachment } from '@/components/projects/types';
@@ -755,7 +766,7 @@ const Library = () => {
                           ))}
                         </div>
                       </CardContent>
-                      <CardFooter className="pt-2 pb-4 flex justify-between">
+                      <CardFooter className="pt-2 pb-4 flex justify-between gap-2">
                         <Button 
                           variant="outline" 
                           size="sm" 
@@ -763,119 +774,173 @@ const Library = () => {
                         >
                           <Edit className="h-4 w-4 mr-1" /> Edit
                         </Button>
-                        <Dialog>
-                          <DialogTrigger asChild>
-                            <Button variant="outline" size="sm">View Details</Button>
-                          </DialogTrigger>
-                          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-                            <DialogHeader>
-                              <DialogTitle>{item.title}</DialogTitle>
-                              <DialogDescription>{item.description}</DialogDescription>
-                            </DialogHeader>
-                            <div className="mt-4 space-y-4">
-                              <div className="flex flex-wrap gap-1">
-                                {item.tags.map(tag => (
-                                  <Badge 
-                                    key={tag} 
-                                    variant="outline"
-                                    className="text-xs"
-                                  >
-                                    {tag}
-                                  </Badge>
-                                ))}
-                              </div>
-                              
-                              {item.type === 'text' && (
-                                <div className="p-4 bg-muted/50 rounded-md whitespace-pre-line">
-                                  {item.content}
+                        <div className="flex gap-2">
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="outline" size="sm" className="text-destructive border-destructive hover:bg-destructive/10">
+                                <Trash className="h-4 w-4 mr-1" /> Delete
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Delete Reference Item</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Are you sure you want to delete "{item.title}"? This action cannot be undone.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction 
+                                  onClick={() => handleDeleteItem(item.id)}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  Delete
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                          <Dialog>
+                            <DialogTrigger asChild>
+                              <Button variant="outline" size="sm">View Details</Button>
+                            </DialogTrigger>
+                            <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                              <DialogHeader>
+                                <DialogTitle>{item.title}</DialogTitle>
+                                <DialogDescription>{item.description}</DialogDescription>
+                              </DialogHeader>
+                              <div className="mt-4 space-y-4">
+                                <div className="flex flex-wrap gap-1">
+                                  {item.tags.map(tag => (
+                                    <Badge 
+                                      key={tag} 
+                                      variant="outline"
+                                      className="text-xs"
+                                    >
+                                      {tag}
+                                    </Badge>
+                                  ))}
                                 </div>
-                              )}
-                              
-                              {item.type === 'image' && item.imageUrl && (
-                                <div className="flex justify-center">
-                                  <img 
-                                    src={item.imageUrl} 
-                                    alt={item.title} 
-                                    className="max-w-full max-h-[400px] object-contain rounded-md"
-                                  />
-                                </div>
-                              )}
-                              
-                              {item.type === 'database' && item.tableData && (
-                                <div className="overflow-x-auto border rounded-md">
-                                  <table className="min-w-full">
-                                    <thead className="bg-muted/50">
-                                      <tr>
-                                        {item.tableData.headers.map((header, index) => (
-                                          <th key={index} className="px-4 py-2 font-medium text-left">
-                                            {header}
-                                          </th>
-                                        ))}
-                                      </tr>
-                                    </thead>
-                                    <tbody>
-                                      {item.tableData.rows.map((row, rowIndex) => (
-                                        <tr key={rowIndex} className={rowIndex % 2 === 0 ? 'bg-white' : 'bg-muted/20'}>
-                                          {row.map((cell, cellIndex) => (
-                                            <td key={cellIndex} className="px-4 py-2 border-t">
-                                              {cell || '—'}
-                                            </td>
+                                
+                                {item.type === 'text' && (
+                                  <div className="p-4 bg-muted/50 rounded-md whitespace-pre-line">
+                                    {item.content}
+                                  </div>
+                                )}
+                                
+                                {item.type === 'image' && item.imageUrl && (
+                                  <div className="flex justify-center">
+                                    <img 
+                                      src={item.imageUrl} 
+                                      alt={item.title} 
+                                      className="max-w-full max-h-[400px] object-contain rounded-md"
+                                    />
+                                  </div>
+                                )}
+                                
+                                {item.type === 'database' && item.tableData && (
+                                  <div className="overflow-x-auto border rounded-md">
+                                    <table className="min-w-full">
+                                      <thead className="bg-muted/50">
+                                        <tr>
+                                          {item.tableData.headers.map((header, index) => (
+                                            <th key={index} className="px-4 py-2 font-medium text-left">
+                                              {header}
+                                            </th>
                                           ))}
                                         </tr>
-                                      ))}
-                                    </tbody>
-                                  </table>
-                                </div>
-                              )}
-                              
-                              {item.attachments && item.attachments.length > 0 && (
-                                <div className="mt-4">
-                                  <h4 className="text-sm font-medium mb-2">Attachments</h4>
-                                  <div className="space-y-2">
-                                    {item.attachments.map(attachment => (
-                                      <div key={attachment.id} className="flex items-center justify-between bg-gray-50 rounded p-3">
-                                        <div className="flex items-center">
-                                          <FileArchive className="h-4 w-4 mr-2 text-muted-foreground" />
-                                          <span>{attachment.name}</span>
-                                          <span className="text-xs text-muted-foreground ml-2">
-                                            ({(attachment.size / 1024).toFixed(1)} KB)
-                                          </span>
-                                        </div>
-                                        <div className="flex gap-2">
-                                          <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => handlePreviewAttachment(attachment)}
-                                          >
-                                            <Eye className="h-4 w-4 mr-1" /> View
-                                          </Button>
-                                          <Button
-                                            variant="outline"
-                                            size="sm"
-                                            asChild
-                                          >
-                                            <a href={attachment.url} download={attachment.name}>
-                                              <Download className="h-4 w-4 mr-1" /> Download
-                                            </a>
-                                          </Button>
-                                        </div>
-                                      </div>
-                                    ))}
+                                      </thead>
+                                      <tbody>
+                                        {item.tableData.rows.map((row, rowIndex) => (
+                                          <tr key={rowIndex} className={rowIndex % 2 === 0 ? 'bg-white' : 'bg-muted/20'}>
+                                            {row.map((cell, cellIndex) => (
+                                              <td key={cellIndex} className="px-4 py-2 border-t">
+                                                {cell || '—'}
+                                              </td>
+                                            ))}
+                                          </tr>
+                                        ))}
+                                      </tbody>
+                                    </table>
                                   </div>
-                                </div>
-                              )}
-                            </div>
-                            <DialogFooter className="flex justify-end mt-4">
-                              <Button 
-                                variant="outline" 
-                                size="sm" 
-                                onClick={() => handleEditItem(item)}
-                              >
-                                <Edit className="h-4 w-4 mr-1" /> Edit Entry
-                              </Button>
-                            </DialogFooter>
-                          </DialogContent>
-                        </Dialog>
+                                )}
+                                
+                                {item.attachments && item.attachments.length > 0 && (
+                                  <div className="mt-4">
+                                    <h4 className="text-sm font-medium mb-2">Attachments</h4>
+                                    <div className="space-y-2">
+                                      {item.attachments.map(attachment => (
+                                        <div key={attachment.id} className="flex items-center justify-between bg-gray-50 rounded p-3">
+                                          <div className="flex items-center">
+                                            <FileArchive className="h-4 w-4 mr-2 text-muted-foreground" />
+                                            <span>{attachment.name}</span>
+                                            <span className="text-xs text-muted-foreground ml-2">
+                                              ({(attachment.size / 1024).toFixed(1)} KB)
+                                            </span>
+                                          </div>
+                                          <div className="flex gap-2">
+                                            <Button
+                                              variant="outline"
+                                              size="sm"
+                                              onClick={() => handlePreviewAttachment(attachment)}
+                                            >
+                                              <Eye className="h-4 w-4 mr-1" /> View
+                                            </Button>
+                                            <Button
+                                              variant="outline"
+                                              size="sm"
+                                              asChild
+                                            >
+                                              <a href={attachment.url} download={attachment.name}>
+                                                <Download className="h-4 w-4 mr-1" /> Download
+                                              </a>
+                                            </Button>
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                              <DialogFooter className="flex justify-between mt-4">
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button 
+                                      variant="outline" 
+                                      size="sm"
+                                      className="text-destructive border-destructive hover:bg-destructive/10"
+                                    >
+                                      <Trash className="h-4 w-4 mr-1" /> Delete
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>Delete Reference Item</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        Are you sure you want to delete "{item.title}"? This action cannot be undone.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                      <AlertDialogAction 
+                                        onClick={() => handleDeleteItem(item.id)}
+                                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                      >
+                                        Delete
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                                <Button 
+                                  variant="outline" 
+                                  size="sm" 
+                                  onClick={() => handleEditItem(item)}
+                                >
+                                  <Edit className="h-4 w-4 mr-1" /> Edit Entry
+                                </Button>
+                              </DialogFooter>
+                            </DialogContent>
+                          </Dialog>
+                        </div>
                       </CardFooter>
                     </Card>
                   );
