@@ -11,6 +11,7 @@ import Voice from "./pages/Voice";
 import Projects from "./pages/Projects";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
+import Settings from "./pages/Settings";
 
 const queryClient = new QueryClient();
 
@@ -27,6 +28,7 @@ const App = () => (
           <Route path="/library" element={<Library />} />
           <Route path="/voice" element={<Voice />} />
           <Route path="/projects" element={<Projects />} />
+          <Route path="/settings" element={<Settings />} />
           <Route path="/tasks" element={<Navigate to="/projects" replace />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

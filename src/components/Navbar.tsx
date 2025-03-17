@@ -29,6 +29,11 @@ const Navbar: React.FC = () => {
       href: "/library", 
       icon: <BookOpen className="h-4 w-4 mr-1" />, 
       label: "Reference" 
+    },
+    { 
+      href: "/settings", 
+      icon: <Settings className="h-4 w-4 mr-1" />, 
+      label: "Settings" 
     }
   ];
 

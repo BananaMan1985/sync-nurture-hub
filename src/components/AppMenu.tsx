@@ -53,7 +53,7 @@ const AppMenu: React.FC = () => {
       label: "Reference" 
     },
     { 
-      href: "#", // Placeholder until Settings page is added
+      href: "/settings", 
       icon: <Settings className="mr-2 h-5 w-5" />, 
       label: "Settings" 
     }
