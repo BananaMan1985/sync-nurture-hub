@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -67,11 +68,11 @@ const TaskColumn: React.FC<TaskColumnProps> = ({
     
     const sourceStatus = e.dataTransfer.getData('sourceStatus') as TaskStatus;
     
-    if (sourceStatus === status && draggedIndex !== null && dropPreviewIndex !== null) {
-      // If we're dragging within the same column
+    if (sourceStatus === status && dropPreviewIndex !== null) {
+      // If we're dragging within the same column, reorder tasks
       onReorderTasks(taskId, dropPreviewIndex, status);
     } else {
-      // If we're dragging between columns
+      // If we're dragging between columns, change status
       onDrop(taskId, status);
     }
     
@@ -248,7 +249,7 @@ const TaskColumn: React.FC<TaskColumnProps> = ({
                   />
                 )}
                 
-                {index === sortedTasks.length - 1 && dropPreviewIndex === sortedTasks.length && (
+                {dropPreviewIndex === sortedTasks.length && index === sortedTasks.length - 1 && (
                   <div 
                     className="h-1 w-full bg-primary rounded-full mt-2 transform transition-all duration-200 animate-pulse"
                   />
@@ -256,7 +257,7 @@ const TaskColumn: React.FC<TaskColumnProps> = ({
               </React.Fragment>
             ))}
             
-            {tasks.length > 0 && dropPreviewIndex === tasks.length && (
+            {tasks.length === 0 && dropPreviewIndex === 0 && (
               <div 
                 className="h-1 w-full bg-primary rounded-full mt-2 transform transition-all duration-200 animate-pulse"
               />
