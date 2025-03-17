@@ -10,6 +10,7 @@ import Library from "./pages/Library";
 import Voice from "./pages/Voice";
 import Projects from "./pages/Projects";
 import NotFound from "./pages/NotFound";
+import Login from "./pages/Login";
 
 const queryClient = new QueryClient();
 
@@ -21,6 +22,7 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
+          <Route path="/login" element={<Login />} />
           <Route path="/reports" element={<Reports />} />
           <Route path="/library" element={<Library />} />
           <Route path="/voice" element={<Voice />} />
