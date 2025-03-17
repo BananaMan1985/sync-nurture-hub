@@ -32,7 +32,6 @@ const TaskForm: React.FC<TaskFormProps> = ({
     description: task?.description || '',
     status: task?.status || initialStatus || 'todo',
     dueDate: task?.dueDate || format(new Date(), 'yyyy-MM-dd'),
-    priority: task?.priority || 'medium',
     content: task?.content || '',
     purpose: task?.purpose || '',
   });
@@ -51,7 +50,6 @@ const TaskForm: React.FC<TaskFormProps> = ({
         content: task.content || '',
         purpose: task.purpose || '',
         status: task.status || initialStatus || 'todo',
-        priority: task.priority || 'medium',
         dueDate: task.dueDate || format(new Date(), 'yyyy-MM-dd'),
       });
       setSelectedDate(task.dueDate ? new Date(task.dueDate) : undefined);

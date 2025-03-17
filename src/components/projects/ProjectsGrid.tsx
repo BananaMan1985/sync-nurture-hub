@@ -64,12 +64,7 @@ const ProjectsGrid: React.FC<ProjectsGridProps> = ({
             onClick={() => onTaskClick(task)}
           >
             <CardHeader className="pb-3">
-              <div className="flex justify-between items-start">
-                <CardTitle className="text-base line-clamp-2">{task.title}</CardTitle>
-                {task.priority && (
-                  <Badge variant="outline">{task.priority}</Badge>
-                )}
-              </div>
+              <CardTitle className="text-base line-clamp-2">{task.title}</CardTitle>
               <CardDescription className="flex flex-wrap items-center gap-2 mt-1">
                 <Badge variant="secondary">
                   {getStatusBadge(task.status)}

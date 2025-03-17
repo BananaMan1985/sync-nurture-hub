@@ -36,10 +36,9 @@ export interface Task {
   title: string;
   description: string;
   content?: string;
-  purpose?: string; // Added purpose field
+  purpose?: string;
   status: TaskStatus;
   dueDate?: string;
-  priority: 'low' | 'medium' | 'high';
   attachments?: number;
   comments?: Comment[];
   order?: number;
@@ -62,7 +61,6 @@ export const mockTasks: Task[] = [
     purpose: 'Provide executives with data needed for strategic planning',
     status: 'inbox',
     dueDate: '2023-11-15',
-    priority: 'high',
     attachments: 2,
     comments: [
       {
@@ -84,7 +82,6 @@ export const mockTasks: Task[] = [
     title: 'Client follow-up',
     description: 'Send follow-up emails to clients from Monday\'s meeting',
     status: 'confirmedreceived',
-    priority: 'medium',
     dueDate: '2023-11-10',
     comments: [
       {
@@ -100,7 +97,6 @@ export const mockTasks: Task[] = [
     title: 'Update website content',
     description: 'Update the team page with new staff photos',
     status: 'confirmedreceived',
-    priority: 'low',
     dueDate: '2023-11-20',
     comments: [],
   },
@@ -109,7 +105,6 @@ export const mockTasks: Task[] = [
     title: 'Book travel arrangements',
     description: 'Finalize travel arrangements for the conference in December',
     status: 'inprogress',
-    priority: 'medium',
     dueDate: '2023-11-12',
     comments: [],
   },
@@ -118,7 +113,6 @@ export const mockTasks: Task[] = [
     title: 'Review department budget',
     description: 'Review and approve department budget for next quarter',
     status: 'archive',
-    priority: 'high',
     dueDate: '2023-11-05',
     comments: [],
   },
