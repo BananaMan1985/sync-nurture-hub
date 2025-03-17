@@ -660,8 +660,8 @@ const Library = () => {
                       <FormLabel>Tags</FormLabel>
                       <FormControl>
                         <Select
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
+                          onValueChange={(value) => field.onChange(value)}
+                          value={field.value.length > 0 ? field.value[0] : ""}
                         >
                           <SelectTrigger>
                             <SelectValue placeholder="Select tags" />
@@ -718,7 +718,7 @@ const Library = () => {
                       <FormControl>
                         <Select
                           onValueChange={field.onChange}
-                          defaultValue={field.value}
+                          value={field.value}
                         >
                           <SelectTrigger>
                             <SelectValue placeholder="Select type" />
@@ -799,8 +799,8 @@ const Library = () => {
                       <FormLabel>Tags</FormLabel>
                       <FormControl>
                         <Select
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
+                          onValueChange={(value) => field.onChange(value)}
+                          value={field.value.length > 0 ? field.value[0] : ""}
                         >
                           <SelectTrigger>
                             <SelectValue placeholder="Select tags" />
@@ -857,7 +857,7 @@ const Library = () => {
                       <FormControl>
                         <Select
                           onValueChange={field.onChange}
-                          defaultValue={field.value}
+                          value={field.value}
                         >
                           <SelectTrigger>
                             <SelectValue placeholder="Select type" />
@@ -1248,4 +1248,3 @@ const Library = () => {
 };
 
 export default Library;
-
