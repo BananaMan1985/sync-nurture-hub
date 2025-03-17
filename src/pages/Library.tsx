@@ -1,6 +1,6 @@
+
 import React, { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
-import AppMenu from '@/components/AppMenu';
 import { 
   Search, 
   Phone, 
@@ -370,7 +370,7 @@ const Library = () => {
           </Button>
         </div>
 
-        <AppMenu />
+        {/* Removed AppMenu component from here */}
 
         <div className="grid grid-cols-1 md:grid-cols-[1fr_3fr] gap-8 mt-8">
           <div className="space-y-6">
