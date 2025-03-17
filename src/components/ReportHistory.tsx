@@ -15,7 +15,7 @@ import {
   CardTitle
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { format, parseISO } from 'date-fns';
+import { format } from 'date-fns';
 import { Eye, AlertCircle, Search } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Input } from '@/components/ui/input';
@@ -45,12 +45,12 @@ const ReportHistory: React.FC = () => {
       report.status.toLowerCase().includes(searchTerm.toLowerCase())
     )
     .sort((a, b) => {
-      // Sort by date using our consistent date handling
+      // Sort by date consistently using our date handling functions
       const dateA = getLocalDate(a.date);
       const dateB = getLocalDate(b.date);
       return dateB.getTime() - dateA.getTime();
-    }); // Sort by date, newest first
-  
+    });
+
   // Calculate pagination
   const totalPages = Math.ceil(filteredReports.length / ITEMS_PER_PAGE);
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;

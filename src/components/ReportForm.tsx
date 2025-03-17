@@ -110,6 +110,8 @@ const ReportForm: React.FC = () => {
     if (date) {
       setSelectedDate(date);
       const formattedDate = formatDateForStorage(date);
+      console.log('Selected date:', date);
+      console.log('Formatted date for storage:', formattedDate);
       
       const existingReport = reportHistoryData.find(r => r.date === formattedDate);
       
@@ -177,6 +179,7 @@ const ReportForm: React.FC = () => {
     setLoading(true);
     
     const currentDate = formatDateForStorage(selectedDate);
+    console.log('Submitting report for date:', currentDate);
     
     const existingReportIndex = reportHistoryData.findIndex(r => r.date === currentDate);
     if (existingReportIndex !== -1) {
@@ -199,6 +202,8 @@ const ReportForm: React.FC = () => {
     };
     
     reportHistoryData.push(newReport);
+    console.log('Report added:', newReport);
+    console.log('Updated report history:', reportHistoryData);
     
     toast.success("Report submitted successfully", { duration: 3000 });
     setLoading(false);
@@ -263,9 +268,10 @@ const ReportForm: React.FC = () => {
   const dayContent = (day: Date) => {
     const hasReport = reportHistoryData.some(r => {
       const reportDate = getLocalDate(r.date);
-      return reportDate.getDate() === day.getDate() &&
-             reportDate.getMonth() === day.getMonth() &&
-             reportDate.getFullYear() === day.getFullYear();
+      return isEqual(
+        startOfDay(reportDate),
+        startOfDay(day)
+      );
     });
     
     return (

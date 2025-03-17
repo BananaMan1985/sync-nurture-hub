@@ -25,12 +25,20 @@ export const reportHistoryData = [
 
 // Helper functions to ensure consistent date handling
 export const formatDateForStorage = (date: Date): string => {
-  // Format the date without timezone conversion (YYYY-MM-DD)
-  return date.toISOString().split('T')[0];
+  // Get year, month, and day components in local timezone
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  
+  // Create YYYY-MM-DD format without any timezone conversion
+  return `${year}-${month}-${day}`;
 };
 
 export const getLocalDate = (dateString: string): Date => {
   // Create a date object in local timezone from YYYY-MM-DD format
   const [year, month, day] = dateString.split('-').map(Number);
-  return new Date(year, month - 1, day);
+  const date = new Date(year, month - 1, day);
+  
+  // Return date object set to midnight in local timezone
+  return date;
 };
