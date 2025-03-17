@@ -36,7 +36,8 @@ const TaskEditDialog: React.FC<TaskEditDialogProps> = ({
 
   useEffect(() => {
     if (task) {
-      setEditedTask({ ...task });
+      // Make a deep copy to prevent mutations
+      setEditedTask(JSON.parse(JSON.stringify(task)));
     }
   }, [task]);
 
@@ -44,6 +45,7 @@ const TaskEditDialog: React.FC<TaskEditDialogProps> = ({
 
   const handleSave = () => {
     if (editedTask) {
+      console.log("Saving edited task:", editedTask);
       onSave(editedTask);
       toast({
         title: "Project updated",

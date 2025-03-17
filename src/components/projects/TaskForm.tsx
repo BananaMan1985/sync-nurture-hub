@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -43,16 +42,46 @@ const TaskForm: React.FC<TaskFormProps> = ({
   const [includeDueDate, setIncludeDueDate] = useState<boolean>(!!task?.dueDate);
   const [activeTab, setActiveTab] = useState<string>("details");
 
+  useEffect(() => {
+    if (task) {
+      setNewTask({
+        ...task,
+        title: task.title || '',
+        description: task.description || '',
+        content: task.content || '',
+        purpose: task.purpose || '',
+        status: task.status || initialStatus || 'todo',
+        priority: task.priority || 'medium',
+        dueDate: task.dueDate || format(new Date(), 'yyyy-MM-dd'),
+      });
+      setSelectedDate(task.dueDate ? new Date(task.dueDate) : undefined);
+      setIncludeDueDate(!!task.dueDate);
+    }
+  }, [task, initialStatus]);
+
   const handleChange = (field: keyof Task, value: any) => {
     setNewTask(prev => ({ ...prev, [field]: value }));
   };
 
   const handleSubmit = () => {
-    // If due date is not included, remove it from the task
     const taskToSave = { ...newTask };
     if (!includeDueDate) {
       delete taskToSave.dueDate;
     }
+    
+    if (task?.id) {
+      taskToSave.id = task.id;
+    }
+    
+    if (task?.comments) {
+      taskToSave.comments = task.comments;
+    }
+    
+    if (task?.attachments) {
+      taskToSave.attachments = task.attachments;
+    }
+    
+    console.log("Saving task:", taskToSave);
     onSave(taskToSave);
   };
 
@@ -79,7 +108,6 @@ const TaskForm: React.FC<TaskFormProps> = ({
         </TabsList>
         
         <TabsContent value="details" className="space-y-6">
-          {/* Project Title */}
           <div className="space-y-2">
             <div className="flex items-center gap-2 mb-1 text-sm font-medium text-gray-700">
               <FileText className="h-4 w-4 text-gray-500" />
@@ -93,7 +121,6 @@ const TaskForm: React.FC<TaskFormProps> = ({
             />
           </div>
           
-          {/* Status */}
           <div className="space-y-2">
             <div className="flex items-center gap-2 mb-1 text-sm font-medium text-gray-700">
               <FileText className="h-4 w-4 text-gray-500" />
@@ -134,7 +161,6 @@ const TaskForm: React.FC<TaskFormProps> = ({
             </Select>
           </div>
           
-          {/* Optional Due Date */}
           <div className="space-y-2">
             <div className="flex items-center justify-between mb-1">
               <div className="flex items-center gap-2 text-sm font-medium text-gray-700">

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import Layout from '@/components/Layout';
 import AppMenu from '@/components/AppMenu';
@@ -76,9 +77,19 @@ const Projects = () => {
   };
 
   const handleSaveTask = (updatedTask: Task) => {
+    console.log("Saving updated task in main component:", updatedTask);
     setTasks(prev => prev.map(task => 
       task.id === updatedTask.id 
-        ? { ...updatedTask } 
+        ? { 
+            ...task, 
+            title: updatedTask.title,
+            description: updatedTask.description,
+            status: updatedTask.status,
+            priority: updatedTask.priority,
+            dueDate: updatedTask.dueDate,
+            content: updatedTask.content,
+            purpose: updatedTask.purpose
+          }
         : task
     ));
     setIsTaskDialogOpen(false);
@@ -103,6 +114,8 @@ const Projects = () => {
       dueDate: newTask.dueDate || format(new Date(), 'yyyy-MM-dd'),
       priority: newTask.priority || 'medium',
       comments: [],
+      content: newTask.content || '',
+      purpose: newTask.purpose || '',
       order: getTasksByStatus(newTask.status || newTaskStatus).length
     };
     
