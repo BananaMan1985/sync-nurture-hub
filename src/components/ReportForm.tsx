@@ -85,18 +85,24 @@ const ReportForm: React.FC = () => {
             busynessLevel: existingReport.busynessLevel
           });
         }
-      } else if (formattedDate === today) {
-        setFormData({
-          date: today,
-          completedTasks: '',
-          outstandingTasks: '',
-          needFromManager: '',
-          tomorrowPlans: '',
-          busynessLevel: '5'
-        });
+      } else {
+        // Reset form data for new reports
+        resetFormData(formattedDate);
       }
     }
   }, [selectedDate, viewMode]);
+
+  // Function to reset form data
+  const resetFormData = (date: string) => {
+    setFormData({
+      date: date,
+      completedTasks: '',
+      outstandingTasks: '',
+      needFromManager: '',
+      tomorrowPlans: '',
+      busynessLevel: '5'
+    });
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -118,13 +124,23 @@ const ReportForm: React.FC = () => {
     if (date) {
       setSelectedDate(date);
       const formattedDate = date.toISOString().split('T')[0];
-      setFormData(prev => ({ ...prev, date: formattedDate }));
       
       const existingReport = reportHistoryData.find(r => r.date === formattedDate);
       
       if (existingReport) {
         setViewMode('view');
+        setFormData({
+          date: existingReport.date,
+          completedTasks: existingReport.completedTasks,
+          outstandingTasks: existingReport.outstandingTasks,
+          needFromManager: existingReport.needFromManager,
+          tomorrowPlans: existingReport.tomorrowPlans,
+          busynessLevel: existingReport.busynessLevel
+        });
       } else {
+        // Reset form data for new reports
+        resetFormData(formattedDate);
+        
         // Check if date is within allowed range for submission
         const isWithinSubmissionRange = !isBefore(date, sevenDaysAgo) && !isAfter(date, new Date());
         
@@ -171,8 +187,23 @@ const ReportForm: React.FC = () => {
 
   const goToToday = () => {
     setSelectedDate(new Date());
-    setFormData(prev => ({ ...prev, date: today }));
-    setViewMode(reportExists ? 'view' : 'form');
+    const todayDate = new Date().toISOString().split('T')[0];
+    
+    const existingReport = reportHistoryData.find(r => r.date === todayDate);
+    if (existingReport) {
+      setViewMode('view');
+      setFormData({
+        date: existingReport.date,
+        completedTasks: existingReport.completedTasks,
+        outstandingTasks: existingReport.outstandingTasks,
+        needFromManager: existingReport.needFromManager,
+        tomorrowPlans: existingReport.tomorrowPlans,
+        busynessLevel: existingReport.busynessLevel
+      });
+    } else {
+      resetFormData(todayDate);
+      setViewMode('form');
+    }
   };
 
   const moveDate = (days: number) => {
@@ -180,13 +211,23 @@ const ReportForm: React.FC = () => {
     newDate.setDate(newDate.getDate() + days);
     setSelectedDate(newDate);
     const formattedDate = newDate.toISOString().split('T')[0];
-    setFormData(prev => ({ ...prev, date: formattedDate }));
     
     const existingReport = reportHistoryData.find(r => r.date === formattedDate);
     
     if (existingReport) {
       setViewMode('view');
+      setFormData({
+        date: existingReport.date,
+        completedTasks: existingReport.completedTasks,
+        outstandingTasks: existingReport.outstandingTasks,
+        needFromManager: existingReport.needFromManager,
+        tomorrowPlans: existingReport.tomorrowPlans,
+        busynessLevel: existingReport.busynessLevel
+      });
     } else {
+      // Reset form data for the new date
+      resetFormData(formattedDate);
+      
       // Check if date is within allowed range for submission
       const isWithinSubmissionRange = !isBefore(newDate, sevenDaysAgo) && !isAfter(newDate, new Date());
       
