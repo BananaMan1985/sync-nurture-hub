@@ -900,4 +900,30 @@ const Library = () => {
                                 size="sm" 
                                 onClick={() => handleEditItem(item)}
                               >
-                                <Edit className="h-4 w-
+                                <Edit className="h-4 w-4 mr-1" /> Edit
+                              </Button>
+                            </DialogFooter>
+                          </DialogContent>
+                        </Dialog>
+                      </CardFooter>
+                    </Card>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-center py-10 bg-muted/10 rounded-lg">
+                <FileText className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
+                <h3 className="text-lg font-medium text-muted-foreground/70">No reference items found</h3>
+                <p className="text-sm text-muted-foreground/50 mt-1">
+                  Try changing your search or filter criteria
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      </motion.div>
+    </Layout>
+  );
+};
+
+export default Library;
