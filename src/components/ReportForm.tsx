@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -9,7 +8,7 @@ import { Slider } from '@/components/ui/slider';
 import { Calendar } from '@/components/ui/calendar';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { Send, Calendar as CalendarIcon, ArrowLeft, ArrowRight } from 'lucide-react';
+import { Send, Calendar as CalendarIcon, ArrowLeft, ArrowRight, Info } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface ReportFormData {
@@ -221,6 +220,9 @@ const ReportForm: React.FC = () => {
     }
   };
 
+  const isToday = formData.date === today;
+  const showFormattedDate = format(selectedDate, 'MMM dd, yyyy');
+
   return (
     <>
       <motion.form
@@ -234,7 +236,7 @@ const ReportForm: React.FC = () => {
           <motion.div variants={itemVariants}>
             <h3 className="text-xl font-medium">End-of-Day Report</h3>
             <p className="text-muted-foreground mt-1">
-              {viewMode === 'view' ? 'Viewing report for' : 'Creating report for'} {format(selectedDate, 'MMM dd, yyyy')}
+              {viewMode === 'view' ? 'Viewing report for' : 'Creating report for'} {showFormattedDate}
             </p>
           </motion.div>
           
@@ -410,14 +412,24 @@ const ReportForm: React.FC = () => {
                   Cancel
                 </Button>
               ) : (
-                <Button 
-                  type="submit" 
-                  className="gap-2"
-                  disabled={loading || formData.date !== today}
-                >
-                  <Send className="w-4 h-4" />
-                  Submit Report
-                </Button>
+                <div className="flex flex-col gap-2 w-full">
+                  {!isToday && (
+                    <div className="flex items-center gap-2 text-muted-foreground bg-accent p-2 rounded mb-2 w-full">
+                      <Info className="h-4 w-4 text-amber-500" />
+                      <span className="text-sm">Reports can only be submitted for the current day ({format(new Date(), 'MMM dd, yyyy')})</span>
+                    </div>
+                  )}
+                  <div className="flex justify-end">
+                    <Button 
+                      type="submit" 
+                      className="gap-2"
+                      disabled={loading || !isToday}
+                    >
+                      <Send className="w-4 h-4" />
+                      Submit Report
+                    </Button>
+                  </div>
+                </div>
               )}
             </motion.div>
           </>
