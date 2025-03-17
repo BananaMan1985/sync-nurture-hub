@@ -5,8 +5,8 @@ import { Mic, User, Lock, Mail, Eye, EyeOff, ArrowRight } from 'lucide-react';
 
 // Initialize Supabase client (replace with your Supabase URL and anon key)
 const supabase = createClient(
-  'https://usrcnpbhbwtwnssprdfq.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVzcmNucGJoYnd0d25zc3ByZGZxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDIyMjg5ODQsImV4cCI6MjA1NzgwNDk4NH0.IT7ubjHU9Rqq23-LEvVxhbEuWsj5YWugxbGWtj6-rC4'    
+  import.meta.env.VITE_SUPABASE_URL,
+  import.meta.env.VITE_SUPABASE_ANON_KEY
 );
 
 const Login = () => {

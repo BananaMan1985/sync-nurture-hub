@@ -1,13 +1,16 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import Layout from '@/components/Layout';
 import { Mic, Square } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 import { useToast } from '@/hooks/use-toast';
+import OpenAI from 'openai';
 
-// This key will need to be replaced with a real OpenAI API key later
-const OPENAI_API_KEY = "your-openai-api-key-here";
+// Initialize OpenAI client with environment variable
+const openai = new OpenAI({
+  apiKey: import.meta.env.VITE_OPENAI_API_KEY,
+  dangerouslyAllowBrowser: true, // Note: For demo only; use backend in production
+});
 
 const Voice: React.FC = () => {
   const [isRecording, setIsRecording] = useState(false);
@@ -20,6 +23,7 @@ const Voice: React.FC = () => {
   const audioChunksRef = useRef<Blob[]>([]);
   const { toast } = useToast();
 
+  // Cleanup audio URL on unmount
   useEffect(() => {
     return () => {
       if (audioURL) {
@@ -32,7 +36,7 @@ const Voice: React.FC = () => {
     try {
       audioChunksRef.current = [];
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      mediaRecorderRef.current = new MediaRecorder(stream);
+      mediaRecorderRef.current = new MediaRecorder(stream, { mimeType: 'audio/webm' });
       
       mediaRecorderRef.current.ondataavailable = (event) => {
         if (event.data.size > 0) {
@@ -41,13 +45,11 @@ const Voice: React.FC = () => {
       };
 
       mediaRecorderRef.current.onstop = () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/mp3' });
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
         const url = URL.createObjectURL(audioBlob);
         setAudioURL(url);
         setRecordingStatus('recorded');
-        
-        // Auto-transcribe after recording will be implemented later
-        // transcribeAudio(audioBlob);
+        transcribeAudio(audioBlob); // Auto-transcribe after stopping
       };
 
       mediaRecorderRef.current.start();
@@ -71,7 +73,6 @@ const Voice: React.FC = () => {
   const stopRecording = () => {
     if (mediaRecorderRef.current && isRecording) {
       mediaRecorderRef.current.stop();
-      // Stop all audio tracks
       mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
       setIsRecording(false);
       
@@ -90,10 +91,31 @@ const Voice: React.FC = () => {
     }
   };
 
-  // The transcribeAudio function will be implemented later
   const transcribeAudio = async (audioBlob: Blob) => {
-    // Implementation will be added later
-    console.log("Transcription functionality to be implemented");
+    setIsTranscribing(true);
+    try {
+      const audioFile = new File([audioBlob], 'recording.webm', { type: 'audio/webm' });
+
+      const transcriptionResponse = await openai.audio.transcriptions.create({
+        file: audioFile,
+        model: 'whisper-1',
+      });
+
+      setTranscription(transcriptionResponse.text);
+      toast({
+        title: "Transcription complete",
+        description: "Your audio has been transcribed successfully.",
+      });
+    } catch (error) {
+      console.error('Transcription error:', error);
+      toast({
+        variant: "destructive",
+        title: "Transcription failed",
+        description: error.message || "Could not transcribe audio. Please try again.",
+      });
+    } finally {
+      setIsTranscribing(false);
+    }
   };
 
   return (
@@ -139,18 +161,28 @@ const Voice: React.FC = () => {
               {isRecording ? "Stop Recording" : "Start Recording"}
             </Button>
             
+            {/* Combined Audio and Transcription Display */}
             {recordingStatus === 'recorded' && audioURL && (
-              <div className="w-full mt-4">
-                <h3 className="text-lg font-medium mb-2">Recording</h3>
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.3 }}
+                className="w-full mt-4 p-4 bg-gray-50 rounded-md border border-gray-200"
+              >
+                <h3 className="text-lg font-medium mb-2">Your Recording</h3>
                 <audio src={audioURL} controls className="w-full mb-4" />
-              </div>
-            )}
-            
-            {transcription && (
-              <div className="w-full mt-4 p-4 bg-muted rounded-md">
-                <h3 className="text-lg font-medium mb-2">Transcription</h3>
-                <p className="text-sm">{transcription}</p>
-              </div>
+                
+                {isTranscribing ? (
+                  <p className="text-sm text-gray-500 italic">Transcribing...</p>
+                ) : transcription ? (
+                  <div>
+                    <h4 className="text-md font-medium mb-1">Transcription</h4>
+                    <p className="text-sm text-gray-800 bg-white p-2 rounded-md border border-gray-300">{transcription}</p>
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-500">Transcription failed or pending.</p>
+                )}
+              </motion.div>
             )}
             
             <p className="text-center text-muted-foreground mt-4">
