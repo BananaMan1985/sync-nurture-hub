@@ -1,13 +1,10 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import Layout from '@/components/Layout';
 import AnimatedTransition from '@/components/AnimatedTransition';
 import ReportForm from '@/components/ReportForm';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const Reports: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<string>("create");
-
   return (
     <Layout>
       <AnimatedTransition>
@@ -25,14 +22,7 @@ const Reports: React.FC = () => {
           </div>
           
           <div className="max-w-3xl mx-auto mt-8">
-            <Tabs defaultValue="create" className="mb-6" onValueChange={setActiveTab}>
-              <TabsList className="w-full max-w-md mx-auto">
-                <TabsTrigger value="create" className="w-full">Create/View Reports</TabsTrigger>
-              </TabsList>
-              <TabsContent value="create" className="mt-6">
-                <ReportForm key={`form-${activeTab}`} />
-              </TabsContent>
-            </Tabs>
+            <ReportForm />
           </div>
         </div>
       </AnimatedTransition>
