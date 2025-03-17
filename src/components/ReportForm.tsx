@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { toast } from 'sonner';
 import { Send, Calendar as CalendarIcon, ArrowLeft, ArrowRight, Info } from 'lucide-react';
 import { format, isAfter, isBefore, subDays, startOfDay, isEqual } from 'date-fns';
-import { reportHistoryData } from '@/data/reportData';
+import { reportHistoryData, formatDateForStorage, getLocalDate } from '@/data/reportData';
 
 interface ReportFormData {
   date: string;
@@ -24,7 +24,7 @@ interface ReportFormData {
 export type ViewMode = 'form' | 'view';
 
 const ReportForm: React.FC = () => {
-  const today = new Date().toISOString().split('T')[0];
+  const today = formatDateForStorage(new Date());
   const [formData, setFormData] = useState<ReportFormData>({
     date: today,
     completedTasks: '',
@@ -48,7 +48,7 @@ const ReportForm: React.FC = () => {
 
   useEffect(() => {
     if (selectedDate) {
-      const formattedDate = selectedDate.toISOString().split('T')[0];
+      const formattedDate = formatDateForStorage(selectedDate);
       const existingReport = reportHistoryData.find(r => r.date === formattedDate);
       
       setReportExists(!!existingReport);
@@ -109,7 +109,7 @@ const ReportForm: React.FC = () => {
   const handleDateSelect = (date: Date | undefined) => {
     if (date) {
       setSelectedDate(date);
-      const formattedDate = date.toISOString().split('T')[0];
+      const formattedDate = formatDateForStorage(date);
       
       const existingReport = reportHistoryData.find(r => r.date === formattedDate);
       
@@ -176,7 +176,9 @@ const ReportForm: React.FC = () => {
     
     setLoading(true);
     
-    const existingReportIndex = reportHistoryData.findIndex(r => r.date === formData.date);
+    const currentDate = formatDateForStorage(selectedDate);
+    
+    const existingReportIndex = reportHistoryData.findIndex(r => r.date === currentDate);
     if (existingReportIndex !== -1) {
       toast.error("A report already exists for this date", { duration: 3000 });
       setLoading(false);
@@ -187,7 +189,7 @@ const ReportForm: React.FC = () => {
     
     const newReport = {
       id: Date.now(),
-      date: formData.date,
+      date: currentDate,
       status: 'Pending',
       completedTasks: formData.completedTasks,
       outstandingTasks: formData.outstandingTasks,
@@ -205,10 +207,11 @@ const ReportForm: React.FC = () => {
   };
 
   const goToToday = () => {
-    setSelectedDate(new Date());
-    const todayDate = new Date().toISOString().split('T')[0];
+    const nowDate = new Date();
+    setSelectedDate(nowDate);
+    const todayString = formatDateForStorage(nowDate);
     
-    const existingReport = reportHistoryData.find(r => r.date === todayDate);
+    const existingReport = reportHistoryData.find(r => r.date === todayString);
     if (existingReport) {
       setViewMode('view');
       setFormData({
@@ -220,7 +223,7 @@ const ReportForm: React.FC = () => {
         busynessLevel: existingReport.busynessLevel
       });
     } else {
-      resetFormData(todayDate);
+      resetFormData(todayString);
       setViewMode('form');
     }
   };
@@ -229,7 +232,7 @@ const ReportForm: React.FC = () => {
     const newDate = new Date(selectedDate);
     newDate.setDate(newDate.getDate() + days);
     setSelectedDate(newDate);
-    const formattedDate = newDate.toISOString().split('T')[0];
+    const formattedDate = formatDateForStorage(newDate);
     
     const existingReport = reportHistoryData.find(r => r.date === formattedDate);
     
@@ -259,7 +262,7 @@ const ReportForm: React.FC = () => {
 
   const dayContent = (day: Date) => {
     const hasReport = reportHistoryData.some(r => {
-      const reportDate = new Date(r.date);
+      const reportDate = getLocalDate(r.date);
       return reportDate.getDate() === day.getDate() &&
              reportDate.getMonth() === day.getMonth() &&
              reportDate.getFullYear() === day.getFullYear();

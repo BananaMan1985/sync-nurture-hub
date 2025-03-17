@@ -22,3 +22,15 @@ export const reportHistoryData = [
     busynessLevel: '4'
   },
 ];
+
+// Helper functions to ensure consistent date handling
+export const formatDateForStorage = (date: Date): string => {
+  // Format the date without timezone conversion (YYYY-MM-DD)
+  return date.toISOString().split('T')[0];
+};
+
+export const getLocalDate = (dateString: string): Date => {
+  // Create a date object in local timezone from YYYY-MM-DD format
+  const [year, month, day] = dateString.split('-').map(Number);
+  return new Date(year, month - 1, day);
+};

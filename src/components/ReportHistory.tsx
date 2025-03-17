@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { 
   Table, 
@@ -29,7 +28,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
-import { reportHistoryData } from '@/data/reportData';
+import { reportHistoryData, getLocalDate } from '@/data/reportData';
 
 const ReportHistory: React.FC = () => {
   const [selectedReport, setSelectedReport] = useState<typeof reportHistoryData[0] | null>(null);
@@ -45,7 +44,12 @@ const ReportHistory: React.FC = () => {
       report.completedTasks.toLowerCase().includes(searchTerm.toLowerCase()) ||
       report.status.toLowerCase().includes(searchTerm.toLowerCase())
     )
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()); // Sort by date, newest first
+    .sort((a, b) => {
+      // Sort by date using our consistent date handling
+      const dateA = getLocalDate(a.date);
+      const dateB = getLocalDate(b.date);
+      return dateB.getTime() - dateA.getTime();
+    }); // Sort by date, newest first
   
   // Calculate pagination
   const totalPages = Math.ceil(filteredReports.length / ITEMS_PER_PAGE);
@@ -127,7 +131,7 @@ const ReportHistory: React.FC = () => {
               Report Details
             </motion.h3>
             <motion.p variants={itemVariants} className="text-muted-foreground">
-              {format(parseISO(selectedReport.date), 'MMMM dd, yyyy')}
+              {format(getLocalDate(selectedReport.date), 'MMMM dd, yyyy')}
             </motion.p>
           </div>
           <motion.div variants={itemVariants}>
@@ -203,7 +207,9 @@ const ReportHistory: React.FC = () => {
               {paginatedReports.length > 0 ? (
                 paginatedReports.map((report) => (
                   <TableRow key={report.id}>
-                    <TableCell className="font-medium">{format(parseISO(report.date), 'MMM dd, yyyy')}</TableCell>
+                    <TableCell className="font-medium">
+                      {format(getLocalDate(report.date), 'MMM dd, yyyy')}
+                    </TableCell>
                     <TableCell>
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                         report.status === 'Reviewed' 
