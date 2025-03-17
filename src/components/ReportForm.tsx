@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { toast } from 'sonner';
 import { Send, Calendar as CalendarIcon, ArrowLeft, ArrowRight, Info } from 'lucide-react';
 import { format, isAfter, isBefore, subDays, startOfDay, isEqual } from 'date-fns';
+import { reportHistoryData } from '@/data/reportData';
 
 interface ReportFormData {
   date: string;
@@ -21,29 +22,6 @@ interface ReportFormData {
 }
 
 export type ViewMode = 'form' | 'view';
-
-const reportHistoryData = [
-  { 
-    id: 1, 
-    date: '2023-06-15', 
-    status: 'Reviewed',
-    completedTasks: 'Completed the UI design for the dashboard.',
-    outstandingTasks: 'Need to finish the user profile section.',
-    needFromManager: 'Feedback on the new layout design.',
-    tomorrowPlans: 'Start implementing the feedback system.',
-    busynessLevel: '5'
-  },
-  { 
-    id: 2, 
-    date: '2023-06-14', 
-    status: 'Reviewed',
-    completedTasks: 'Fixed bugs in the login flow.',
-    outstandingTasks: 'Authentication edge cases need handling.',
-    needFromManager: 'Access to the production error logs.',
-    tomorrowPlans: 'Implement error tracking system.',
-    busynessLevel: '4'
-  },
-];
 
 const ReportForm: React.FC = () => {
   const today = new Date().toISOString().split('T')[0];
@@ -198,8 +176,8 @@ const ReportForm: React.FC = () => {
     
     setLoading(true);
     
-    const existingReport = reportHistoryData.find(r => r.date === formData.date);
-    if (existingReport) {
+    const existingReportIndex = reportHistoryData.findIndex(r => r.date === formData.date);
+    if (existingReportIndex !== -1) {
       toast.error("A report already exists for this date", { duration: 3000 });
       setLoading(false);
       return;
@@ -207,8 +185,8 @@ const ReportForm: React.FC = () => {
     
     await new Promise((resolve) => setTimeout(resolve, 800));
     
-    reportHistoryData.push({
-      id: reportHistoryData.length + 1,
+    const newReport = {
+      id: Date.now(),
       date: formData.date,
       status: 'Pending',
       completedTasks: formData.completedTasks,
@@ -216,7 +194,9 @@ const ReportForm: React.FC = () => {
       needFromManager: formData.needFromManager,
       tomorrowPlans: formData.tomorrowPlans,
       busynessLevel: formData.busynessLevel
-    });
+    };
+    
+    reportHistoryData.push(newReport);
     
     toast.success("Report submitted successfully", { duration: 3000 });
     setLoading(false);

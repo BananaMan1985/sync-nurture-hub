@@ -17,35 +17,40 @@ import {
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { format, parseISO } from 'date-fns';
-import { Eye, AlertCircle } from 'lucide-react';
+import { Eye, AlertCircle, Search } from 'lucide-react';
 import { motion } from 'framer-motion';
-
-// Import the same mock data used in the form component
-const reportHistoryData = [
-  { 
-    id: 1, 
-    date: '2023-06-15', 
-    status: 'Reviewed',
-    completedTasks: 'Completed the UI design for the dashboard.',
-    outstandingTasks: 'Need to finish the user profile section.',
-    needFromManager: 'Feedback on the new layout design.',
-    tomorrowPlans: 'Start implementing the feedback system.',
-    busynessLevel: '5'
-  },
-  { 
-    id: 2, 
-    date: '2023-06-14', 
-    status: 'Reviewed',
-    completedTasks: 'Fixed bugs in the login flow.',
-    outstandingTasks: 'Authentication edge cases need handling.',
-    needFromManager: 'Access to the production error logs.',
-    tomorrowPlans: 'Implement error tracking system.',
-    busynessLevel: '4'
-  },
-];
+import { Input } from '@/components/ui/input';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
+import { reportHistoryData } from '@/data/reportData';
 
 const ReportHistory: React.FC = () => {
   const [selectedReport, setSelectedReport] = useState<typeof reportHistoryData[0] | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [searchTerm, setSearchTerm] = useState('');
+  
+  const ITEMS_PER_PAGE = 5;
+
+  // Filter reports based on search term
+  const filteredReports = reportHistoryData
+    .filter(report => 
+      report.date.includes(searchTerm) ||
+      report.completedTasks.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      report.status.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()); // Sort by date, newest first
+  
+  // Calculate pagination
+  const totalPages = Math.ceil(filteredReports.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const paginatedReports = filteredReports.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
   // Check if there are any reports
   const hasReports = reportHistoryData.length > 0;
@@ -83,6 +88,10 @@ const ReportHistory: React.FC = () => {
       y: 0,
       transition: { duration: 0.4 }
     }
+  };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
   };
 
   if (!hasReports) {
@@ -167,6 +176,18 @@ const ReportHistory: React.FC = () => {
         <CardHeader className="pb-3">
           <CardTitle>Your Reports</CardTitle>
           <CardDescription>View all your previously submitted reports</CardDescription>
+          <div className="relative mt-2">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search reports..."
+              className="pl-8"
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setCurrentPage(1); // Reset to first page when searching
+              }}
+            />
+          </div>
         </CardHeader>
         <CardContent>
           <Table>
@@ -179,34 +200,117 @@ const ReportHistory: React.FC = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {reportHistoryData.map((report) => (
-                <TableRow key={report.id}>
-                  <TableCell className="font-medium">{format(parseISO(report.date), 'MMM dd, yyyy')}</TableCell>
-                  <TableCell>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      report.status === 'Reviewed' 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-amber-100 text-amber-800'
-                    }`}>
-                      {report.status}
-                    </span>
-                  </TableCell>
-                  <TableCell>{getBusynessLabel(report.busynessLevel)}</TableCell>
-                  <TableCell className="text-right">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="flex items-center gap-1"
-                      onClick={() => viewReport(report)}
-                    >
-                      <Eye className="h-4 w-4" />
-                      <span>View</span>
-                    </Button>
+              {paginatedReports.length > 0 ? (
+                paginatedReports.map((report) => (
+                  <TableRow key={report.id}>
+                    <TableCell className="font-medium">{format(parseISO(report.date), 'MMM dd, yyyy')}</TableCell>
+                    <TableCell>
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        report.status === 'Reviewed' 
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-amber-100 text-amber-800'
+                      }`}>
+                        {report.status}
+                      </span>
+                    </TableCell>
+                    <TableCell>{getBusynessLabel(report.busynessLevel)}</TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="flex items-center gap-1"
+                        onClick={() => viewReport(report)}
+                      >
+                        <Eye className="h-4 w-4" />
+                        <span>View</span>
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={4} className="text-center py-4 text-muted-foreground">
+                    No reports match your search.
                   </TableCell>
                 </TableRow>
-              ))}
+              )}
             </TableBody>
           </Table>
+          
+          {totalPages > 1 && (
+            <div className="mt-4">
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious 
+                      onClick={() => currentPage > 1 && handlePageChange(currentPage - 1)}
+                      className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
+                    />
+                  </PaginationItem>
+                  
+                  {Array.from({length: Math.min(5, totalPages)}, (_, i) => {
+                    // Show first page, last page, current page, and pages around current
+                    let pageToShow;
+                    
+                    if (totalPages <= 5) {
+                      // If 5 or fewer pages, show all
+                      pageToShow = i + 1;
+                    } else if (currentPage <= 3) {
+                      // Near start
+                      if (i < 4) {
+                        pageToShow = i + 1;
+                      } else {
+                        pageToShow = totalPages;
+                      }
+                    } else if (currentPage >= totalPages - 2) {
+                      // Near end
+                      if (i === 0) {
+                        pageToShow = 1;
+                      } else {
+                        pageToShow = totalPages - (4 - i);
+                      }
+                    } else {
+                      // Middle
+                      if (i === 0) {
+                        pageToShow = 1;
+                      } else if (i === 4) {
+                        pageToShow = totalPages;
+                      } else {
+                        pageToShow = currentPage + (i - 2);
+                      }
+                    }
+                    
+                    // Add ellipsis
+                    if ((i === 1 && pageToShow !== 2) || (i === 3 && pageToShow !== totalPages - 1)) {
+                      return (
+                        <PaginationItem key={`ellipsis-${i}`}>
+                          <PaginationEllipsis />
+                        </PaginationItem>
+                      );
+                    }
+                    
+                    return (
+                      <PaginationItem key={pageToShow}>
+                        <PaginationLink 
+                          isActive={currentPage === pageToShow}
+                          onClick={() => handlePageChange(pageToShow)}
+                        >
+                          {pageToShow}
+                        </PaginationLink>
+                      </PaginationItem>
+                    );
+                  })}
+                  
+                  <PaginationItem>
+                    <PaginationNext 
+                      onClick={() => currentPage < totalPages && handlePageChange(currentPage + 1)}
+                      className={currentPage === totalPages ? "pointer-events-none opacity-50" : ""}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            </div>
+          )}
         </CardContent>
       </Card>
     </motion.div>
