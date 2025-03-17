@@ -63,6 +63,7 @@ const ReportForm: React.FC = () => {
   const [viewMode, setViewMode] = useState<ViewMode>('form');
   const [reportExists, setReportExists] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Calculate the earliest date for submission (7 days ago)
   const sevenDaysAgo = subDays(startOfDay(new Date()), 7);
@@ -102,11 +103,21 @@ const ReportForm: React.FC = () => {
       tomorrowPlans: '',
       busynessLevel: '5'
     });
+    setErrors({});
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    
+    // Clear error for this field if it exists
+    if (errors[name]) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
+    }
   };
 
   const handleSliderChange = (value: number[]) => {
@@ -155,8 +166,37 @@ const ReportForm: React.FC = () => {
     }
   };
 
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+
+    if (!formData.completedTasks.trim()) {
+      newErrors.completedTasks = 'Completed tasks is required';
+    }
+    
+    if (!formData.outstandingTasks.trim()) {
+      newErrors.outstandingTasks = 'Outstanding tasks is required';
+    }
+    
+    if (!formData.needFromManager.trim()) {
+      newErrors.needFromManager = 'Need from manager is required';
+    }
+    
+    if (!formData.tomorrowPlans.trim()) {
+      newErrors.tomorrowPlans = 'Tomorrow\'s plans is required';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!validateForm()) {
+      toast.error("Please fill in all required fields", { duration: 3000 });
+      return;
+    }
+    
     setLoading(true);
     
     const existingReport = reportHistoryData.find(r => r.date === formData.date);
@@ -394,55 +434,79 @@ const ReportForm: React.FC = () => {
         ) : (
           <>
             <motion.div variants={itemVariants} className="space-y-2">
-              <Label htmlFor="completedTasks">Completed Tasks</Label>
+              <Label htmlFor="completedTasks" className="flex items-center">
+                Completed Tasks <span className="text-destructive ml-1">*</span>
+              </Label>
               <Textarea
                 id="completedTasks"
                 name="completedTasks"
                 value={formData.completedTasks}
                 onChange={handleChange}
                 placeholder="What did you accomplish today?"
-                className="min-h-24 resize-none"
+                className={`min-h-24 resize-none ${errors.completedTasks ? 'border-destructive' : ''}`}
                 disabled={viewMode === 'view'}
+                required
               />
+              {errors.completedTasks && (
+                <p className="text-destructive text-sm">{errors.completedTasks}</p>
+              )}
             </motion.div>
 
             <motion.div variants={itemVariants} className="space-y-2">
-              <Label htmlFor="outstandingTasks">Outstanding Tasks</Label>
+              <Label htmlFor="outstandingTasks" className="flex items-center">
+                Outstanding Tasks <span className="text-destructive ml-1">*</span>
+              </Label>
               <Textarea
                 id="outstandingTasks"
                 name="outstandingTasks"
                 value={formData.outstandingTasks}
                 onChange={handleChange}
                 placeholder="What tasks are still in progress or pending?"
-                className="min-h-24 resize-none"
+                className={`min-h-24 resize-none ${errors.outstandingTasks ? 'border-destructive' : ''}`}
                 disabled={viewMode === 'view'}
+                required
               />
+              {errors.outstandingTasks && (
+                <p className="text-destructive text-sm">{errors.outstandingTasks}</p>
+              )}
             </motion.div>
 
             <motion.div variants={itemVariants} className="space-y-2">
-              <Label htmlFor="needFromManager">Need from Manager</Label>
+              <Label htmlFor="needFromManager" className="flex items-center">
+                Need from Manager <span className="text-destructive ml-1">*</span>
+              </Label>
               <Textarea
                 id="needFromManager"
                 name="needFromManager"
                 value={formData.needFromManager}
                 onChange={handleChange}
                 placeholder="What do you need from your manager to move forward?"
-                className="min-h-24 resize-none"
+                className={`min-h-24 resize-none ${errors.needFromManager ? 'border-destructive' : ''}`}
                 disabled={viewMode === 'view'}
+                required
               />
+              {errors.needFromManager && (
+                <p className="text-destructive text-sm">{errors.needFromManager}</p>
+              )}
             </motion.div>
 
             <motion.div variants={itemVariants} className="space-y-2">
-              <Label htmlFor="tomorrowPlans">Tomorrow's Plans</Label>
+              <Label htmlFor="tomorrowPlans" className="flex items-center">
+                Tomorrow's Plans <span className="text-destructive ml-1">*</span>
+              </Label>
               <Textarea
                 id="tomorrowPlans"
                 name="tomorrowPlans"
                 value={formData.tomorrowPlans}
                 onChange={handleChange}
                 placeholder="What are your priorities for tomorrow?"
-                className="min-h-24 resize-none"
+                className={`min-h-24 resize-none ${errors.tomorrowPlans ? 'border-destructive' : ''}`}
                 disabled={viewMode === 'view'}
+                required
               />
+              {errors.tomorrowPlans && (
+                <p className="text-destructive text-sm">{errors.tomorrowPlans}</p>
+              )}
             </motion.div>
 
             <motion.div variants={itemVariants} className="space-y-4">

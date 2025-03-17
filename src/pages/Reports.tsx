@@ -17,6 +17,7 @@ const Reports: React.FC = () => {
               <br />
               <span className="text-sm font-medium mt-1 inline-block">
                 Reports can be submitted for the current day and up to 7 days in the past.
+                <span className="text-destructive ml-1">All fields are required.</span>
               </span>
             </p>
           </div>
