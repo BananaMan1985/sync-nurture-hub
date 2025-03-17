@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -9,7 +10,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { Send, Calendar as CalendarIcon, ArrowLeft, ArrowRight, Info } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, isAfter, isBefore, subDays, startOfDay, isEqual } from 'date-fns';
 
 interface ReportFormData {
   date: string;
@@ -62,6 +63,9 @@ const ReportForm: React.FC = () => {
   const [viewMode, setViewMode] = useState<ViewMode>('form');
   const [reportExists, setReportExists] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
+
+  // Calculate the earliest date for submission (7 days ago)
+  const sevenDaysAgo = subDays(startOfDay(new Date()), 7);
 
   useEffect(() => {
     if (selectedDate) {
@@ -120,10 +124,15 @@ const ReportForm: React.FC = () => {
       
       if (existingReport) {
         setViewMode('view');
-      } else if (formattedDate === today) {
-        setViewMode('form');
       } else {
-        setDialogOpen(true);
+        // Check if date is within allowed range for submission
+        const isWithinSubmissionRange = !isBefore(date, sevenDaysAgo) && !isAfter(date, new Date());
+        
+        if (isWithinSubmissionRange) {
+          setViewMode('form');
+        } else {
+          setDialogOpen(true);
+        }
       }
       
       setShowCalendar(false);
@@ -174,7 +183,20 @@ const ReportForm: React.FC = () => {
     setFormData(prev => ({ ...prev, date: formattedDate }));
     
     const existingReport = reportHistoryData.find(r => r.date === formattedDate);
-    setViewMode(existingReport ? 'view' : 'form');
+    
+    if (existingReport) {
+      setViewMode('view');
+    } else {
+      // Check if date is within allowed range for submission
+      const isWithinSubmissionRange = !isBefore(newDate, sevenDaysAgo) && !isAfter(newDate, new Date());
+      
+      if (isWithinSubmissionRange) {
+        setViewMode('form');
+      } else {
+        setDialogOpen(true);
+        setViewMode('form'); // Set to form but will be disabled
+      }
+    }
   };
 
   const dayContent = (day: Date) => {
@@ -220,7 +242,9 @@ const ReportForm: React.FC = () => {
     }
   };
 
-  const isToday = formData.date === today;
+  // Check if selected date is within submission range
+  const isDateWithinSubmissionRange = !isBefore(selectedDate, sevenDaysAgo) && !isAfter(selectedDate, new Date());
+  const isToday = isEqual(startOfDay(selectedDate), startOfDay(new Date()));
   const showFormattedDate = format(selectedDate, 'MMM dd, yyyy');
 
   return (
@@ -312,7 +336,7 @@ const ReportForm: React.FC = () => {
               <p className="text-base">{formData.tomorrowPlans}</p>
             </motion.div>
             
-            {formData.date === today && (
+            {isDateWithinSubmissionRange && (
               <motion.div 
                 variants={itemVariants}
                 className="flex justify-end pt-2"
@@ -413,17 +437,17 @@ const ReportForm: React.FC = () => {
                 </Button>
               ) : (
                 <div className="flex flex-col gap-2 w-full">
-                  {!isToday && (
+                  {!isDateWithinSubmissionRange && (
                     <div className="flex items-center gap-2 text-muted-foreground bg-accent p-2 rounded mb-2 w-full">
                       <Info className="h-4 w-4 text-amber-500" />
-                      <span className="text-sm">Reports can only be submitted for the current day ({format(new Date(), 'MMM dd, yyyy')})</span>
+                      <span className="text-sm">Reports can only be submitted for dates within the last 7 days</span>
                     </div>
                   )}
                   <div className="flex justify-end">
                     <Button 
                       type="submit" 
                       className="gap-2"
-                      disabled={loading || !isToday}
+                      disabled={loading || !isDateWithinSubmissionRange}
                     >
                       <Send className="w-4 h-4" />
                       Submit Report
@@ -461,14 +485,14 @@ const ReportForm: React.FC = () => {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>No Report Available</DialogTitle>
+            <DialogTitle>Date Out of Range</DialogTitle>
             <DialogDescription className="text-destructive font-medium">
-              No report was submitted for {format(selectedDate, 'MMM dd, yyyy')}
+              Reports can only be submitted for dates within the last 7 days
             </DialogDescription>
           </DialogHeader>
           <div className="py-4 text-center">
             <p className="text-muted-foreground mb-4">
-              Reports can only be created for the current day.
+              Please select a date within the allowed range.
             </p>
             <Button onClick={() => {
               setDialogOpen(false);

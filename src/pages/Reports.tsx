@@ -14,6 +14,10 @@ const Reports: React.FC = () => {
             <h1 className="mb-4 text-4xl font-medium tracking-tight">End-of-Day Reports</h1>
             <p className="text-muted-foreground text-lg">
               Summarize your day, stay aligned, and plan effectively.
+              <br />
+              <span className="text-sm font-medium mt-1 inline-block">
+                Reports can be submitted for the current day and up to 7 days in the past.
+              </span>
             </p>
           </div>
           
