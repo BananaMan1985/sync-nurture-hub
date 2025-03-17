@@ -30,19 +30,6 @@ const ProjectsGrid: React.FC<ProjectsGridProps> = ({
     return tasks.filter(task => task.status === activeTab);
   }, [tasks, activeTab]);
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'high':
-        return 'text-red-500 bg-red-100';
-      case 'medium':
-        return 'text-orange-500 bg-orange-100';
-      case 'low':
-        return 'text-green-500 bg-green-100';
-      default:
-        return 'text-blue-500 bg-blue-100';
-    }
-  };
-
   const getStatusBadge = (status: string) => {
     const column = columns.find(col => col.id === status);
     if (!column) return status;
@@ -79,9 +66,9 @@ const ProjectsGrid: React.FC<ProjectsGridProps> = ({
             <CardHeader className="pb-3">
               <div className="flex justify-between items-start">
                 <CardTitle className="text-base line-clamp-2">{task.title}</CardTitle>
-                <Badge variant="outline" className={getPriorityColor(task.priority)}>
-                  {task.priority}
-                </Badge>
+                {task.priority && (
+                  <Badge variant="outline">{task.priority}</Badge>
+                )}
               </div>
               <CardDescription className="flex flex-wrap items-center gap-2 mt-1">
                 <Badge variant="secondary">
