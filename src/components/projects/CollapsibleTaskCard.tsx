@@ -16,6 +16,7 @@ interface CollapsibleTaskCardProps {
   onDragStart: (e: React.DragEvent, task: Task, index: number) => void;
   onDragEnter: (e: React.DragEvent, index: number) => void;
   isDragging: boolean;
+  className?: string;
 }
 
 const CollapsibleTaskCard: React.FC<CollapsibleTaskCardProps> = ({
@@ -24,7 +25,8 @@ const CollapsibleTaskCard: React.FC<CollapsibleTaskCardProps> = ({
   index,
   onDragStart,
   onDragEnter,
-  isDragging
+  isDragging,
+  className = ''
 }) => {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -55,7 +57,7 @@ const CollapsibleTaskCard: React.FC<CollapsibleTaskCardProps> = ({
     <Card 
       className={`mb-4 cursor-pointer hover:shadow-md transition-all duration-200 border-l-4 border-l-gray-400 ${
         isDragging ? 'opacity-50' : ''
-      }`}
+      } ${className}`}
       draggable={true}
       onDragStart={handleDragStart}
       onDragEnter={handleDragEnter}

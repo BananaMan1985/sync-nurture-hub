@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -49,6 +48,7 @@ const TaskColumn: React.FC<TaskColumnProps> = ({
   const [dropPreviewIndex, setDropPreviewIndex] = useState<number | null>(null);
   const [editedTitle, setEditedTitle] = useState(title);
   const [isDraggedOver, setIsDraggedOver] = useState(false);
+  const columnRef = useRef<HTMLDivElement>(null);
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault(); // Allow drop
@@ -60,17 +60,16 @@ const TaskColumn: React.FC<TaskColumnProps> = ({
     e.preventDefault();
     setIsDraggedOver(false);
     
-    // Try to get the taskId and other data
+    // Get all the necessary data from dataTransfer
     const taskId = e.dataTransfer.getData('taskId');
-    
-    // Only proceed if we have a taskId
     if (!taskId) return;
     
     const sourceStatus = e.dataTransfer.getData('sourceStatus') as TaskStatus;
+    const currentDropIndex = determineDropIndex(e, sortedTasks.length);
     
-    if (sourceStatus === status && dropPreviewIndex !== null) {
+    if (sourceStatus === status) {
       // If we're dragging within the same column, reorder tasks
-      onReorderTasks(taskId, dropPreviewIndex, status);
+      onReorderTasks(taskId, currentDropIndex, status);
     } else {
       // If we're dragging between columns, change status
       onDrop(taskId, status);
@@ -78,6 +77,32 @@ const TaskColumn: React.FC<TaskColumnProps> = ({
     
     setDraggedIndex(null);
     setDropPreviewIndex(null);
+  };
+
+  // Helper function to determine the drop index based on mouse position
+  const determineDropIndex = (e: React.DragEvent, totalItems: number): number => {
+    if (!columnRef.current) return 0;
+    
+    const columnRect = columnRef.current.getBoundingClientRect();
+    const scrollArea = columnRef.current.querySelector('.scroll-area');
+    const scrollTop = scrollArea ? scrollArea.scrollTop : 0;
+    
+    const taskCards = columnRef.current.querySelectorAll('.task-card');
+    if (taskCards.length === 0) return 0;
+    
+    const mouseY = e.clientY - columnRect.top + scrollTop;
+    
+    for (let i = 0; i < taskCards.length; i++) {
+      const card = taskCards[i] as HTMLElement;
+      const cardRect = card.getBoundingClientRect();
+      const cardMiddle = cardRect.top + (cardRect.height / 2) - columnRect.top + scrollTop;
+      
+      if (mouseY < cardMiddle) {
+        return i;
+      }
+    }
+    
+    return totalItems;
   };
 
   const handleDragStart = (e: React.DragEvent, task: Task, index: number) => {
@@ -89,9 +114,20 @@ const TaskColumn: React.FC<TaskColumnProps> = ({
     e.preventDefault();
     e.stopPropagation();
     
-    // Only set the drop preview if we have a task being dragged
     if (e.dataTransfer.types.includes('taskId')) {
-      setDropPreviewIndex(index);
+      // Update the drop preview based on mouse position
+      const currentDropIndex = determineDropIndex(e, sortedTasks.length);
+      setDropPreviewIndex(currentDropIndex);
+    }
+  };
+  
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    
+    if (e.dataTransfer.types.includes('taskId')) {
+      // Continuously update the drop preview while dragging over
+      const currentDropIndex = determineDropIndex(e, sortedTasks.length);
+      setDropPreviewIndex(currentDropIndex);
     }
   };
   
@@ -131,6 +167,7 @@ const TaskColumn: React.FC<TaskColumnProps> = ({
 
   return (
     <div 
+      ref={columnRef}
       className={`rounded-lg h-full flex flex-col overflow-hidden shadow-sm bg-white border border-slate-200 transition-all duration-200 hover:shadow-md ${isDraggedOver ? 'border-2 border-primary ring-4 ring-primary/20' : ''}`}
       onDragOver={handleDragOver}
       onDrop={handleDrop}
@@ -213,7 +250,7 @@ const TaskColumn: React.FC<TaskColumnProps> = ({
           <Skeleton className="h-[120px]" />
         </div>
       ) : (
-        <ScrollArea className="flex-1 p-3">
+        <ScrollArea className="flex-1 p-3 scroll-area">
           <div className="space-y-3 pr-1">
             {shouldShowEmptyColumnIndicator && (
               <div 
@@ -221,9 +258,15 @@ const TaskColumn: React.FC<TaskColumnProps> = ({
               />
             )}
             
+            {dropPreviewIndex === 0 && (
+              <div 
+                className="h-1 w-full bg-primary rounded-full mb-2 transform transition-all duration-200 animate-pulse"
+              />
+            )}
+            
             {sortedTasks.map((task, index) => (
               <React.Fragment key={task.id}>
-                {dropPreviewIndex === index && (
+                {dropPreviewIndex === index && index > 0 && (
                   <div 
                     className="h-1 w-full bg-primary rounded-full mb-2 transform transition-all duration-200 animate-pulse"
                   />
@@ -237,6 +280,7 @@ const TaskColumn: React.FC<TaskColumnProps> = ({
                     onDragStart={handleDragStart}
                     onDragEnter={handleDragEnter}
                     isDragging={draggedTaskId === task.id}
+                    className="task-card"
                   />
                 ) : (
                   <TaskCard 
@@ -246,10 +290,11 @@ const TaskColumn: React.FC<TaskColumnProps> = ({
                     onDragStart={handleDragStart}
                     onDragEnter={handleDragEnter}
                     isDragging={draggedTaskId === task.id}
+                    className="task-card"
                   />
                 )}
                 
-                {dropPreviewIndex === sortedTasks.length && index === sortedTasks.length - 1 && (
+                {dropPreviewIndex === index + 1 && (
                   <div 
                     className="h-1 w-full bg-primary rounded-full mt-2 transform transition-all duration-200 animate-pulse"
                   />

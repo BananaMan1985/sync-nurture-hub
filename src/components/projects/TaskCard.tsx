@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { CalendarDays, PaperclipIcon, MessageSquare } from 'lucide-react';
@@ -10,6 +11,7 @@ interface TaskCardProps {
   onDragStart: (e: React.DragEvent, task: Task, index: number) => void;
   onDragEnter: (e: React.DragEvent, index: number) => void;
   isDragging: boolean;
+  className?: string;
 }
 
 const TaskCard: React.FC<TaskCardProps> = ({ 
@@ -18,7 +20,8 @@ const TaskCard: React.FC<TaskCardProps> = ({
   index,
   onDragStart,
   onDragEnter,
-  isDragging
+  isDragging,
+  className = ''
 }) => {
   const statusColors = {
     inbox: 'bg-slate-50 border-l-slate-400',
@@ -68,7 +71,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
     <Card 
       className={`mb-4 cursor-pointer hover:shadow-md transition-all duration-200 hover:-translate-y-1 border-l-4 ${
         getColor()
-      } ${isDragging ? 'opacity-50' : ''}`}
+      } ${isDragging ? 'opacity-50' : ''} ${className}`}
       draggable={true}
       onDragStart={handleDragStart}
       onDragEnter={handleDragEnter}
