@@ -35,7 +35,7 @@ const AppMenu: React.FC = () => {
     { 
       href: "/voice", 
       icon: <Mic className="mr-2 h-5 w-5" />, 
-      label: "Voice Tasks" 
+      label: "Voice Input" 
     },
     { 
       href: "/tasks", 

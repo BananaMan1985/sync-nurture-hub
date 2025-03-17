@@ -12,7 +12,7 @@ const Navbar: React.FC = () => {
     { 
       href: "/voice", 
       icon: <Mic className="h-4 w-4 mr-1" />, 
-      label: "Voice Tasks" 
+      label: "Voice Input" 
     },
     { 
       href: "/projects", 

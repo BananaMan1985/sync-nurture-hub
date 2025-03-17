@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import Layout from '@/components/Layout';
 import { Mic, Square } from 'lucide-react';
@@ -104,7 +105,7 @@ const Voice: React.FC = () => {
         className="container mx-auto px-4 md:px-6"
       >
         <div className="mb-8">
-          <h1 className="text-3xl font-bold tracking-tight">Voice Tasks</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Voice Input</h1>
         </div>
 
         <div className="flex justify-center items-center my-12">
