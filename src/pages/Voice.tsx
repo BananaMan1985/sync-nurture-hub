@@ -1,7 +1,5 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import Layout from '@/components/Layout';
-import AppMenu from '@/components/AppMenu';
 import { Mic, Square } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
@@ -108,8 +106,6 @@ const Voice: React.FC = () => {
         <div className="mb-8">
           <h1 className="text-3xl font-bold tracking-tight">Voice Tasks</h1>
         </div>
-
-        <AppMenu />
 
         <div className="flex justify-center items-center my-12">
           <div className="bg-white rounded-lg shadow-sm border border-border/30 p-8 max-w-md w-full flex flex-col items-center">

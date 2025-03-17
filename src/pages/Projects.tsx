@@ -1,14 +1,11 @@
-
 import React, { useState } from 'react';
 import Layout from '@/components/Layout';
-import AppMenu from '@/components/AppMenu';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
-import { ListChecks, Plus, Clock, CalendarDays, Check, Settings, Archive, Inbox, FileCheck, PackageCheck, Clock4, FileSpreadsheet } from 'lucide-react';
+import { ListChecks, Plus } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
-import { Input } from '@/components/ui/input';
 
 import TaskColumn from '@/components/projects/TaskColumn';
 import TaskForm from '@/components/projects/TaskForm';
@@ -79,12 +76,10 @@ const Projects = () => {
   const handleSaveTask = (updatedTask: Task) => {
     console.log("Saving updated task in main component:", updatedTask);
     
-    // Replace the entire task object to ensure all fields are updated
     setTasks(prev => prev.map(task => 
       task.id === updatedTask.id ? updatedTask : task
     ));
     
-    // Update the selected task if it's still open
     if (selectedTask && selectedTask.id === updatedTask.id) {
       setSelectedTask(updatedTask);
     }
@@ -270,7 +265,6 @@ const Projects = () => {
               <Plus className="h-4 w-4" />
               Add New Project
             </Button>
-            <AppMenu />
           </div>
         </div>
 

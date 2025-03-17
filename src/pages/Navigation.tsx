@@ -1,7 +1,6 @@
 
 import React from 'react';
 import Layout from '@/components/Layout';
-import AppMenu from '@/components/AppMenu';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Navigation as NavigationIcon, MapPin, Compass } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -21,8 +20,6 @@ const Navigation: React.FC = () => {
             Maps, directions, and location services
           </p>
         </div>
-
-        <AppMenu />
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
           <Card>

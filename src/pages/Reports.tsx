@@ -3,7 +3,6 @@ import React, { useState } from 'react';
 import Layout from '@/components/Layout';
 import AnimatedTransition from '@/components/AnimatedTransition';
 import ReportForm from '@/components/ReportForm';
-import AppMenu from '@/components/AppMenu';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const Reports: React.FC = () => {
@@ -24,8 +23,6 @@ const Reports: React.FC = () => {
               </span>
             </p>
           </div>
-          
-          <AppMenu />
           
           <div className="max-w-3xl mx-auto mt-8">
             <Tabs defaultValue="create" className="mb-6" onValueChange={setActiveTab}>
