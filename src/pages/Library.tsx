@@ -1061,6 +1061,7 @@ const Library = () => {
                                 />
                                 {tableHeaders.length > 1 && (
                                   <Button
+                                    type="button"
                                     variant="ghost"
                                     size="sm"
                                     className="h-6 px-2 mt-1 text-destructive"
@@ -1073,6 +1074,7 @@ const Library = () => {
                             ))}
                             <th className="p-2 border-b w-10">
                               <Button
+                                type="button"
                                 variant="ghost"
                                 size="sm"
                                 className="h-6 w-6 p-0"
@@ -1098,6 +1100,7 @@ const Library = () => {
                               ))}
                               <td className="p-2 border-b w-10">
                                 <Button
+                                  type="button"
                                   variant="ghost"
                                   size="sm"
                                   className="h-6 w-6 p-0 text-destructive"
@@ -1111,6 +1114,7 @@ const Library = () => {
                           <tr>
                             <td colSpan={tableHeaders.length + 1} className="p-2">
                               <Button
+                                type="button"
                                 variant="ghost"
                                 size="sm"
                                 className="w-full h-8 border border-dashed border-muted-foreground/30"
