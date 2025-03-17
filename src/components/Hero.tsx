@@ -47,7 +47,7 @@ const Hero: React.FC = () => {
           className="max-w-3xl mx-auto mb-6 font-medium leading-tight tracking-tighter"
           variants={itemVariants}
         >
-          The Executive Assistant <br className="hidden sm:inline" />
+          The Sagan <br className="hidden sm:inline" />
           <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary to-blue-400">
             Command Center
           </span>

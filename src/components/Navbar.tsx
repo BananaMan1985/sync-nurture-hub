@@ -34,7 +34,7 @@ const Navbar: React.FC = () => {
   return (
     <nav className="bg-background border-b border-border/30 py-2 px-4">
       <div className="container mx-auto flex justify-between items-center">
-        <Link to="/" className="font-medium text-lg">Executive Assistant</Link>
+        <Link to="/" className="font-medium text-lg">Sagan Command Center</Link>
         <div className="flex space-x-1">
           {menuItems.map((item) => (
             <Button 
