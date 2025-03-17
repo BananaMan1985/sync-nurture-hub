@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -331,6 +332,9 @@ const ReportForm: React.FC = () => {
   const isToday = isEqual(startOfDay(selectedDate), startOfDay(new Date()));
   const showFormattedDate = format(selectedDate, 'MMM dd, yyyy');
 
+  // Helper function for comparing viewMode safely with TypeScript
+  const isViewMode = (mode: ViewMode): boolean => viewMode === mode;
+
   return (
     <>
       <motion.form
@@ -344,7 +348,7 @@ const ReportForm: React.FC = () => {
           <motion.div variants={itemVariants}>
             <h3 className="text-xl font-medium">End-of-Day Report</h3>
             <p className="text-muted-foreground mt-1">
-              {viewMode === 'view' ? 'Viewing report for' : 'Creating report for'} {showFormattedDate}
+              {isViewMode('view') ? 'Viewing report for' : 'Creating report for'} {showFormattedDate}
             </p>
           </motion.div>
           
@@ -393,7 +397,7 @@ const ReportForm: React.FC = () => {
           </motion.div>
         </div>
 
-        {viewMode === 'view' ? (
+        {isViewMode('view') ? (
           <div className="space-y-6">
             <motion.div variants={itemVariants} className="space-y-2">
               <Label className="text-muted-foreground">Busyness Level</Label>
@@ -447,7 +451,7 @@ const ReportForm: React.FC = () => {
                 onChange={handleChange}
                 placeholder="What did you accomplish today?"
                 className={`min-h-24 resize-none ${errors.completedTasks ? 'border-destructive' : ''}`}
-                disabled={viewMode === 'view'}
+                disabled={isViewMode('view')}
                 required
               />
               {errors.completedTasks && (
@@ -466,7 +470,7 @@ const ReportForm: React.FC = () => {
                 onChange={handleChange}
                 placeholder="What tasks are still in progress or pending?"
                 className={`min-h-24 resize-none ${errors.outstandingTasks ? 'border-destructive' : ''}`}
-                disabled={viewMode === 'view'}
+                disabled={isViewMode('view')}
                 required
               />
               {errors.outstandingTasks && (
@@ -485,7 +489,7 @@ const ReportForm: React.FC = () => {
                 onChange={handleChange}
                 placeholder="What do you need from your manager to move forward?"
                 className={`min-h-24 resize-none ${errors.needFromManager ? 'border-destructive' : ''}`}
-                disabled={viewMode === 'view'}
+                disabled={isViewMode('view')}
                 required
               />
               {errors.needFromManager && (
@@ -504,7 +508,7 @@ const ReportForm: React.FC = () => {
                 onChange={handleChange}
                 placeholder="What are your priorities for tomorrow?"
                 className={`min-h-24 resize-none ${errors.tomorrowPlans ? 'border-destructive' : ''}`}
-                disabled={viewMode === 'view'}
+                disabled={isViewMode('view')}
                 required
               />
               {errors.tomorrowPlans && (
