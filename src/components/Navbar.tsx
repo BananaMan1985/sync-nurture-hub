@@ -22,7 +22,7 @@ const Navbar: React.FC = () => {
     { href: "/projects", icon: <ListChecks className="h-4 w-4 mr-1" />, label: "Project Board" },
     { href: "/reports", icon: <ClipboardList className="h-4 w-4 mr-1" />, label: "Reports" },
     { href: "/library", icon: <BookOpen className="h-4 w-4 mr-1" />, label: "Reference" },
-    { href: "", icon: <Settings className="h-4 w-4 mr-1" />, label: "Settings" },
+    { href: "/settings", icon: <Settings className="h-4 w-4 mr-1" />, label: "Settings" },
   ];
 
   // Check authentication state on mount and listen for changes
