@@ -5,7 +5,6 @@ export interface Column {
   id: string;
   title: string;
   icon?: React.ReactNode;
-  order?: number; // Added order field for column sorting
 }
 
 export interface CommentAttachment {
@@ -47,9 +46,13 @@ export interface Task {
 }
 
 export const defaultColumns: Column[] = [
-  { id: 'todo', title: 'To Do', order: 0 },
-  { id: 'inprogress', title: 'In Progress', order: 1 },
-  { id: 'done', title: 'Done', order: 2 }
+  { id: 'inbox', title: 'Inbox' },
+  { id: 'confirmed', title: 'Confirmed' },
+  { id: 'received', title: 'Received' },
+  { id: 'inprogress', title: 'In Progress' },
+  { id: 'waiting', title: 'Waiting' },
+  { id: 'review', title: 'Ready for Review' },
+  { id: 'archive', title: 'Archive' }
 ];
 
 export const mockTasks: Task[] = [
@@ -58,7 +61,7 @@ export const mockTasks: Task[] = [
     title: 'Prepare quarterly report',
     description: 'Compile data from Q3 for executive meeting',
     purpose: 'Provide executives with data needed for strategic planning',
-    status: 'todo',
+    status: 'inbox',
     dueDate: '2023-11-15',
     priority: 'high',
     attachments: 2,
@@ -81,7 +84,7 @@ export const mockTasks: Task[] = [
     id: '2',
     title: 'Client follow-up',
     description: 'Send follow-up emails to clients from Monday\'s meeting',
-    status: 'inprogress',
+    status: 'confirmed',
     priority: 'medium',
     dueDate: '2023-11-10',
     comments: [
@@ -97,7 +100,7 @@ export const mockTasks: Task[] = [
     id: '3',
     title: 'Update website content',
     description: 'Update the team page with new staff photos',
-    status: 'todo',
+    status: 'received',
     priority: 'low',
     dueDate: '2023-11-20',
     comments: [],
@@ -115,7 +118,7 @@ export const mockTasks: Task[] = [
     id: '5',
     title: 'Review department budget',
     description: 'Review and approve department budget for next quarter',
-    status: 'done',
+    status: 'archive',
     priority: 'high',
     dueDate: '2023-11-05',
     comments: [],

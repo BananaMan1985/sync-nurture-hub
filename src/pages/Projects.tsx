@@ -1,15 +1,14 @@
+
 import React, { useState } from 'react';
 import Layout from '@/components/Layout';
 import AppMenu from '@/components/AppMenu';
-import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
-import { ListChecks, Plus, Clock, CalendarDays, Check, Settings, Edit, X, GripVertical } from 'lucide-react';
+import { ListChecks, Plus, Clock, CalendarDays, Check, Settings, Archive, Inbox, FileCheck, PackageCheck, Clock4, ClockCountdown, FileSpreadsheet } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { Input } from '@/components/ui/input';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 // Import the components with explicit type imports
 import TaskColumn from '@/components/projects/TaskColumn';
@@ -20,25 +19,15 @@ import { Task, TaskStatus, mockTasks, Comment as TaskComment, Column, defaultCol
 
 const Projects = () => {
   const [tasks, setTasks] = useState<Task[]>(mockTasks);
-  const [columns, setColumns] = useState<Column[]>(defaultColumns);
+  const [columns] = useState<Column[]>(defaultColumns);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
   const [isNewTaskDialogOpen, setIsNewTaskDialogOpen] = useState(false);
-  const [isColumnDialogOpen, setIsColumnDialogOpen] = useState(false);
-  const [newTaskStatus, setNewTaskStatus] = useState<TaskStatus>('todo');
+  const [newTaskStatus, setNewTaskStatus] = useState<TaskStatus>('inbox');
   const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
   const [editingColumnId, setEditingColumnId] = useState<string | null>(null);
-  const [newColumnTitle, setNewColumnTitle] = useState('');
-  const [draggedColumnId, setDraggedColumnId] = useState<string | null>(null);
   const { toast } = useToast();
-
-  // Sort columns by order property
-  const sortedColumns = [...columns].sort((a, b) => {
-    const orderA = a.order !== undefined ? a.order : 0;
-    const orderB = b.order !== undefined ? b.order : 0;
-    return orderA - orderB;
-  });
 
   const getTasksByStatus = (status: TaskStatus) => {
     return tasks.filter(task => task.status === status);
@@ -231,129 +220,31 @@ const Projects = () => {
     e.preventDefault();
   };
 
-  // Column management functions
   const handleEditColumnTitle = (id: string, newTitle: string) => {
-    setColumns(prev => prev.map(col => 
-      col.id === id ? { ...col, title: newTitle } : col
-    ));
-    setEditingColumnId(null);
-    
+    // This is kept for backward compatibility but has no effect now that columns are static
     toast({
-      title: "Column updated",
-      description: `Column name changed to "${newTitle}".`,
+      title: "Column names are fixed",
+      description: "Column names cannot be changed in this version.",
     });
-  };
-
-  const handleAddColumn = () => {
-    if (!newColumnTitle.trim()) {
-      toast({
-        title: "Error",
-        description: "Column name cannot be empty.",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    const newColumnId = `column-${Date.now()}`;
-    const maxOrder = columns.reduce((max, col) => {
-      const colOrder = col.order !== undefined ? col.order : 0;
-      return colOrder > max ? colOrder : max;
-    }, 0);
-    
-    setColumns(prev => [...prev, { 
-      id: newColumnId, 
-      title: newColumnTitle,
-      order: maxOrder + 1
-    }]);
-    setNewColumnTitle('');
-    setIsColumnDialogOpen(false);
-    
-    toast({
-      title: "Column added",
-      description: `New column "${newColumnTitle}" has been added.`,
-    });
-  };
-
-  const handleDeleteColumn = (id: string) => {
-    const hasTasksInColumn = tasks.some(task => task.status === id);
-    
-    if (hasTasksInColumn) {
-      toast({
-        title: "Cannot delete column",
-        description: "This column contains projects. Move them to another column first.",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    setColumns(prev => prev.filter(col => col.id !== id));
-    
-    toast({
-      title: "Column deleted",
-      description: "The column has been removed.",
-    });
-  };
-
-  // Column reordering functions
-  const handleColumnDragStart = (e: React.DragEvent, columnId: string) => {
-    e.dataTransfer.setData('columnId', columnId);
-    setDraggedColumnId(columnId);
-    e.dataTransfer.effectAllowed = 'move';
-  };
-
-  const handleColumnDragOver = (e: React.DragEvent) => {
-    if (e.dataTransfer.types.includes('columnId')) {
-      e.preventDefault();
-    }
-  };
-
-  const handleColumnDrop = (e: React.DragEvent, targetColumnId: string) => {
-    e.preventDefault();
-    const sourceColumnId = e.dataTransfer.getData('columnId');
-    
-    if (!sourceColumnId || !e.dataTransfer.types.includes('columnId')) return;
-    
-    if (sourceColumnId === targetColumnId || !draggedColumnId) return;
-    
-    const sourceColumn = columns.find(col => col.id === sourceColumnId);
-    const targetColumn = columns.find(col => col.id === targetColumnId);
-    
-    if (!sourceColumn || !targetColumn) return;
-    
-    setColumns(prev => {
-      const updated = prev.map(col => {
-        if (col.id === sourceColumnId) {
-          return { ...col, order: targetColumn.order };
-        }
-        if (col.id === targetColumnId) {
-          return { ...col, order: sourceColumn.order };
-        }
-        return col;
-      });
-      return updated;
-    });
-    
-    setDraggedColumnId(null);
-    
-    toast({
-      title: "Columns reordered",
-      description: "Column order has been updated.",
-    });
-  };
-
-  const handleColumnDragEnd = () => {
-    setDraggedColumnId(null);
   };
 
   // Function to get the appropriate icon for a column
   const getColumnIcon = (columnId: string) => {
     switch (columnId) {
-      case 'todo':
-        return <ListChecks className="h-5 w-5" />;
+      case 'inbox':
+        return <Inbox className="h-5 w-5" />;
+      case 'confirmed':
+        return <FileCheck className="h-5 w-5" />;
+      case 'received':
+        return <PackageCheck className="h-5 w-5" />;
       case 'inprogress':
         return <Clock className="h-5 w-5" />;
-      case 'done':
-        return <Check className="h-5 w-5" />;
+      case 'waiting':
+        return <ClockCountdown className="h-5 w-5" />;
+      case 'review':
+        return <FileSpreadsheet className="h-5 w-5" />;
+      case 'archive':
+        return <Archive className="h-5 w-5" />;
       default:
         return <ListChecks className="h-5 w-5" />;
     }
@@ -376,24 +267,21 @@ const Projects = () => {
             <Button 
               variant="outline" 
               size="sm" 
-              onClick={() => setIsColumnDialogOpen(true)}
+              onClick={() => setIsNewTaskDialogOpen(true)}
               className="flex items-center gap-1"
             >
               <Plus className="h-4 w-4" />
-              Add Column
+              Add New Project
             </Button>
             <AppMenu />
           </div>
         </div>
 
         <ColumnCarousel>
-          {sortedColumns.map(column => (
+          {columns.map(column => (
             <div 
               key={column.id} 
               className="min-w-[300px] w-[350px] max-w-md flex-shrink-0"
-              onDragOver={handleColumnDragOver}
-              onDrop={(e) => handleColumnDrop(e, column.id)}
-              style={{ opacity: draggedColumnId === column.id ? 0.6 : 1 }}
             >
               <TaskColumn
                 title={column.title}
@@ -408,10 +296,8 @@ const Projects = () => {
                 onDragOver={handleDragOver}
                 onAddTask={handleAddTask}
                 onEditColumnTitle={(newTitle) => handleEditColumnTitle(column.id, newTitle)}
-                onDeleteColumn={() => handleDeleteColumn(column.id)}
                 isEditing={editingColumnId === column.id}
                 setIsEditing={(isEditing) => setEditingColumnId(isEditing ? column.id : null)}
-                isDraggable={true}
               />
             </div>
           ))}
@@ -450,41 +336,6 @@ const Projects = () => {
               statuses={columns.map(col => ({ id: col.id, name: col.title }))}
               initialStatus={newTaskStatus}
             />
-          </DialogContent>
-        </Dialog>
-
-        {/* Add Column Dialog */}
-        <Dialog open={isColumnDialogOpen} onOpenChange={setIsColumnDialogOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Add New Column</DialogTitle>
-              <DialogDescription>
-                Create a new column for your projects board.
-              </DialogDescription>
-            </DialogHeader>
-            
-            <div className="space-y-4 pt-4">
-              <div className="space-y-2">
-                <label htmlFor="columnTitle" className="text-sm font-medium">
-                  Column Name
-                </label>
-                <Input
-                  id="columnTitle"
-                  value={newColumnTitle}
-                  onChange={(e) => setNewColumnTitle(e.target.value)}
-                  placeholder="Enter column name"
-                />
-              </div>
-              
-              <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setIsColumnDialogOpen(false)}>
-                  Cancel
-                </Button>
-                <Button onClick={handleAddColumn}>
-                  Add Column
-                </Button>
-              </div>
-            </div>
           </DialogContent>
         </Dialog>
       </motion.div>

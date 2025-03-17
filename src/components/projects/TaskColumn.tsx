@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Plus, Edit, Trash, Check, X, GripVertical } from 'lucide-react';
+import { Plus, Edit, Trash, Check, X } from 'lucide-react';
 import TaskCard from './TaskCard';
 import { Task, TaskStatus } from './types';
 import { Input } from '@/components/ui/input';
@@ -25,7 +25,6 @@ interface TaskColumnProps {
   onDeleteColumn?: () => void;
   isEditing?: boolean;
   setIsEditing?: (isEditing: boolean) => void;
-  isDraggable?: boolean;
 }
 
 const TaskColumn: React.FC<TaskColumnProps> = ({
@@ -44,7 +43,6 @@ const TaskColumn: React.FC<TaskColumnProps> = ({
   onDeleteColumn,
   isEditing = false,
   setIsEditing,
-  isDraggable = false,
 }) => {
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dropPreviewIndex, setDropPreviewIndex] = useState<number | null>(null);
@@ -54,11 +52,16 @@ const TaskColumn: React.FC<TaskColumnProps> = ({
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault(); // Allow drop
     onDragOver(e, status);
+    setIsDraggedOver(true);
   };
   
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDraggedOver(false);
+    
+    // Only process task-related drops
+    if (!e.dataTransfer.types.includes('taskId')) return;
+    
     const taskId = e.dataTransfer.getData('taskId');
     const sourceStatus = e.dataTransfer.getData('sourceStatus') as TaskStatus;
     
@@ -75,6 +78,7 @@ const TaskColumn: React.FC<TaskColumnProps> = ({
   };
 
   const handleDragStart = (e: React.DragEvent, task: Task, index: number) => {
+    e.stopPropagation();
     e.dataTransfer.setData('taskId', task.id);
     e.dataTransfer.setData('sourceStatus', task.status);
     e.dataTransfer.setData('sourceIndex', index.toString());
@@ -83,6 +87,11 @@ const TaskColumn: React.FC<TaskColumnProps> = ({
 
   const handleDragEnter = (e: React.DragEvent, index: number) => {
     e.preventDefault();
+    e.stopPropagation();
+    
+    // Only process if we have a task being dragged
+    if (!e.dataTransfer.types.includes('taskId')) return;
+    
     setDropPreviewIndex(index);
   };
   
@@ -110,21 +119,6 @@ const TaskColumn: React.FC<TaskColumnProps> = ({
     }
   };
 
-  // For column drag events
-  const handleColumnDragOver = (e: React.DragEvent) => {
-    if (e.dataTransfer.types.includes('columnId')) {
-      e.preventDefault();
-      setIsDraggedOver(true);
-    }
-  };
-
-  const handleColumnDragLeave = (e: React.DragEvent) => {
-    const relatedTarget = e.relatedTarget as Element;
-    if (!relatedTarget || !e.currentTarget.contains(relatedTarget)) {
-      setIsDraggedOver(false);
-    }
-  };
-
   // Add indicator if the column is empty and something is being dragged
   const shouldShowEmptyColumnIndicator = tasks.length === 0 && draggedTaskId !== null;
 
@@ -142,21 +136,8 @@ const TaskColumn: React.FC<TaskColumnProps> = ({
       onDrop={handleDrop}
       onDragLeave={handleDragLeave}
       onDragEnd={handleDragEnd}
-      onDragOver={handleColumnDragOver}
-      onDragLeave={handleColumnDragLeave}
     >
       <div className={`flex items-center p-4 border-b border-slate-100 ${isDraggedOver ? 'bg-primary/10' : ''}`}>
-        {isDraggable && (
-          <div className="cursor-move mr-1 text-slate-400 hover:text-slate-600" 
-               draggable 
-               onDragStart={(e) => {
-                 e.dataTransfer.setData('columnId', status);
-                 e.dataTransfer.effectAllowed = 'move';
-               }}>
-            <GripVertical className="h-5 w-5" />
-          </div>
-        )}
-        
         <div className="p-1.5 rounded-full bg-slate-100">
           <div className="text-slate-600">
             {icon}
@@ -198,7 +179,7 @@ const TaskColumn: React.FC<TaskColumnProps> = ({
               {tasks.length}
             </div>
 
-            {(onEditColumnTitle || onDeleteColumn) && (
+            {onEditColumnTitle && (
               <Popover>
                 <PopoverTrigger asChild>
                   <Button variant="ghost" size="icon" className="h-7 w-7 ml-1">
@@ -216,17 +197,6 @@ const TaskColumn: React.FC<TaskColumnProps> = ({
                       >
                         <Edit className="mr-2 h-4 w-4" />
                         Edit name
-                      </Button>
-                    )}
-                    {onDeleteColumn && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="justify-start text-red-500 hover:text-red-600 hover:bg-red-50"
-                        onClick={onDeleteColumn}
-                      >
-                        <Trash className="mr-2 h-4 w-4" />
-                        Delete column
                       </Button>
                     )}
                   </div>

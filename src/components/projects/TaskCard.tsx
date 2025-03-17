@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { CalendarDays, PaperclipIcon, MessageSquare } from 'lucide-react';
@@ -22,20 +21,31 @@ const TaskCard: React.FC<TaskCardProps> = ({
   isDragging
 }) => {
   const statusColors = {
-    todo: 'bg-slate-50 border-l-slate-400',
+    inbox: 'bg-slate-50 border-l-slate-400',
+    confirmed: 'bg-slate-50 border-l-green-400',
+    received: 'bg-slate-50 border-l-blue-400',
     inprogress: 'bg-slate-50 border-l-amber-400',
+    waiting: 'bg-slate-50 border-l-orange-400',
+    review: 'bg-slate-50 border-l-purple-400',
+    archive: 'bg-slate-50 border-l-gray-400',
+    
+    todo: 'bg-slate-50 border-l-slate-400',
     done: 'bg-slate-50 border-l-teal-400'
   };
 
-  // Handle drag start with stopPropagation to prevent column dragging
+  const getColor = () => {
+    return statusColors[task.status] || 'bg-slate-50 border-l-slate-400';
+  };
+
   const handleDragStart = (e: React.DragEvent) => {
-    e.stopPropagation(); // Stop event from bubbling up to column
+    e.stopPropagation();
+    e.dataTransfer.effectAllowed = 'move';
     onDragStart(e, task, index);
   };
 
-  // Prevent propagation on drag events
   const handleDragEnter = (e: React.DragEvent) => {
     e.stopPropagation();
+    e.preventDefault();
     onDragEnter(e, index);
   };
 
@@ -44,16 +54,21 @@ const TaskCard: React.FC<TaskCardProps> = ({
     e.stopPropagation();
   };
 
+  const handleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onClick();
+  };
+
   return (
     <Card 
       className={`mb-4 cursor-pointer hover:shadow-md transition-all duration-200 hover:-translate-y-1 border-l-4 ${
-        statusColors[task.status]
+        getColor()
       } ${isDragging ? 'opacity-50' : ''}`}
-      draggable 
+      draggable={true}
       onDragStart={handleDragStart}
       onDragEnter={handleDragEnter}
       onDragOver={handleDragOver}
-      onClick={onClick}
+      onClick={handleClick}
     >
       <CardHeader className="pb-2">
         <CardTitle className="text-lg font-medium">{task.title}</CardTitle>
