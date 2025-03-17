@@ -1,16 +1,32 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import Layout from '@/components/Layout';
-import { Mic, Square } from 'lucide-react';
+import { Mic, Square, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 import { useToast } from '@/hooks/use-toast';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import OpenAI from 'openai';
 
-// Initialize OpenAI client with environment variable
-const openai = new OpenAI({
-  apiKey: import.meta.env.VITE_OPENAI_API_KEY,
-  dangerouslyAllowBrowser: true, // Note: For demo only; use backend in production
-});
+// Initialize OpenAI client with environment variable safely
+const openai = (() => {
+  try {
+    const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
+    
+    if (!apiKey) {
+      console.warn('OpenAI API key missing. Voice transcription will be disabled.');
+      return null;
+    }
+    
+    return new OpenAI({
+      apiKey,
+      dangerouslyAllowBrowser: true, // Note: For demo only; use backend in production
+    });
+  } catch (error) {
+    console.error('Failed to initialize OpenAI client:', error);
+    return null;
+  }
+})();
 
 const Voice: React.FC = () => {
   const [isRecording, setIsRecording] = useState(false);
@@ -49,7 +65,16 @@ const Voice: React.FC = () => {
         const url = URL.createObjectURL(audioBlob);
         setAudioURL(url);
         setRecordingStatus('recorded');
-        transcribeAudio(audioBlob); // Auto-transcribe after stopping
+        
+        if (openai) {
+          transcribeAudio(audioBlob); // Auto-transcribe after stopping if OpenAI is available
+        } else {
+          toast({
+            variant: "destructive",
+            title: "Transcription unavailable",
+            description: "OpenAI API key is missing. Transcription is disabled.",
+          });
+        }
       };
 
       mediaRecorderRef.current.start();
@@ -92,6 +117,15 @@ const Voice: React.FC = () => {
   };
 
   const transcribeAudio = async (audioBlob: Blob) => {
+    if (!openai) {
+      toast({
+        variant: "destructive",
+        title: "Transcription unavailable",
+        description: "OpenAI API key is missing. Transcription is disabled.",
+      });
+      return;
+    }
+    
     setIsTranscribing(true);
     try {
       const audioFile = new File([audioBlob], 'recording.webm', { type: 'audio/webm' });
@@ -129,6 +163,17 @@ const Voice: React.FC = () => {
         <div className="mb-8">
           <h1 className="text-3xl font-bold tracking-tight">Voice Input</h1>
         </div>
+
+        {!openai && (
+          <Alert variant="destructive" className="mb-6">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Configuration Missing</AlertTitle>
+            <AlertDescription>
+              The OpenAI API key is not configured. Voice transcription is disabled. 
+              Please add the VITE_OPENAI_API_KEY environment variable to enable transcription.
+            </AlertDescription>
+          </Alert>
+        )}
 
         <div className="flex justify-center items-center my-12">
           <div className="bg-white rounded-lg shadow-sm border border-border/30 p-8 max-w-md w-full flex flex-col items-center">
@@ -179,14 +224,16 @@ const Voice: React.FC = () => {
                     <h4 className="text-md font-medium mb-1">Transcription</h4>
                     <p className="text-sm text-gray-800 bg-white p-2 rounded-md border border-gray-300">{transcription}</p>
                   </div>
-                ) : (
+                ) : openai ? (
                   <p className="text-sm text-gray-500">Transcription failed or pending.</p>
+                ) : (
+                  <p className="text-sm text-gray-500">Transcription disabled due to missing API key.</p>
                 )}
               </motion.div>
             )}
             
             <p className="text-center text-muted-foreground mt-4">
-              Tap to record a voice note. It will be transcribed and added as a task.
+              Tap to record a voice note. {openai ? "It will be transcribed and added as a task." : "Transcription is currently disabled."}
             </p>
           </div>
         </div>

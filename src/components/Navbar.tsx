@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { createClient } from '@supabase/supabase-js';
@@ -5,11 +6,23 @@ import { Mic, ListChecks, ClipboardList, BookOpen, Settings, LogIn, LogOut } fro
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 
-// Initialize Supabase client with environment variables
-const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL,
-  import.meta.env.VITE_SUPABASE_ANON_KEY
-);
+// Initialize Supabase client safely with environment variables
+const supabase = (() => {
+  try {
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+    
+    if (!supabaseUrl || !supabaseAnonKey) {
+      console.warn('Supabase credentials missing. Auth features will be disabled.');
+      return null;
+    }
+    
+    return createClient(supabaseUrl, supabaseAnonKey);
+  } catch (error) {
+    console.error('Failed to initialize Supabase client:', error);
+    return null;
+  }
+})();
 
 const Navbar: React.FC = () => {
   const location = useLocation();
@@ -25,26 +38,41 @@ const Navbar: React.FC = () => {
     { href: "/settings", icon: <Settings className="h-4 w-4 mr-1" />, label: "Settings" },
   ];
 
-  // Check authentication state on mount and listen for changes
+  // Check authentication state on mount and listen for changes if Supabase is available
   useEffect(() => {
     const checkSession = async () => {
+      if (!supabase) {
+        setIsLoggedIn(false);
+        return;
+      }
+      
       const { data: { session } } = await supabase.auth.getSession();
       setIsLoggedIn(!!session);
     };
+    
     checkSession();
 
-    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-      setIsLoggedIn(!!session);
-      console.log('Auth event:', event, 'Session:', session);
-    });
+    // Only set up listener if Supabase is initialized
+    if (supabase) {
+      const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+        setIsLoggedIn(!!session);
+        console.log('Auth event:', event, 'Session:', session);
+      });
 
-    return () => {
-      authListener.subscription.unsubscribe();
-    };
+      return () => {
+        authListener?.subscription.unsubscribe();
+      };
+    }
   }, []);
 
   // Handle logout
   const handleLogout = async () => {
+    if (!supabase) {
+      console.warn('Supabase not initialized, cannot logout');
+      navigate('/login');
+      return;
+    }
+    
     const { error } = await supabase.auth.signOut();
     if (error) {
       console.error('Logout error:', error.message);
