@@ -914,6 +914,417 @@ const Library = () => {
                 : 'Create a new reference item to store important information.'}
             </DialogDescription>
           </DialogHeader>
+          
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <FormField
+                control={form.control}
+                name="type"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Item Type</FormLabel>
+                    <Select 
+                      onValueChange={field.onChange} 
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a type" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="text">
+                          <div className="flex items-center">
+                            <TypeIcon className="h-4 w-4 mr-2" />
+                            <span>Text</span>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="image">
+                          <div className="flex items-center">
+                            <ImageIcon className="h-4 w-4 mr-2" />
+                            <span>Image</span>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="file">
+                          <div className="flex items-center">
+                            <FileArchive className="h-4 w-4 mr-2" />
+                            <span>File Attachment</span>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="database">
+                          <div className="flex items-center">
+                            <TableIcon className="h-4 w-4 mr-2" />
+                            <span>Table/Database</span>
+                          </div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <div className="grid grid-cols-1 gap-4">
+                <FormField
+                  control={form.control}
+                  name="title"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Title</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter a title" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="description"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Description</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter a brief description" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              
+              {form.watch('type') === 'text' && (
+                <FormField
+                  control={form.control}
+                  name="content"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Content</FormLabel>
+                      <FormControl>
+                        <Textarea 
+                          placeholder="Enter the text content" 
+                          className="min-h-32"
+                          {...field} 
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+              
+              {form.watch('type') === 'image' && (
+                <FormField
+                  control={form.control}
+                  name="imageUrl"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Image URL</FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder="Enter image URL" 
+                          {...field} 
+                        />
+                      </FormControl>
+                      <FormMessage />
+                      {field.value && (
+                        <div className="mt-2">
+                          <p className="text-sm text-muted-foreground mb-1">Preview:</p>
+                          <img 
+                            src={field.value} 
+                            alt="Preview" 
+                            className="max-h-48 rounded-md object-contain" 
+                          />
+                        </div>
+                      )}
+                    </FormItem>
+                  )}
+                />
+              )}
+              
+              {form.watch('type') === 'database' && (
+                <div className="space-y-4">
+                  <div>
+                    <FormLabel>Table Data</FormLabel>
+                    <div className="border rounded-md p-3 mt-1.5 overflow-x-auto">
+                      <table className="min-w-full">
+                        <thead>
+                          <tr>
+                            {tableHeaders.map((header, colIndex) => (
+                              <th key={colIndex} className="p-2 border-b">
+                                <Input
+                                  value={header}
+                                  onChange={(e) => updateTableHeader(colIndex, e.target.value)}
+                                  className="w-full h-8 text-sm"
+                                  placeholder={`Column ${colIndex + 1}`}
+                                />
+                                {tableHeaders.length > 1 && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-6 px-2 mt-1 text-destructive"
+                                    onClick={() => removeTableColumn(colIndex)}
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </Button>
+                                )}
+                              </th>
+                            ))}
+                            <th className="p-2 border-b w-10">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 w-6 p-0"
+                                onClick={addTableColumn}
+                              >
+                                <Plus className="h-3 w-3" />
+                              </Button>
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {tableRows.map((row, rowIndex) => (
+                            <tr key={rowIndex}>
+                              {row.map((cell, colIndex) => (
+                                <td key={colIndex} className="p-2 border-b">
+                                  <Input
+                                    value={cell}
+                                    onChange={(e) => updateTableCell(rowIndex, colIndex, e.target.value)}
+                                    className="w-full h-8 text-sm"
+                                    placeholder="Value"
+                                  />
+                                </td>
+                              ))}
+                              <td className="p-2 border-b w-10">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-6 w-6 p-0 text-destructive"
+                                  onClick={() => removeTableRow(rowIndex)}
+                                >
+                                  <X className="h-3 w-3" />
+                                </Button>
+                              </td>
+                            </tr>
+                          ))}
+                          <tr>
+                            <td colSpan={tableHeaders.length + 1} className="p-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="w-full h-8 border border-dashed border-muted-foreground/30"
+                                onClick={addTableRow}
+                              >
+                                <Plus className="h-3 w-3 mr-1" /> Add Row
+                              </Button>
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              <div className="space-y-2">
+                <FormLabel>Attachments</FormLabel>
+                <div className="flex items-center">
+                  <Input
+                    type="file"
+                    id="file-upload"
+                    className="hidden"
+                    onChange={handleFileUpload}
+                    multiple
+                  />
+                  <label
+                    htmlFor="file-upload"
+                    className="cursor-pointer inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2"
+                  >
+                    <Upload className="h-4 w-4 mr-2" />
+                    Upload Files
+                  </label>
+                </div>
+                
+                {form.watch('attachments')?.length > 0 && (
+                  <div className="mt-3 space-y-2">
+                    {form.watch('attachments').map((attachment) => (
+                      <div key={attachment.id} className="flex items-center justify-between bg-muted/30 rounded-md p-2">
+                        <div className="flex items-center text-sm">
+                          <FileArchive className="h-4 w-4 mr-2 text-muted-foreground" />
+                          <span className="truncate max-w-xs">{attachment.name}</span>
+                        </div>
+                        <div className="flex gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0"
+                            onClick={() => handlePreviewAttachment(attachment)}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0 text-destructive"
+                            onClick={() => handleRemoveAttachment(attachment.id)}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              
+              <div className="space-y-2">
+                <FormLabel>Tags</FormLabel>
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {form.watch('tags')?.map((tag, index) => (
+                    <Badge key={index} className="px-3 py-1">
+                      {tag}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-4 w-4 p-0 ml-1"
+                        onClick={() => {
+                          const currentTags = form.getValues('tags');
+                          form.setValue('tags', currentTags.filter((_, i) => i !== index));
+                        }}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </Badge>
+                  ))}
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <FormField
+                    control={form.control}
+                    name="newTag"
+                    render={({ field }) => (
+                      <FormItem className="flex-grow">
+                        <FormControl>
+                          <Input 
+                            placeholder="Add a tag" 
+                            {...field} 
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      const newTag = form.getValues('newTag');
+                      if (newTag) {
+                        const currentTags = form.getValues('tags') || [];
+                        if (!currentTags.includes(newTag)) {
+                          form.setValue('tags', [...currentTags, newTag]);
+                          form.setValue('newTag', '');
+                        }
+                      }
+                    }}
+                  >
+                    Add
+                  </Button>
+                </div>
+                
+                {availableTags.length > 0 && (
+                  <div className="mt-2">
+                    <p className="text-sm text-muted-foreground mb-1">Existing tags:</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {availableTags.map((tag) => {
+                        const isSelected = form.watch('tags')?.includes(tag);
+                        return (
+                          <Badge 
+                            key={tag}
+                            variant={isSelected ? "default" : "outline"}
+                            className="cursor-pointer text-xs"
+                            onClick={() => {
+                              const currentTags = form.getValues('tags') || [];
+                              if (currentTags.includes(tag)) {
+                                form.setValue('tags', currentTags.filter(t => t !== tag));
+                              } else {
+                                form.setValue('tags', [...currentTags, tag]);
+                              }
+                            }}
+                          >
+                            {tag}
+                          </Badge>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+              
+              <DialogFooter className="flex justify-end gap-2 pt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setEditingItem(null);
+                    setIsNewItemDialogOpen(false);
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit">
+                  {editingItem ? 'Update' : 'Create'}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+      
+      <Dialog
+        open={isAttachmentPreviewOpen}
+        onOpenChange={setIsAttachmentPreviewOpen}
+      >
+        <DialogContent className="max-w-3xl max-h-[80vh]">
+          <DialogHeader>
+            <DialogTitle>
+              {selectedAttachment?.name}
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="flex justify-center items-center h-full">
+            {selectedAttachment?.type?.startsWith('image/') ? (
+              <img 
+                src={selectedAttachment.url} 
+                alt={selectedAttachment.name} 
+                className="max-h-[60vh] object-contain" 
+              />
+            ) : selectedAttachment?.type?.includes('pdf') ? (
+              <iframe 
+                src={selectedAttachment.url} 
+                title={selectedAttachment.name} 
+                width="100%" 
+                height="500px" 
+                className="border-0"
+              />
+            ) : (
+              <div className="flex flex-col items-center justify-center py-12">
+                <FileArchive className="h-16 w-16 text-muted-foreground mb-4" />
+                <p className="text-lg">Preview not available for this file type</p>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  className="mt-4"
+                  asChild
+                >
+                  <a href={selectedAttachment?.url} download={selectedAttachment?.name}>
+                    <Download className="h-4 w-4 mr-2" /> Download
+                  </a>
+                </Button>
+              </div>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     </Layout>
