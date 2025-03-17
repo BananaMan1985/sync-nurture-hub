@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -157,7 +158,9 @@ const ReportForm: React.FC = () => {
         if (isWithinSubmissionRange) {
           setViewMode('form');
         } else {
+          // For dates outside submission range, show dialog but stay in form mode
           setDialogOpen(true);
+          setViewMode('form');
         }
       }
       
@@ -267,14 +270,13 @@ const ReportForm: React.FC = () => {
       // Reset form data for the new date
       resetFormData(formattedDate);
       
-      // Check if date is within allowed range for submission
-      const isWithinSubmissionRange = !isBefore(newDate, sevenDaysAgo) && !isAfter(newDate, new Date());
+      // Always set to form mode but disable submission if needed based on date
+      setViewMode('form');
       
-      if (isWithinSubmissionRange) {
-        setViewMode('form');
-      } else {
+      // If outside submission range, show dialog to inform user
+      const isWithinSubmissionRange = !isBefore(newDate, sevenDaysAgo) && !isAfter(newDate, new Date());
+      if (!isWithinSubmissionRange) {
         setDialogOpen(true);
-        setViewMode('form'); // Set to form but will be disabled
       }
     }
   };
@@ -590,19 +592,18 @@ const ReportForm: React.FC = () => {
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>Date Out of Range</DialogTitle>
-            <DialogDescription className="text-destructive font-medium">
+            <DialogDescription>
               Reports can only be submitted for dates within the last 7 days
             </DialogDescription>
           </DialogHeader>
           <div className="py-4 text-center">
             <p className="text-muted-foreground mb-4">
-              Please select a date within the allowed range.
+              You can view reports for any date, but new reports can only be submitted for dates within the last 7 days.
             </p>
             <Button onClick={() => {
               setDialogOpen(false);
-              goToToday();
             }}>
-              Go to Today
+              I Understand
             </Button>
           </div>
         </DialogContent>
