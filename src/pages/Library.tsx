@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
 import { 
@@ -16,7 +15,10 @@ import {
   X,
   Upload,
   Download,
-  Eye
+  Eye,
+  Image as ImageIcon,
+  Table as TableIcon,
+  Type as TypeIcon
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Input } from '@/components/ui/input';
@@ -48,6 +50,13 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { ReferenceAttachment } from '@/components/projects/types';
@@ -76,7 +85,31 @@ const mockAttachments: ReferenceAttachment[] = [
   }
 ];
 
-const initialReferenceItems = [
+// Define the type for the reference item
+type ReferenceItemType = 'text' | 'image' | 'file' | 'database';
+
+// Define the interface for table data
+interface TableData {
+  headers: string[];
+  rows: string[][];
+}
+
+// Extend the reference item interface
+interface ReferenceItem {
+  id: number;
+  title: string;
+  description: string;
+  content: string;
+  tags: string[];
+  icon: React.ElementType;
+  attachments: ReferenceAttachment[];
+  updatedAt: string;
+  type: ReferenceItemType;
+  imageUrl?: string;
+  tableData?: TableData;
+}
+
+const initialReferenceItems: ReferenceItem[] = [
   {
     id: 1,
     title: 'Travel Preferences',
@@ -85,7 +118,8 @@ const initialReferenceItems = [
     tags: ['airlines', 'hotels', 'travel policy'],
     icon: Plane,
     attachments: [],
-    updatedAt: '2 days ago'
+    updatedAt: '2 days ago',
+    type: 'text'
   },
   {
     id: 2,
@@ -95,7 +129,8 @@ const initialReferenceItems = [
     tags: ['phone numbers', 'emails', 'employees'],
     icon: Phone,
     attachments: [mockAttachments[0]],
-    updatedAt: '5 days ago'
+    updatedAt: '5 days ago',
+    type: 'text'
   },
   {
     id: 3,
@@ -105,7 +140,8 @@ const initialReferenceItems = [
     tags: ['sop', 'meetings', 'preparation'],
     icon: FileText,
     attachments: [],
-    updatedAt: '1 week ago'
+    updatedAt: '1 week ago',
+    type: 'text'
   },
   {
     id: 4,
@@ -115,7 +151,8 @@ const initialReferenceItems = [
     tags: ['expenses', 'reimbursement', 'finance'],
     icon: FileText,
     attachments: [mockAttachments[1], mockAttachments[2]],
-    updatedAt: '2 weeks ago'
+    updatedAt: '2 weeks ago',
+    type: 'text'
   },
   {
     id: 5,
@@ -125,7 +162,8 @@ const initialReferenceItems = [
     tags: ['booking', 'conference rooms', 'meetings'],
     icon: FileText, 
     attachments: [],
-    updatedAt: '3 weeks ago'
+    updatedAt: '3 weeks ago',
+    type: 'text'
   },
   {
     id: 6,
@@ -135,30 +173,39 @@ const initialReferenceItems = [
     tags: ['leadership', 'executives', 'management'],
     icon: Phone,
     attachments: [],
-    updatedAt: '1 month ago'
+    updatedAt: '1 month ago',
+    type: 'text'
   }
 ];
 
 const Library = () => {
-  const [referenceItems, setReferenceItems] = useState(initialReferenceItems);
+  const [referenceItems, setReferenceItems] = useState<ReferenceItem[]>(initialReferenceItems);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [availableTags, setAvailableTags] = useState<string[]>([]);
-  const [editingItem, setEditingItem] = useState<any>(null);
+  const [editingItem, setEditingItem] = useState<ReferenceItem | null>(null);
   const [isNewItemDialogOpen, setIsNewItemDialogOpen] = useState(false);
   const [editingTag, setEditingTag] = useState<string | null>(null);
   const [newTagValue, setNewTagValue] = useState('');
   const [selectedAttachment, setSelectedAttachment] = useState<ReferenceAttachment | null>(null);
   const [isAttachmentPreviewOpen, setIsAttachmentPreviewOpen] = useState(false);
+  const [tableHeaders, setTableHeaders] = useState<string[]>(['Column 1', 'Column 2', 'Column 3']);
+  const [tableRows, setTableRows] = useState<string[][]>([['', '', ''], ['', '', '']]);
 
   const form = useForm({
     defaultValues: {
       title: '',
       description: '',
       content: '',
-      tags: [],
+      tags: [] as string[],
       newTag: '',
-      attachments: [] as ReferenceAttachment[]
+      attachments: [] as ReferenceAttachment[],
+      type: 'text' as ReferenceItemType,
+      imageUrl: '',
+      tableData: {
+        headers: ['Column 1', 'Column 2', 'Column 3'],
+        rows: [['', '', ''], ['', '', '']]
+      }
     }
   });
 
@@ -187,7 +234,7 @@ const Library = () => {
     return matchesSearch && matchesTags;
   });
 
-  const resetForm = (item?: any) => {
+  const resetForm = (item?: ReferenceItem) => {
     if (item) {
       form.reset({
         title: item.title,
@@ -195,8 +242,22 @@ const Library = () => {
         content: item.content,
         tags: item.tags,
         newTag: '',
-        attachments: item.attachments || []
+        attachments: item.attachments || [],
+        type: item.type,
+        imageUrl: item.imageUrl || '',
+        tableData: item.tableData || {
+          headers: ['Column 1', 'Column 2', 'Column 3'],
+          rows: [['', '', ''], ['', '', '']]
+        }
       });
+      
+      if (item.tableData) {
+        setTableHeaders(item.tableData.headers);
+        setTableRows(item.tableData.rows);
+      } else {
+        setTableHeaders(['Column 1', 'Column 2', 'Column 3']);
+        setTableRows([['', '', ''], ['', '', '']]);
+      }
     } else {
       form.reset({
         title: '',
@@ -204,12 +265,20 @@ const Library = () => {
         content: '',
         tags: [],
         newTag: '',
-        attachments: []
+        attachments: [],
+        type: 'text',
+        imageUrl: '',
+        tableData: {
+          headers: ['Column 1', 'Column 2', 'Column 3'],
+          rows: [['', '', ''], ['', '', '']]
+        }
       });
+      setTableHeaders(['Column 1', 'Column 2', 'Column 3']);
+      setTableRows([['', '', ''], ['', '', '']]);
     }
   };
 
-  const handleEditItem = (item: any) => {
+  const handleEditItem = (item: ReferenceItem) => {
     setEditingItem(item);
     resetForm(item);
   };
@@ -255,21 +324,97 @@ const Library = () => {
     setIsAttachmentPreviewOpen(true);
   };
 
+  // Table manipulation functions
+  const addTableColumn = () => {
+    setTableHeaders([...tableHeaders, `Column ${tableHeaders.length + 1}`]);
+    setTableRows(tableRows.map(row => [...row, '']));
+  };
+
+  const removeTableColumn = (index: number) => {
+    if (tableHeaders.length <= 1) return;
+    
+    const newHeaders = [...tableHeaders];
+    newHeaders.splice(index, 1);
+    setTableHeaders(newHeaders);
+    
+    const newRows = tableRows.map(row => {
+      const newRow = [...row];
+      newRow.splice(index, 1);
+      return newRow;
+    });
+    setTableRows(newRows);
+  };
+
+  const addTableRow = () => {
+    const newRow = Array(tableHeaders.length).fill('');
+    setTableRows([...tableRows, newRow]);
+  };
+
+  const removeTableRow = (index: number) => {
+    if (tableRows.length <= 1) return;
+    
+    const newRows = [...tableRows];
+    newRows.splice(index, 1);
+    setTableRows(newRows);
+  };
+
+  const updateTableHeader = (index: number, value: string) => {
+    const newHeaders = [...tableHeaders];
+    newHeaders[index] = value;
+    setTableHeaders(newHeaders);
+  };
+
+  const updateTableCell = (rowIndex: number, colIndex: number, value: string) => {
+    const newRows = [...tableRows];
+    newRows[rowIndex][colIndex] = value;
+    setTableRows(newRows);
+  };
+
   const onSubmit = (data: any) => {
     const processedTags = [...data.tags];
     if (data.newTag && !processedTags.includes(data.newTag)) {
       processedTags.push(data.newTag);
     }
     
-    const newItem = {
+    // Prepare table data if type is database
+    let tableData = undefined;
+    if (data.type === 'database') {
+      tableData = {
+        headers: tableHeaders,
+        rows: tableRows
+      };
+    }
+    
+    // Determine the icon based on the type
+    let icon;
+    switch (data.type) {
+      case 'image':
+        icon = ImageIcon;
+        break;
+      case 'file':
+        icon = FileArchive;
+        break;
+      case 'database':
+        icon = TableIcon;
+        break;
+      case 'text':
+      default:
+        icon = TypeIcon;
+        break;
+    }
+    
+    const newItem: ReferenceItem = {
       id: editingItem ? editingItem.id : Date.now(),
       title: data.title,
       description: data.description,
       content: data.content,
       tags: processedTags,
-      icon: editingItem?.icon || FileText,
+      icon: editingItem?.icon || icon,
       attachments: data.attachments || [],
-      updatedAt: 'Just now'
+      updatedAt: 'Just now',
+      type: data.type,
+      imageUrl: data.type === 'image' ? data.imageUrl : undefined,
+      tableData: tableData
     };
     
     if (editingItem) {
@@ -350,6 +495,79 @@ const Library = () => {
     toast.success(`Tag "${tagToDelete}" deleted`);
   };
 
+  const renderContentByType = (item: ReferenceItem) => {
+    switch (item.type) {
+      case 'image':
+        return (
+          <div className="mt-3">
+            {item.imageUrl ? (
+              <img 
+                src={item.imageUrl} 
+                alt={item.title} 
+                className="w-full h-auto rounded-md object-cover max-h-36"
+              />
+            ) : (
+              <div className="flex items-center justify-center h-32 bg-gray-100 rounded-md">
+                <ImageIcon className="h-8 w-8 text-muted-foreground/50" />
+              </div>
+            )}
+          </div>
+        );
+      case 'file':
+        return (
+          <div className="mt-2">
+            <div className="flex items-center text-sm text-muted-foreground">
+              <FileArchive className="mr-2 h-4 w-4" />
+              <span>{item.attachments.length} file(s) attached</span>
+            </div>
+          </div>
+        );
+      case 'database':
+        return (
+          <div className="mt-3 overflow-hidden">
+            {item.tableData && (
+              <div className="overflow-x-auto text-xs border rounded-md">
+                <table className="min-w-full">
+                  <thead className="bg-muted/50">
+                    <tr>
+                      {item.tableData.headers.map((header, index) => (
+                        <th key={index} className="px-2 py-2 font-medium text-left truncate">
+                          {header}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {item.tableData.rows.slice(0, 2).map((row, rowIndex) => (
+                      <tr key={rowIndex} className={rowIndex % 2 === 0 ? 'bg-white' : 'bg-muted/20'}>
+                        {row.map((cell, cellIndex) => (
+                          <td key={cellIndex} className="px-2 py-1.5 truncate border-t">
+                            {cell || '—'}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                    {item.tableData.rows.length > 2 && (
+                      <tr>
+                        <td colSpan={item.tableData.headers.length} className="px-2 py-1 text-center text-muted-foreground border-t">
+                          +{item.tableData.rows.length - 2} more rows
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        );
+      case 'text':
+      default:
+        return (
+          <CardDescription>{item.description}</CardDescription>
+        );
+    }
+  };
+
   return (
     <Layout>
       <motion.div
@@ -370,9 +588,8 @@ const Library = () => {
           </Button>
         </div>
 
-        {/* Removed AppMenu component from here */}
-
         <div className="grid grid-cols-1 md:grid-cols-[1fr_3fr] gap-8 mt-8">
+          {/* Left sidebar - search and filters */}
           <div className="space-y-6">
             <div className="relative">
               <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
@@ -478,6 +695,7 @@ const Library = () => {
             </div>
           </div>
           
+          {/* Main content - reference items grid */}
           <div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {filteredItems.length > 0 ? (
@@ -497,8 +715,9 @@ const Library = () => {
                         <CardTitle className="mt-3 text-xl">{item.title}</CardTitle>
                       </CardHeader>
                       <CardContent className="space-y-4">
-                        <CardDescription>{item.description}</CardDescription>
-                        {item.attachments && item.attachments.length > 0 && (
+                        {renderContentByType(item)}
+                        
+                        {item.attachments && item.attachments.length > 0 && item.type !== 'file' && (
                           <div>
                             <h4 className="text-xs font-medium text-muted-foreground mb-2">
                               Attachments ({item.attachments.length})
@@ -573,9 +792,50 @@ const Library = () => {
                                   </Badge>
                                 ))}
                               </div>
-                              <div className="p-4 bg-muted/50 rounded-md whitespace-pre-line">
-                                {item.content}
-                              </div>
+                              
+                              {item.type === 'text' && (
+                                <div className="p-4 bg-muted/50 rounded-md whitespace-pre-line">
+                                  {item.content}
+                                </div>
+                              )}
+                              
+                              {item.type === 'image' && item.imageUrl && (
+                                <div className="flex justify-center">
+                                  <img 
+                                    src={item.imageUrl} 
+                                    alt={item.title} 
+                                    className="max-w-full max-h-[400px] object-contain rounded-md"
+                                  />
+                                </div>
+                              )}
+                              
+                              {item.type === 'database' && item.tableData && (
+                                <div className="overflow-x-auto border rounded-md">
+                                  <table className="min-w-full">
+                                    <thead className="bg-muted/50">
+                                      <tr>
+                                        {item.tableData.headers.map((header, index) => (
+                                          <th key={index} className="px-4 py-2 font-medium text-left">
+                                            {header}
+                                          </th>
+                                        ))}
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {item.tableData.rows.map((row, rowIndex) => (
+                                        <tr key={rowIndex} className={rowIndex % 2 === 0 ? 'bg-white' : 'bg-muted/20'}>
+                                          {row.map((cell, cellIndex) => (
+                                            <td key={cellIndex} className="px-4 py-2 border-t">
+                                              {cell || '—'}
+                                            </td>
+                                          ))}
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              )}
+                              
                               {item.attachments && item.attachments.length > 0 && (
                                 <div className="mt-4">
                                   <h4 className="text-sm font-medium mb-2">Attachments</h4>
@@ -642,6 +902,7 @@ const Library = () => {
         </div>
       </motion.div>
 
+      {/* Form Dialog */}
       <Dialog 
         open={isNewItemDialogOpen || !!editingItem} 
         onOpenChange={(open) => {
@@ -651,262 +912,4 @@ const Library = () => {
           }
         }}
       >
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>{editingItem ? 'Edit Entry' : 'Add New Entry'}</DialogTitle>
-            <DialogDescription>
-              {editingItem 
-                ? 'Update this entry in the reference library.' 
-                : 'Create a new entry for the reference library.'}
-            </DialogDescription>
-          </DialogHeader>
-          
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <FormField
-                control={form.control}
-                name="title"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Title</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter title" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Description</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Brief description" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="content"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Content</FormLabel>
-                    <FormControl>
-                      <Textarea 
-                        placeholder="Detailed information..." 
-                        className="min-h-[150px]" 
-                        {...field} 
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="attachments"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Attachments</FormLabel>
-                    <div className="mt-2">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <label htmlFor="file-upload" className="cursor-pointer">
-                            <div className="flex items-center gap-2 bg-primary/5 text-primary px-3 py-2 rounded-md hover:bg-primary/10 transition-colors">
-                              <Upload className="h-4 w-4" />
-                              <span className="text-sm font-medium">Upload File</span>
-                            </div>
-                            <input
-                              id="file-upload"
-                              type="file"
-                              className="hidden"
-                              onChange={handleFileUpload}
-                              multiple
-                            />
-                          </label>
-                        </div>
-                        <div className="text-sm text-muted-foreground">
-                          {field.value.length} file(s) attached
-                        </div>
-                      </div>
-                      
-                      {field.value && field.value.length > 0 && (
-                        <div className="mt-3 space-y-2">
-                          {field.value.map((attachment: ReferenceAttachment) => (
-                            <div key={attachment.id} className="flex items-center justify-between bg-muted/50 rounded-md p-2 text-sm">
-                              <div className="flex items-center overflow-hidden">
-                                <FileArchive className="h-4 w-4 mr-2 text-muted-foreground flex-shrink-0" />
-                                <span className="truncate max-w-[150px]">{attachment.name}</span>
-                                <span className="text-xs text-muted-foreground ml-2 flex-shrink-0">
-                                  ({(attachment.size / 1024).toFixed(1)} KB)
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-8 w-8 p-0"
-                                  onClick={() => handlePreviewAttachment(attachment)}
-                                >
-                                  <Eye className="h-4 w-4 mr-1" /> View
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-8 w-8 p-0 text-destructive"
-                                  onClick={() => handleRemoveAttachment(attachment.id)}
-                                >
-                                  <X className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="tags"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Tags</FormLabel>
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      {availableTags.map(tag => (
-                        <Badge
-                          key={tag}
-                          variant={field.value?.includes(tag) ? "default" : "outline"}
-                          className="text-xs py-1 px-2 cursor-pointer"
-                          onClick={() => {
-                            const currentTags = field.value || [];
-                            if (currentTags.includes(tag)) {
-                              field.onChange(currentTags.filter(t => t !== tag));
-                            } else {
-                              field.onChange([...currentTags, tag]);
-                            }
-                          }}
-                        >
-                          {tag}
-                        </Badge>
-                      ))}
-                    </div>
-                    <div className="flex gap-2 mt-3">
-                      <Input
-                        placeholder="Add a new tag"
-                        value={form.watch('newTag') || ''}
-                        onChange={(e) => form.setValue('newTag', e.target.value)}
-                        className="text-sm"
-                      />
-                      <Button 
-                        type="button" 
-                        onClick={() => {
-                          const newTag = form.getValues('newTag');
-                          if (newTag) {
-                            const currentTags = form.getValues('tags') || [];
-                            if (!currentTags.includes(newTag)) {
-                              form.setValue('tags', [...currentTags, newTag]);
-                            }
-                            
-                            if (!availableTags.includes(newTag)) {
-                              setAvailableTags(prev => [...prev, newTag]);
-                            }
-                            
-                            form.setValue('newTag', '');
-                          }
-                        }}
-                      >
-                        Add Tag
-                      </Button>
-                    </div>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <DialogFooter className="flex justify-between">
-                {editingItem && (
-                  <Button 
-                    type="button" 
-                    variant="outline"
-                    className="text-destructive"
-                    onClick={() => handleDeleteItem(editingItem.id)}
-                  >
-                    <Trash className="h-4 w-4 mr-1" /> Delete
-                  </Button>
-                )}
-                <Button type="submit">
-                  {editingItem ? 'Update Entry' : 'Add Entry'}
-                </Button>
-              </DialogFooter>
-            </form>
-          </Form>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog 
-        open={isAttachmentPreviewOpen} 
-        onOpenChange={(open) => {
-          if (!open) {
-            setIsAttachmentPreviewOpen(false);
-            setSelectedAttachment(null);
-          }
-        }}
-      >
-        <DialogContent className="max-w-4xl max-h-[90vh]">
-          {selectedAttachment && (
-            <>
-              <DialogHeader>
-                <DialogTitle className="flex items-center gap-2">
-                  <FileArchive className="h-5 w-5" />
-                  {selectedAttachment.name}
-                </DialogTitle>
-                <DialogDescription>
-                  {(selectedAttachment.size / 1024).toFixed(2)} KB - {selectedAttachment.type}
-                </DialogDescription>
-              </DialogHeader>
-              
-              <div className="flex-1 overflow-auto my-6 flex items-center justify-center">
-                {selectedAttachment.type.startsWith('image/') ? (
-                  <img 
-                    src={selectedAttachment.url} 
-                    alt={selectedAttachment.name} 
-                    className="max-w-full max-h-[60vh] object-contain"
-                  />
-                ) : (
-                  <div className="text-center p-10 bg-slate-50 rounded-md w-full">
-                    <FileArchive className="h-16 w-16 mx-auto text-slate-400 mb-4" />
-                    <p className="font-medium">Preview not available</p>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      This file type cannot be previewed directly.
-                    </p>
-                    <Button 
-                      className="mt-4" 
-                      asChild
-                    >
-                      <a href={selectedAttachment.url} download={selectedAttachment.name}>
-                        <Download className="h-4 w-4 mr-2" /> Download File
-                      </a>
-                    </Button>
-                  </div>
-                )}
-              </div>
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
-    </Layout>
-  );
-};
-
-export default Library;
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
