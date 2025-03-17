@@ -62,15 +62,12 @@ const Hero: React.FC = () => {
         </motion.p>
         
         <motion.div 
-          className="flex flex-col sm:flex-row gap-4 justify-center items-center"
+          className="flex justify-center items-center"
           variants={itemVariants}
         >
-          <Link to="/reports" className="btn-primary flex items-center gap-2 group w-full sm:w-auto">
+          <Link to="/reports" className="btn-primary flex items-center gap-2 group">
             Get Started
             <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
-          </Link>
-          <Link to="/tasks" className="btn-outline w-full sm:w-auto">
-            Explore Features
           </Link>
         </motion.div>
       </motion.div>
