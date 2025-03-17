@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Index from "./pages/Index";
 import Reports from "./pages/Reports";
 import Library from "./pages/Library";
@@ -25,7 +25,7 @@ const App = () => (
           <Route path="/library" element={<Library />} />
           <Route path="/voice" element={<Voice />} />
           <Route path="/projects" element={<Projects />} />
-          <Route path="/tasks" element={<Projects />} /> {/* Redirect old path to new */}
+          <Route path="/tasks" element={<Navigate to="/projects" replace />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
