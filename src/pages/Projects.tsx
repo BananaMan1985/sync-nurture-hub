@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import Layout from '@/components/Layout';
 import { Button } from '@/components/ui/button';
@@ -107,7 +106,6 @@ const Projects = () => {
       description: newTask.description || '',
       status: newTask.status || newTaskStatus,
       dueDate: newTask.dueDate || format(new Date(), 'yyyy-MM-dd'),
-      priority: newTask.priority || 'medium',
       comments: [],
       content: newTask.content || '',
       purpose: newTask.purpose || '',
