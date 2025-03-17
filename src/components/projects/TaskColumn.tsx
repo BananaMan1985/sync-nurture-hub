@@ -49,6 +49,7 @@ const TaskColumn: React.FC<TaskColumnProps> = ({
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dropPreviewIndex, setDropPreviewIndex] = useState<number | null>(null);
   const [editedTitle, setEditedTitle] = useState(title);
+  const [isDraggedOver, setIsDraggedOver] = useState(false);
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault(); // Allow drop
@@ -57,6 +58,7 @@ const TaskColumn: React.FC<TaskColumnProps> = ({
   
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
+    setIsDraggedOver(false);
     const taskId = e.dataTransfer.getData('taskId');
     const sourceStatus = e.dataTransfer.getData('sourceStatus') as TaskStatus;
     
@@ -89,12 +91,14 @@ const TaskColumn: React.FC<TaskColumnProps> = ({
     const relatedTarget = e.relatedTarget as Element;
     if (!relatedTarget || !e.currentTarget.contains(relatedTarget)) {
       setDropPreviewIndex(null);
+      setIsDraggedOver(false);
     }
   };
 
   const handleDragEnd = () => {
     setDraggedIndex(null);
     setDropPreviewIndex(null);
+    setIsDraggedOver(false);
   };
 
   const handleSaveTitle = () => {
@@ -103,6 +107,21 @@ const TaskColumn: React.FC<TaskColumnProps> = ({
     }
     if (setIsEditing) {
       setIsEditing(false);
+    }
+  };
+
+  // For column drag events
+  const handleColumnDragOver = (e: React.DragEvent) => {
+    if (e.dataTransfer.types.includes('columnId')) {
+      e.preventDefault();
+      setIsDraggedOver(true);
+    }
+  };
+
+  const handleColumnDragLeave = (e: React.DragEvent) => {
+    const relatedTarget = e.relatedTarget as Element;
+    if (!relatedTarget || !e.currentTarget.contains(relatedTarget)) {
+      setIsDraggedOver(false);
     }
   };
 
@@ -118,15 +137,22 @@ const TaskColumn: React.FC<TaskColumnProps> = ({
 
   return (
     <div 
-      className="rounded-lg h-full flex flex-col overflow-hidden shadow-sm bg-white border border-slate-200 transition-all duration-200 hover:shadow-md"
+      className={`rounded-lg h-full flex flex-col overflow-hidden shadow-sm bg-white border border-slate-200 transition-all duration-200 hover:shadow-md ${isDraggedOver ? 'border-2 border-primary ring-4 ring-primary/20' : ''}`}
       onDragOver={handleDragOver}
       onDrop={handleDrop}
       onDragLeave={handleDragLeave}
       onDragEnd={handleDragEnd}
+      onDragOver={handleColumnDragOver}
+      onDragLeave={handleColumnDragLeave}
     >
-      <div className="flex items-center p-4 border-b border-slate-100">
+      <div className={`flex items-center p-4 border-b border-slate-100 ${isDraggedOver ? 'bg-primary/10' : ''}`}>
         {isDraggable && (
-          <div className="cursor-move mr-1 text-slate-400 hover:text-slate-600">
+          <div className="cursor-move mr-1 text-slate-400 hover:text-slate-600" 
+               draggable 
+               onDragStart={(e) => {
+                 e.dataTransfer.setData('columnId', status);
+                 e.dataTransfer.effectAllowed = 'move';
+               }}>
             <GripVertical className="h-5 w-5" />
           </div>
         )}
@@ -229,7 +255,7 @@ const TaskColumn: React.FC<TaskColumnProps> = ({
               <React.Fragment key={task.id}>
                 {dropPreviewIndex === index && (
                   <div 
-                    className="h-1 w-full bg-slate-300 rounded-full mb-2 transform transition-all duration-200 animate-pulse"
+                    className="h-1 w-full bg-primary rounded-full mb-2 transform transition-all duration-200 animate-pulse"
                   />
                 )}
                 <TaskCard 
@@ -242,7 +268,7 @@ const TaskColumn: React.FC<TaskColumnProps> = ({
                 />
                 {index === sortedTasks.length - 1 && dropPreviewIndex === sortedTasks.length && (
                   <div 
-                    className="h-1 w-full bg-slate-300 rounded-full mt-2 transform transition-all duration-200 animate-pulse"
+                    className="h-1 w-full bg-primary rounded-full mt-2 transform transition-all duration-200 animate-pulse"
                   />
                 )}
               </React.Fragment>
@@ -250,7 +276,7 @@ const TaskColumn: React.FC<TaskColumnProps> = ({
             
             {tasks.length > 0 && dropPreviewIndex === tasks.length && (
               <div 
-                className="h-1 w-full bg-slate-300 rounded-full mt-2 transform transition-all duration-200 animate-pulse"
+                className="h-1 w-full bg-primary rounded-full mt-2 transform transition-all duration-200 animate-pulse"
               />
             )}
           </div>

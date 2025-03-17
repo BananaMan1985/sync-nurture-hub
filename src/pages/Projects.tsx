@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import Layout from '@/components/Layout';
 import AppMenu from '@/components/AppMenu';
@@ -299,23 +298,28 @@ const Projects = () => {
   const handleColumnDragStart = (e: React.DragEvent, columnId: string) => {
     e.dataTransfer.setData('columnId', columnId);
     setDraggedColumnId(columnId);
+    e.dataTransfer.effectAllowed = 'move';
   };
 
   const handleColumnDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
+    if (e.dataTransfer.types.includes('columnId')) {
+      e.preventDefault();
+    }
   };
 
   const handleColumnDrop = (e: React.DragEvent, targetColumnId: string) => {
     e.preventDefault();
     const sourceColumnId = e.dataTransfer.getData('columnId');
-    if (!sourceColumnId || sourceColumnId === targetColumnId || !draggedColumnId) return;
+    
+    if (!sourceColumnId || !e.dataTransfer.types.includes('columnId')) return;
+    
+    if (sourceColumnId === targetColumnId || !draggedColumnId) return;
     
     const sourceColumn = columns.find(col => col.id === sourceColumnId);
     const targetColumn = columns.find(col => col.id === targetColumnId);
     
     if (!sourceColumn || !targetColumn) return;
     
-    // Update column orders
     setColumns(prev => {
       const updated = prev.map(col => {
         if (col.id === sourceColumnId) {
@@ -387,11 +391,8 @@ const Projects = () => {
             <div 
               key={column.id} 
               className="min-w-[300px] w-[350px] max-w-md flex-shrink-0"
-              draggable={true}
-              onDragStart={(e) => handleColumnDragStart(e, column.id)}
               onDragOver={handleColumnDragOver}
               onDrop={(e) => handleColumnDrop(e, column.id)}
-              onDragEnd={handleColumnDragEnd}
               style={{ opacity: draggedColumnId === column.id ? 0.6 : 1 }}
             >
               <TaskColumn
