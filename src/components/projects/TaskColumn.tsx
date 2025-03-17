@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -50,7 +51,7 @@ const TaskColumn: React.FC<TaskColumnProps> = ({
   const [isDraggedOver, setIsDraggedOver] = useState(false);
   const columnRef = useRef<HTMLDivElement>(null);
 
-  const handleDragOver = (e: React.DragEvent) => {
+  const handleColumnDragOver = (e: React.DragEvent) => {
     e.preventDefault(); // Allow drop
     onDragOver(e, status);
     setIsDraggedOver(true);
@@ -169,7 +170,7 @@ const TaskColumn: React.FC<TaskColumnProps> = ({
     <div 
       ref={columnRef}
       className={`rounded-lg h-full flex flex-col overflow-hidden shadow-sm bg-white border border-slate-200 transition-all duration-200 hover:shadow-md ${isDraggedOver ? 'border-2 border-primary ring-4 ring-primary/20' : ''}`}
-      onDragOver={handleDragOver}
+      onDragOver={handleColumnDragOver}
       onDrop={handleDrop}
       onDragLeave={handleDragLeave}
       onDragEnd={handleDragEnd}
