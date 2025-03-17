@@ -256,7 +256,7 @@ const Library = () => {
         setTableRows(item.tableData.rows);
       } else {
         setTableHeaders(['Column 1', 'Column 2', 'Column 3']);
-        setTableRows([['', '', ''], ['', '', '']]);
+        setTableRows([['', '', ''], ['', '', '']]
       }
     } else {
       form.reset({
@@ -274,7 +274,7 @@ const Library = () => {
         }
       });
       setTableHeaders(['Column 1', 'Column 2', 'Column 3']);
-      setTableRows([['', '', ''], ['', '', '']]);
+      setTableRows([['', '', ''], ['', '', '']]
     }
   };
 
@@ -913,3 +913,4 @@ const Library = () => {
         }}
       >
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
