@@ -68,9 +68,25 @@ const TaskEditDialog: React.FC<TaskEditDialogProps> = ({
     }
   };
 
+  // Fix status styles to include all possible statuses from our columns
   const statusStyles = {
     todo: {
       label: 'To Do',
+      color: 'bg-blue-500',
+      borderColor: 'border-blue-500'
+    },
+    inbox: {
+      label: 'Inbox',
+      color: 'bg-slate-500',
+      borderColor: 'border-slate-500'
+    },
+    confirmed: {
+      label: 'Confirmed',
+      color: 'bg-green-500',
+      borderColor: 'border-green-500'
+    },
+    received: {
+      label: 'Received',
       color: 'bg-blue-500',
       borderColor: 'border-blue-500'
     },
@@ -79,6 +95,21 @@ const TaskEditDialog: React.FC<TaskEditDialogProps> = ({
       color: 'bg-amber-500',
       borderColor: 'border-amber-500'
     },
+    waiting: {
+      label: 'Waiting',
+      color: 'bg-orange-500',
+      borderColor: 'border-orange-500'
+    },
+    review: {
+      label: 'Ready for Review',
+      color: 'bg-purple-500',
+      borderColor: 'border-purple-500'
+    },
+    archive: {
+      label: 'Archive',
+      color: 'bg-gray-500',
+      borderColor: 'border-gray-500'
+    },
     done: {
       label: 'Done',
       color: 'bg-emerald-500',
@@ -86,7 +117,16 @@ const TaskEditDialog: React.FC<TaskEditDialogProps> = ({
     }
   };
 
-  const currentStatus = statusStyles[editedTask.status];
+  // Get color based on status with fallback
+  const getStatusStyle = () => {
+    return statusStyles[editedTask.status] || {
+      label: editedTask.status,
+      color: 'bg-slate-500',
+      borderColor: 'border-slate-500'
+    };
+  };
+
+  const currentStatus = getStatusStyle();
 
   const handleDelete = () => {
     if (editedTask) {
@@ -178,6 +218,7 @@ const TaskEditDialog: React.FC<TaskEditDialogProps> = ({
               task={editedTask} 
               onSave={handleSave} 
               onCancel={onClose} 
+              statuses={Object.keys(statusStyles).map(id => ({ id, name: statusStyles[id].label }))}
             />
           ) : (
             <div className="space-y-6">

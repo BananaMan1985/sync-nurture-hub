@@ -221,28 +221,30 @@ const TaskColumn: React.FC<TaskColumnProps> = ({
               />
             )}
             
-            {sortedTasks.map((task, index) => (
-              <React.Fragment key={task.id}>
-                {dropPreviewIndex === index && (
-                  <div 
-                    className="h-1 w-full bg-primary rounded-full mb-2 transform transition-all duration-200 animate-pulse"
+            {sortedTasks.map((task, index) => {
+              return (
+                <React.Fragment key={task.id}>
+                  {dropPreviewIndex === index && (
+                    <div 
+                      className="h-1 w-full bg-primary rounded-full mb-2 transform transition-all duration-200 animate-pulse"
+                    />
+                  )}
+                  <TaskCard 
+                    task={task} 
+                    index={index}
+                    onClick={() => onTaskClick(task)}
+                    onDragStart={handleDragStart}
+                    onDragEnter={handleDragEnter}
+                    isDragging={draggedTaskId === task.id}
                   />
-                )}
-                <TaskCard 
-                  task={task} 
-                  index={index}
-                  onClick={() => onTaskClick(task)}
-                  onDragStart={handleDragStart}
-                  onDragEnter={handleDragEnter}
-                  isDragging={draggedTaskId === task.id}
-                />
-                {index === sortedTasks.length - 1 && dropPreviewIndex === sortedTasks.length && (
-                  <div 
-                    className="h-1 w-full bg-primary rounded-full mt-2 transform transition-all duration-200 animate-pulse"
-                  />
-                )}
-              </React.Fragment>
-            ))}
+                  {index === sortedTasks.length - 1 && dropPreviewIndex === sortedTasks.length && (
+                    <div 
+                      className="h-1 w-full bg-primary rounded-full mt-2 transform transition-all duration-200 animate-pulse"
+                    />
+                  )}
+                </React.Fragment>
+              );
+            })}
             
             {tasks.length > 0 && dropPreviewIndex === tasks.length && (
               <div 
