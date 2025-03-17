@@ -720,6 +720,102 @@ const Library = () => {
                     </FormItem>
                   )}
                 />
+                {form.watch("type") === "image" && (
+                  <FormField
+                    control={form.control}
+                    name="imageUrl"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Image URL</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="https://example.com/image.jpg" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+                {form.watch("type") === "database" && (
+                  <div className="space-y-3 border p-3 rounded-md">
+                    <div className="flex justify-between items-center">
+                      <h4 className="text-sm font-medium">Table Data</h4>
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        size="sm"
+                        onClick={addTableColumn}
+                      >
+                        Add Column
+                      </Button>
+                    </div>
+                    
+                    <div className="overflow-x-auto border rounded-md">
+                      <table className="min-w-full">
+                        <thead className="bg-muted/50">
+                          <tr>
+                            {tableHeaders.map((header, index) => (
+                              <th key={index} className="px-2 py-1">
+                                <div className="flex items-center gap-1">
+                                  <Input
+                                    value={header}
+                                    onChange={(e) => updateTableHeader(index, e.target.value)}
+                                    className="h-7 text-xs w-full"
+                                    placeholder="Column name"
+                                  />
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-7 w-7 p-0"
+                                    onClick={() => removeTableColumn(index)}
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              </th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {tableRows.map((row, rowIndex) => (
+                            <tr key={rowIndex}>
+                              {row.map((cell, colIndex) => (
+                                <td key={colIndex} className="px-2 py-1 border-t">
+                                  <Input
+                                    value={cell}
+                                    onChange={(e) => updateTableCell(rowIndex, colIndex, e.target.value)}
+                                    className="h-7 text-xs"
+                                    placeholder="Cell value"
+                                  />
+                                </td>
+                              ))}
+                              <td className="w-10 border-t">
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-7 w-7 p-0"
+                                  onClick={() => removeTableRow(rowIndex)}
+                                >
+                                  <X className="h-3 w-3" />
+                                </Button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      size="sm"
+                      onClick={addTableRow}
+                    >
+                      Add Row
+                    </Button>
+                  </div>
+                )}
                 <DialogFooter>
                   <Button type="submit">Save reference</Button>
                 </DialogFooter>
@@ -859,6 +955,102 @@ const Library = () => {
                     </FormItem>
                   )}
                 />
+                {form.watch("type") === "image" && (
+                  <FormField
+                    control={form.control}
+                    name="imageUrl"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Image URL</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="https://example.com/image.jpg" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+                {form.watch("type") === "database" && (
+                  <div className="space-y-3 border p-3 rounded-md">
+                    <div className="flex justify-between items-center">
+                      <h4 className="text-sm font-medium">Table Data</h4>
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        size="sm"
+                        onClick={addTableColumn}
+                      >
+                        Add Column
+                      </Button>
+                    </div>
+                    
+                    <div className="overflow-x-auto border rounded-md">
+                      <table className="min-w-full">
+                        <thead className="bg-muted/50">
+                          <tr>
+                            {tableHeaders.map((header, index) => (
+                              <th key={index} className="px-2 py-1">
+                                <div className="flex items-center gap-1">
+                                  <Input
+                                    value={header}
+                                    onChange={(e) => updateTableHeader(index, e.target.value)}
+                                    className="h-7 text-xs w-full"
+                                    placeholder="Column name"
+                                  />
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-7 w-7 p-0"
+                                    onClick={() => removeTableColumn(index)}
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              </th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {tableRows.map((row, rowIndex) => (
+                            <tr key={rowIndex}>
+                              {row.map((cell, colIndex) => (
+                                <td key={colIndex} className="px-2 py-1 border-t">
+                                  <Input
+                                    value={cell}
+                                    onChange={(e) => updateTableCell(rowIndex, colIndex, e.target.value)}
+                                    className="h-7 text-xs"
+                                    placeholder="Cell value"
+                                  />
+                                </td>
+                              ))}
+                              <td className="w-10 border-t">
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-7 w-7 p-0"
+                                  onClick={() => removeTableRow(rowIndex)}
+                                >
+                                  <X className="h-3 w-3" />
+                                </Button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      size="sm"
+                      onClick={addTableRow}
+                    >
+                      Add Row
+                    </Button>
+                  </div>
+                )}
                 <DialogFooter>
                   <Button type="submit">Update reference</Button>
                 </DialogFooter>
@@ -1226,3 +1418,4 @@ const Library = () => {
 };
 
 export default Library;
+
