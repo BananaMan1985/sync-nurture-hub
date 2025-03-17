@@ -80,15 +80,10 @@ const TaskEditDialog: React.FC<TaskEditDialogProps> = ({
       color: 'bg-slate-500',
       borderColor: 'border-slate-500'
     },
-    confirmed: {
-      label: 'Confirmed',
+    confirmedreceived: {
+      label: 'Confirmed/Received',
       color: 'bg-green-500',
       borderColor: 'border-green-500'
-    },
-    received: {
-      label: 'Received',
-      color: 'bg-blue-500',
-      borderColor: 'border-blue-500'
     },
     inprogress: {
       label: 'In Progress',

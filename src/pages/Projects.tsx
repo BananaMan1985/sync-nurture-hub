@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import Layout from '@/components/Layout';
 import AppMenu from '@/components/AppMenu';
@@ -10,7 +9,6 @@ import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { Input } from '@/components/ui/input';
 
-// Import the components with explicit type imports
 import TaskColumn from '@/components/projects/TaskColumn';
 import TaskForm from '@/components/projects/TaskForm';
 import TaskEditDialog from '@/components/projects/TaskEditDialog';
@@ -55,18 +53,15 @@ const Projects = () => {
     
     if (draggedTaskIndex === -1) return;
     
-    // Reorder the tasks
     const draggedTask = statusTasks[draggedTaskIndex];
     statusTasks.splice(draggedTaskIndex, 1);
     statusTasks.splice(targetIndex, 0, draggedTask);
     
-    // Update the orders
     const updatedTasks = statusTasks.map((task, index) => ({
       ...task,
       order: index
     }));
     
-    // Merge with tasks of other statuses
     setTasks(prev => {
       const otherTasks = prev.filter(task => task.status !== status);
       return [...otherTasks, ...updatedTasks];
@@ -140,7 +135,6 @@ const Projects = () => {
       });
     });
     
-    // Update the selectedTask if it's the one we're adding a comment to
     if (selectedTask && selectedTask.id === taskId) {
       setSelectedTask(prev => {
         if (!prev) return prev;
@@ -172,7 +166,6 @@ const Projects = () => {
       });
     });
     
-    // Also update selectedTask if it's the same task
     if (selectedTask && selectedTask.id === taskId) {
       setSelectedTask(prev => {
         if (!prev) return prev;
@@ -199,7 +192,6 @@ const Projects = () => {
       });
     });
     
-    // Also update selectedTask if it's the same task
     if (selectedTask && selectedTask.id === taskId) {
       setSelectedTask(prev => {
         if (!prev) return prev;
@@ -221,26 +213,22 @@ const Projects = () => {
   };
 
   const handleEditColumnTitle = (id: string, newTitle: string) => {
-    // This is kept for backward compatibility but has no effect now that columns are static
     toast({
       title: "Column names are fixed",
       description: "Column names cannot be changed in this version.",
     });
   };
 
-  // Function to get the appropriate icon for a column
   const getColumnIcon = (columnId: string) => {
     switch (columnId) {
       case 'inbox':
         return <Inbox className="h-5 w-5" />;
-      case 'confirmed':
+      case 'confirmedreceived':
         return <FileCheck className="h-5 w-5" />;
-      case 'received':
-        return <PackageCheck className="h-5 w-5" />;
       case 'inprogress':
         return <Clock className="h-5 w-5" />;
       case 'waiting':
-        return <Clock4 className="h-5 w-5" />; // Changed from ClockCountdown to Clock4
+        return <Clock4 className="h-5 w-5" />;
       case 'review':
         return <FileSpreadsheet className="h-5 w-5" />;
       case 'archive':
@@ -303,7 +291,6 @@ const Projects = () => {
           ))}
         </ColumnCarousel>
         
-        {/* Project Edit Dialog */}
         {selectedTask && (
           <TaskEditDialog
             isOpen={isTaskDialogOpen}
@@ -320,7 +307,6 @@ const Projects = () => {
           />
         )}
         
-        {/* New Project Dialog */}
         <Dialog open={isNewTaskDialogOpen} onOpenChange={setIsNewTaskDialogOpen}>
           <DialogContent>
             <DialogHeader>

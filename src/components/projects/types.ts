@@ -47,8 +47,7 @@ export interface Task {
 
 export const defaultColumns: Column[] = [
   { id: 'inbox', title: 'Inbox' },
-  { id: 'confirmed', title: 'Confirmed' },
-  { id: 'received', title: 'Received' },
+  { id: 'confirmedreceived', title: 'Confirmed/Received' },
   { id: 'inprogress', title: 'In Progress' },
   { id: 'waiting', title: 'Waiting' },
   { id: 'review', title: 'Ready for Review' },
@@ -84,7 +83,7 @@ export const mockTasks: Task[] = [
     id: '2',
     title: 'Client follow-up',
     description: 'Send follow-up emails to clients from Monday\'s meeting',
-    status: 'confirmed',
+    status: 'confirmedreceived',
     priority: 'medium',
     dueDate: '2023-11-10',
     comments: [
@@ -100,7 +99,7 @@ export const mockTasks: Task[] = [
     id: '3',
     title: 'Update website content',
     description: 'Update the team page with new staff photos',
-    status: 'received',
+    status: 'confirmedreceived',
     priority: 'low',
     dueDate: '2023-11-20',
     comments: [],
