@@ -3,16 +3,18 @@ import React, { useState } from 'react';
 import Layout from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
-import { ListChecks, Plus, Clock, ClipboardList, Timer, FileText, Archive, Inbox } from 'lucide-react';
+import { ListChecks, Plus, Clock, ClipboardList, Timer, FileText, Archive, Inbox, Kanban, Grid } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
 import TaskColumn from '@/components/projects/TaskColumn';
 import TaskForm from '@/components/projects/TaskForm';
 import TaskEditDialog from '@/components/projects/TaskEditDialog';
 import ColumnCarousel from '@/components/projects/ColumnCarousel';
 import { Task, TaskStatus, mockTasks, Comment as TaskComment, Column, defaultColumns } from '@/components/projects/types';
+import ProjectsGrid from '@/components/projects/ProjectsGrid';
 
 const Projects = () => {
   const [tasks, setTasks] = useState<Task[]>(mockTasks);
@@ -24,6 +26,7 @@ const Projects = () => {
   const [newTaskStatus, setNewTaskStatus] = useState<TaskStatus>('inbox');
   const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
   const [editingColumnId, setEditingColumnId] = useState<string | null>(null);
+  const [activeView, setActiveView] = useState<string>('kanban');
   const { toast } = useToast();
 
   const getTasksByStatus = (status: TaskStatus) => {
@@ -269,31 +272,55 @@ const Projects = () => {
           </div>
         </div>
 
-        <ColumnCarousel>
-          {columns.map(column => (
-            <div 
-              key={column.id} 
-              className="min-w-[300px] w-[350px] max-w-md flex-shrink-0"
-            >
-              <TaskColumn
-                title={column.title}
-                icon={getColumnIcon(column.id)}
-                tasks={getTasksByStatus(column.id)}
-                status={column.id}
-                isLoading={isLoading}
-                onDrop={handleDrop}
-                onTaskClick={handleTaskClick}
-                onReorderTasks={handleReorderTasks}
-                draggedTaskId={draggedTaskId}
-                onDragOver={handleDragOver}
-                onAddTask={handleAddTask}
-                onEditColumnTitle={(newTitle) => handleEditColumnTitle(column.id, newTitle)}
-                isEditing={editingColumnId === column.id}
-                setIsEditing={(isEditing) => setEditingColumnId(isEditing ? column.id : null)}
-              />
-            </div>
-          ))}
-        </ColumnCarousel>
+        <Tabs defaultValue="kanban" value={activeView} onValueChange={setActiveView} className="w-full mb-6">
+          <TabsList className="grid w-[400px] grid-cols-2 mx-auto">
+            <TabsTrigger value="kanban" className="flex items-center gap-2">
+              <Kanban className="h-4 w-4" />
+              Kanban Board
+            </TabsTrigger>
+            <TabsTrigger value="grid" className="flex items-center gap-2">
+              <Grid className="h-4 w-4" />
+              Grid View
+            </TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="kanban" className="mt-4">
+            <ColumnCarousel>
+              {columns.map(column => (
+                <div 
+                  key={column.id} 
+                  className="min-w-[300px] w-[350px] max-w-md flex-shrink-0"
+                >
+                  <TaskColumn
+                    title={column.title}
+                    icon={getColumnIcon(column.id)}
+                    tasks={getTasksByStatus(column.id)}
+                    status={column.id}
+                    isLoading={isLoading}
+                    onDrop={handleDrop}
+                    onTaskClick={handleTaskClick}
+                    onReorderTasks={handleReorderTasks}
+                    draggedTaskId={draggedTaskId}
+                    onDragOver={handleDragOver}
+                    onAddTask={handleAddTask}
+                    onEditColumnTitle={(newTitle) => handleEditColumnTitle(column.id, newTitle)}
+                    isEditing={editingColumnId === column.id}
+                    setIsEditing={(isEditing) => setEditingColumnId(isEditing ? column.id : null)}
+                  />
+                </div>
+              ))}
+            </ColumnCarousel>
+          </TabsContent>
+          
+          <TabsContent value="grid" className="mt-4">
+            <ProjectsGrid 
+              tasks={tasks}
+              columns={columns}
+              onTaskClick={handleTaskClick}
+              onAddTask={() => setIsNewTaskDialogOpen(true)}
+            />
+          </TabsContent>
+        </Tabs>
         
         {selectedTask && (
           <TaskEditDialog
