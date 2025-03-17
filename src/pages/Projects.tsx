@@ -78,22 +78,18 @@ const Projects = () => {
 
   const handleSaveTask = (updatedTask: Task) => {
     console.log("Saving updated task in main component:", updatedTask);
+    
+    // Replace the entire task object to ensure all fields are updated
     setTasks(prev => prev.map(task => 
-      task.id === updatedTask.id 
-        ? { 
-            ...task, 
-            title: updatedTask.title,
-            description: updatedTask.description,
-            status: updatedTask.status,
-            priority: updatedTask.priority,
-            dueDate: updatedTask.dueDate,
-            content: updatedTask.content,
-            purpose: updatedTask.purpose
-          }
-        : task
+      task.id === updatedTask.id ? updatedTask : task
     ));
+    
+    // Update the selected task if it's still open
+    if (selectedTask && selectedTask.id === updatedTask.id) {
+      setSelectedTask(updatedTask);
+    }
+    
     setIsTaskDialogOpen(false);
-    setSelectedTask(null);
   };
 
   const handleDeleteTask = (taskId: string) => {

@@ -43,10 +43,18 @@ const TaskEditDialog: React.FC<TaskEditDialogProps> = ({
 
   if (!editedTask) return null;
 
-  const handleSave = () => {
+  const handleSave = (updatedTask: Partial<Task>) => {
     if (editedTask) {
-      console.log("Saving edited task:", editedTask);
-      onSave(editedTask);
+      // Create a complete updated task by merging the edited task with the new changes
+      const fullUpdatedTask: Task = {
+        ...editedTask,
+        ...updatedTask,
+        // Ensure id is preserved
+        id: editedTask.id
+      };
+
+      console.log("Saving complete edited task:", fullUpdatedTask);
+      onSave(fullUpdatedTask);
       toast({
         title: "Project updated",
         description: "Your project has been successfully updated.",
