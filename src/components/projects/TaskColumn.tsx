@@ -223,6 +223,7 @@ const TaskColumn: React.FC<TaskColumnProps> = ({
             )}
             
             {sortedTasks.map((task, index) => {
+              // Moved the React.Fragment key properly to the key attribute
               return (
                 <React.Fragment key={task.id}>
                   {dropPreviewIndex === index && (
