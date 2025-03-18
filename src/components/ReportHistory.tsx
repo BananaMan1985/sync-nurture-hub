@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Table, 
   TableBody, 
@@ -17,7 +17,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
 import { Eye, AlertCircle, Search } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion } from 'framer-motion'; // Ensure framer-motion is imported
 import { Input } from '@/components/ui/input';
 import {
   Pagination,
@@ -28,26 +28,91 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
-import { reportHistoryData, getLocalDate } from '@/data/reportData';
+import { createClient } from '@supabase/supabase-js';
+import { toast } from 'sonner';
+
+// Initialize Supabase client
+const supabase = createClient(
+  import.meta.env.VITE_SUPABASE_URL,
+  import.meta.env.VITE_SUPABASE_ANON_KEY
+);
 
 const ReportHistory: React.FC = () => {
-  const [selectedReport, setSelectedReport] = useState<typeof reportHistoryData[0] | null>(null);
+  const [selectedReport, setSelectedReport] = useState<any | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
+  const [reports, setReports] = useState<any[]>([]);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [executiveId, setExecutiveId] = useState<string | null>(null); // To store owner_id
+  const [loading, setLoading] = useState(true);
   
   const ITEMS_PER_PAGE = 5;
 
+  // Fetch authenticated user ID and owner_id from user_metadata on mount
+  useEffect(() => {
+    const fetchUser = async () => {
+      const { data: { user }, error } = await supabase.auth.getUser();
+      if (error) {
+        console.error('Error fetching user:', error);
+        toast.error('Failed to authenticate user. Please log in again.', { duration: 3000 });
+      } else if (user) {
+        setUserId(user.id);
+        const ownerId = user.user_metadata?.owner_id;
+        if (ownerId) {
+          setExecutiveId(ownerId);
+        } else {
+          console.warn('No owner_id found in user_metadata');
+          toast.warning('No executive ID found. Only your own reports will be shown.', { duration: 3000 });
+          setExecutiveId(null);
+        }
+      } else {
+        toast.error('No authenticated user found. Please log in.', { duration: 3000 });
+      }
+    };
+    fetchUser();
+  }, []);
+
+  // Fetch reports based on user_id and executive_id
+  useEffect(() => {
+    const fetchReports = async () => {
+      if (!userId) return;
+
+      setLoading(true);
+      let query = supabase
+        .from('reports')
+        .select('*')
+        .eq('executive_id', userId); // Fetch reports where the user is the assistant
+
+      // If executiveId exists, also fetch reports where the user is the executive
+      if (executiveId) {
+        query = query.or(`executive_id.eq.${executiveId}`);
+      }
+
+      const { data, error } = await query
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching reports:', error);
+        toast.error('Failed to fetch report history.', { duration: 3000 });
+      } else {
+        setReports(data || []);
+      }
+      setLoading(false);
+    };
+
+    fetchReports();
+  }, [userId, executiveId]);
+
   // Filter reports based on search term
-  const filteredReports = reportHistoryData
+  const filteredReports = reports
     .filter(report => 
-      report.date.includes(searchTerm) ||
-      report.completedTasks.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      report.status.toLowerCase().includes(searchTerm.toLowerCase())
+      format(new Date(report.date), 'yyyy-MM-dd').includes(searchTerm) ||
+      report.completed_task?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      report.status?.toLowerCase().includes(searchTerm.toLowerCase())
     )
     .sort((a, b) => {
-      // Sort by date consistently using our date handling functions
-      const dateA = getLocalDate(a.date);
-      const dateB = getLocalDate(b.date);
+      const dateA = new Date(a.date);
+      const dateB = new Date(b.date);
       return dateB.getTime() - dateA.getTime();
     });
 
@@ -57,9 +122,9 @@ const ReportHistory: React.FC = () => {
   const paginatedReports = filteredReports.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
   // Check if there are any reports
-  const hasReports = reportHistoryData.length > 0;
+  const hasReports = reports.length > 0;
 
-  const viewReport = (report: typeof reportHistoryData[0]) => {
+  const viewReport = (report: any) => {
     setSelectedReport(report);
   };
 
@@ -98,6 +163,25 @@ const ReportHistory: React.FC = () => {
     setCurrentPage(page);
   };
 
+  if (loading) {
+    return (
+      <motion.div 
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+        className="text-center p-8 bg-background border border-border/40 rounded-xl shadow-sm"
+      >
+        <motion.div variants={itemVariants} className="flex justify-center mb-4">
+          <AlertCircle className="h-12 w-12 text-muted-foreground animate-pulse" />
+        </motion.div>
+        <motion.h3 variants={itemVariants} className="text-xl font-medium mb-2">Loading...</motion.h3>
+        <motion.p variants={itemVariants} className="text-muted-foreground">
+          Fetching your report history.
+        </motion.p>
+      </motion.div>
+    );
+  }
+
   if (!hasReports) {
     return (
       <motion.div 
@@ -131,7 +215,7 @@ const ReportHistory: React.FC = () => {
               Report Details
             </motion.h3>
             <motion.p variants={itemVariants} className="text-muted-foreground">
-              {format(getLocalDate(selectedReport.date), 'MMMM dd, yyyy')}
+              {format(new Date(selectedReport.date), 'MMMM dd, yyyy')}
             </motion.p>
           </div>
           <motion.div variants={itemVariants}>
@@ -143,34 +227,34 @@ const ReportHistory: React.FC = () => {
 
         <motion.div variants={itemVariants} className="space-y-2 mt-6">
           <h4 className="font-medium text-muted-foreground">Busyness Level</h4>
-          <p className="text-lg">{getBusynessLabel(selectedReport.busynessLevel)}</p>
+          <p className="text-lg">{getBusynessLabel(selectedReport.business_level?.toString() || '5')}</p>
         </motion.div>
 
         <motion.div variants={itemVariants} className="space-y-2">
           <h4 className="font-medium text-muted-foreground">Completed Tasks</h4>
-          <p>{selectedReport.completedTasks}</p>
+          <p>{selectedReport.completed_task}</p>
         </motion.div>
 
         <motion.div variants={itemVariants} className="space-y-2">
           <h4 className="font-medium text-muted-foreground">Outstanding Tasks</h4>
-          <p>{selectedReport.outstandingTasks}</p>
+          <p>{selectedReport.outstanding_task}</p>
         </motion.div>
 
         <motion.div variants={itemVariants} className="space-y-2">
           <h4 className="font-medium text-muted-foreground">Need from Manager</h4>
-          <p>{selectedReport.needFromManager}</p>
+          <p>{selectedReport.need_from_manager}</p>
         </motion.div>
 
         <motion.div variants={itemVariants} className="space-y-2">
           <h4 className="font-medium text-muted-foreground">Tomorrow's Plans</h4>
-          <p>{selectedReport.tomorrowPlans}</p>
+          <p>{selectedReport.tomorrows_plan}</p>
         </motion.div>
       </motion.div>
     );
   }
 
   return (
-    <motion.div
+    <motion.div // Changed from div to motion.div
       variants={containerVariants}
       initial="hidden"
       animate="visible"
@@ -208,7 +292,7 @@ const ReportHistory: React.FC = () => {
                 paginatedReports.map((report) => (
                   <TableRow key={report.id}>
                     <TableCell className="font-medium">
-                      {format(getLocalDate(report.date), 'MMM dd, yyyy')}
+                      {format(new Date(report.date), 'MMM dd, yyyy')}
                     </TableCell>
                     <TableCell>
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${
@@ -216,10 +300,10 @@ const ReportHistory: React.FC = () => {
                           ? 'bg-green-100 text-green-800' 
                           : 'bg-amber-100 text-amber-800'
                       }`}>
-                        {report.status}
+                        {report.status || 'Pending'}
                       </span>
                     </TableCell>
-                    <TableCell>{getBusynessLabel(report.busynessLevel)}</TableCell>
+                    <TableCell>{getBusynessLabel(report.business_level?.toString() || '5')}</TableCell>
                     <TableCell className="text-right">
                       <Button
                         variant="ghost"
@@ -255,28 +339,23 @@ const ReportHistory: React.FC = () => {
                   </PaginationItem>
                   
                   {Array.from({length: Math.min(5, totalPages)}, (_, i) => {
-                    // Show first page, last page, current page, and pages around current
                     let pageToShow;
                     
                     if (totalPages <= 5) {
-                      // If 5 or fewer pages, show all
                       pageToShow = i + 1;
                     } else if (currentPage <= 3) {
-                      // Near start
                       if (i < 4) {
                         pageToShow = i + 1;
                       } else {
                         pageToShow = totalPages;
                       }
                     } else if (currentPage >= totalPages - 2) {
-                      // Near end
                       if (i === 0) {
                         pageToShow = 1;
                       } else {
                         pageToShow = totalPages - (4 - i);
                       }
                     } else {
-                      // Middle
                       if (i === 0) {
                         pageToShow = 1;
                       } else if (i === 4) {
@@ -286,7 +365,6 @@ const ReportHistory: React.FC = () => {
                       }
                     }
                     
-                    // Add ellipsis
                     if ((i === 1 && pageToShow !== 2) || (i === 3 && pageToShow !== totalPages - 1)) {
                       return (
                         <PaginationItem key={`ellipsis-${i}`}>

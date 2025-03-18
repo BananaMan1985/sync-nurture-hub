@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import Layout from '@/components/Layout';
 import { Mic, Square, AlertCircle } from 'lucide-react';
@@ -7,6 +6,13 @@ import { motion } from 'framer-motion';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import OpenAI from 'openai';
+import { createClient } from '@supabase/supabase-js';
+
+// Initialize Supabase client
+const supabase = createClient(
+  import.meta.env.VITE_SUPABASE_URL,
+  import.meta.env.VITE_SUPABASE_ANON_KEY
+);
 
 // Initialize OpenAI client with environment variable safely
 const openai = (() => {
@@ -14,7 +20,7 @@ const openai = (() => {
     const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
     
     if (!apiKey) {
-      console.warn('OpenAI API key missing. Voice transcription will be disabled.');
+      console.warn('OpenAI API key missing. Voice transcription and title generation will be disabled.');
       return null;
     }
     
@@ -34,10 +40,37 @@ const Voice: React.FC = () => {
   const [audioURL, setAudioURL] = useState<string | null>(null);
   const [transcription, setTranscription] = useState<string | null>(null);
   const [isTranscribing, setIsTranscribing] = useState(false);
+  const [userRole, setUserRole] = useState<string | null>(null);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const { toast } = useToast();
+
+  // Fetch user role on mount
+  useEffect(() => {
+    const fetchUserRole = async () => {
+      const { data: { user }, error } = await supabase.auth.getUser();
+      if (error) {
+        console.error('Error fetching user:', error);
+        toast({
+          variant: "destructive",
+          title: "Authentication Error",
+          description: "Could not verify user. Please log in again.",
+        });
+        return;
+      }
+      if (user) {
+        setUserRole(user.user_metadata.role || null);
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Not Logged In",
+          description: "Please log in to use voice features.",
+        });
+      }
+    };
+    fetchUserRole();
+  }, [toast]);
 
   // Cleanup audio URL on unmount
   useEffect(() => {
@@ -49,6 +82,15 @@ const Voice: React.FC = () => {
   }, [audioURL]);
 
   const startRecording = async () => {
+    if (userRole !== 'executive') {
+      toast({
+        variant: "destructive",
+        title: "Unauthorized",
+        description: "You are not authorized to use voice recording. This feature is restricted to executives.",
+      });
+      return;
+    }
+
     try {
       audioChunksRef.current = [];
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -67,12 +109,12 @@ const Voice: React.FC = () => {
         setRecordingStatus('recorded');
         
         if (openai) {
-          transcribeAudio(audioBlob); // Auto-transcribe after stopping if OpenAI is available
+          transcribeAudio(audioBlob);
         } else {
           toast({
             variant: "destructive",
             title: "Transcription unavailable",
-            description: "OpenAI API key is missing. Transcription is disabled.",
+            description: "OpenAI API key is missing. Transcription and title generation are disabled.",
           });
         }
       };
@@ -121,7 +163,7 @@ const Voice: React.FC = () => {
       toast({
         variant: "destructive",
         title: "Transcription unavailable",
-        description: "OpenAI API key is missing. Transcription is disabled.",
+        description: "OpenAI API key is missing. Transcription and title generation are disabled.",
       });
       return;
     }
@@ -135,17 +177,51 @@ const Voice: React.FC = () => {
         model: 'whisper-1',
       });
 
-      setTranscription(transcriptionResponse.text);
+      const transcribedText = transcriptionResponse.text;
+      setTranscription(transcribedText);
+
+      // Generate title using OpenAI 3.5 model
+      const titleResponse = await openai.chat.completions.create({
+        model: 'gpt-3.5-turbo',
+        messages: [
+          { role: 'system', content: 'You are a helpful assistant that generates concise task titles based on provided text.' },
+          { role: 'user', content: `Generate a concise title for a task based on this transcription: ${transcribedText}` },
+        ],
+        max_tokens: 10, // Limit to short titles
+      });
+
+      const generatedTitle = titleResponse.choices[0].message.content.trim();
+
+      // Add task to Supabase
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) {
+        throw new Error('Authentication failed');
+      }
+
+      const { error } = await supabase
+        .from('tasks')
+        .insert({
+          title: generatedTitle,
+          task: transcribedText,
+          created_at: new Date().toISOString(),
+          created_by: user.id, // Use auth.user.id
+          status:"inbox"
+        });
+
+      if (error) throw error;
+
+      // Clear transcription and show toast
+      setTranscription(null);
       toast({
-        title: "Transcription complete",
-        description: "Your audio has been transcribed successfully.",
+        title: "Success",
+        description: "Task added successfully!",
       });
     } catch (error) {
-      console.error('Transcription error:', error);
+      console.error('Transcription or task creation error:', error);
       toast({
         variant: "destructive",
-        title: "Transcription failed",
-        description: error.message || "Could not transcribe audio. Please try again.",
+        title: "Error",
+        description: error.message || "Failed to transcribe or add task. Please try again.",
       });
     } finally {
       setIsTranscribing(false);
@@ -169,8 +245,8 @@ const Voice: React.FC = () => {
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Configuration Missing</AlertTitle>
             <AlertDescription>
-              The OpenAI API key is not configured. Voice transcription is disabled. 
-              Please add the VITE_OPENAI_API_KEY environment variable to enable transcription.
+              The OpenAI API key is not configured. Voice transcription and title generation are disabled. 
+              Please add the VITE_OPENAI_API_KEY environment variable to enable these features.
             </AlertDescription>
           </Alert>
         )}
@@ -197,7 +273,7 @@ const Voice: React.FC = () => {
             <Button 
               className={`w-full ${isRecording ? 'bg-red-600 hover:bg-red-700' : 'bg-[#2D3B22] hover:bg-[#3c4f2d]'} text-white mb-4`}
               onClick={toggleRecording}
-              disabled={isTranscribing}
+              disabled={isTranscribing || userRole === null}
             >
               {isRecording ? 
                 <Square className="mr-2 h-4 w-4" /> : 
@@ -233,7 +309,9 @@ const Voice: React.FC = () => {
             )}
             
             <p className="text-center text-muted-foreground mt-4">
-              Tap to record a voice note. {openai ? "It will be transcribed and added as a task." : "Transcription is currently disabled."}
+              {userRole === 'employee' 
+                ? (openai ? "Tap to record a voice note. It will be transcribed, titled, and added as a task." : "Tap to record a voice note. Transcription and task creation are currently disabled.")
+                : "Voice recording is restricted to executives only."}
             </p>
           </div>
         </div>

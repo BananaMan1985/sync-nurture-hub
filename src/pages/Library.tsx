@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import Layout from '@/components/Layout';
-import { 
-  Search, 
-  Phone, 
-  Plane, 
-  FileText, 
+import React, { useState, useEffect } from "react";
+import Layout from "@/components/Layout";
+import {
+  Search,
+  Phone,
+  Plane,
+  FileText,
   RotateCcw,
   Plus,
   Tag,
@@ -16,21 +16,21 @@ import {
   Download,
   Image as ImageIcon,
   Table as TableIcon,
-  Type as TypeIcon
-} from 'lucide-react';
-import { motion } from 'framer-motion';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardFooter, 
-  CardHeader, 
-  CardTitle 
-} from '@/components/ui/card';
-import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
+  Type as TypeIcon,
+} from "lucide-react";
+import { motion } from "framer-motion";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
@@ -68,174 +68,432 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
-import { ReferenceAttachment } from '@/components/projects/types';
+import { createClient } from "@supabase/supabase-js";
+import { useToast } from "@/hooks/use-toast";
 
-const mockAttachments: ReferenceAttachment[] = [
-  {
-    id: 'att1',
-    name: 'employee_handbook.pdf',
-    size: 2500000,
-    type: 'application/pdf',
-    url: 'https://example.com/files/handbook.pdf'
-  },
-  {
-    id: 'att2',
-    name: 'conference_schedule.docx',
-    size: 450000,
-    type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    url: 'https://example.com/files/schedule.docx'
-  },
-  {
-    id: 'att3',
-    name: 'office_map.png',
-    size: 1200000,
-    type: 'image/png',
-    url: 'https://source.unsplash.com/random/800x600/?map'
-  }
-];
+const supabase = createClient(
+  import.meta.env.VITE_SUPABASE_URL,
+  import.meta.env.VITE_SUPABASE_ANON_KEY
+);
 
-type ReferenceItemType = 'text' | 'image' | 'file' | 'database';
+type ReferenceItemType = "text" | "image" | "file" | "database";
 
 interface TableData {
   headers: string[];
   rows: string[][];
 }
 
+interface ReferenceAttachment {
+  id: string;
+  name: string;
+  size: number;
+  type: string;
+  url: string;
+}
+
+interface Tag {
+  id: string;
+  name: string;
+  created_at: string;
+}
+
 interface ReferenceItem {
-  id: number;
+  id: string;
+  user_id: string; // Added to match the database schema
   title: string;
   description: string;
   content: string;
   tags: string[];
   icon: React.ElementType;
   attachments: ReferenceAttachment[];
-  updatedAt: string;
+  updated_at: string;
   type: ReferenceItemType;
-  imageUrl?: string;
-  tableData?: TableData;
+  image_url?: string;
+  table_data?: TableData;
 }
 
-const initialReferenceItems: ReferenceItem[] = [
-  {
-    id: 1,
-    title: 'Travel Preferences',
-    description: 'Preferred airlines, hotel chains, and travel requirements.',
-    content: 'For international flights, prefer Star Alliance carriers. For domestic, Southwest or Delta. Prefer Marriott or Hilton for hotels. Always book aisle seats.',
-    tags: ['airlines', 'hotels', 'travel policy'],
-    icon: Plane,
-    attachments: [],
-    updatedAt: '2 days ago',
-    type: 'text'
-  },
-  {
-    id: 2,
-    title: 'Key Contacts',
-    description: 'Important contact information for frequent collaborators.',
-    content: 'John Smith (IT): john@example.com, 555-123-4567\nSarah Johnson (HR): sarah@example.com, 555-987-6543\nAlex Brown (Finance): alex@example.com, 555-456-7890',
-    tags: ['phone numbers', 'emails', 'employees'],
-    icon: Phone,
-    attachments: [mockAttachments[0]],
-    updatedAt: '5 days ago',
-    type: 'text'
-  },
-  {
-    id: 3,
-    title: 'Meeting Preparation SOP',
-    description: 'Standard operating procedure for preparing meeting materials.',
-    content: '1. Create agenda 48 hours in advance\n2. Share agenda with participants\n3. Prepare slide deck if necessary\n4. Reserve meeting room and test AV equipment\n5. Send calendar invites with agenda attached',
-    tags: ['sop', 'meetings', 'preparation'],
-    icon: FileText,
-    attachments: [],
-    updatedAt: '1 week ago',
-    type: 'text'
-  },
-  {
-    id: 4,
-    title: 'Expense Reporting Process',
-    description: 'Step-by-step guide for submitting and approving expenses.',
-    content: 'Collect all receipts. Categorize expenses. Submit through expense portal within 30 days of purchase. Approval workflow: manager → department head → finance.',
-    tags: ['expenses', 'reimbursement', 'finance'],
-    icon: FileText,
-    attachments: [mockAttachments[1], mockAttachments[2]],
-    updatedAt: '2 weeks ago',
-    type: 'text'
-  },
-  {
-    id: 5,
-    title: 'Conference Room Booking',
-    description: 'Instructions for booking conference rooms and AV equipment.',
-    content: 'Use the room booking system on the intranet. Book at least 24 hours in advance for small rooms, 48 hours for large conference rooms. For AV equipment, contact IT helpdesk.',
-    tags: ['booking', 'conference rooms', 'meetings'],
-    icon: FileText, 
-    attachments: [],
-    updatedAt: '3 weeks ago',
-    type: 'text'
-  },
-  {
-    id: 6,
-    title: 'Executive Team Contacts',
-    description: 'Contact information for the executive leadership team.',
-    content: 'CEO: ceo@example.com, 555-111-2222\nCFO: cfo@example.com, 555-333-4444\nCTO: cto@example.com, 555-555-6666\nCOO: coo@example.com, 555-777-8888',
-    tags: ['leadership', 'executives', 'management'],
-    icon: Phone,
-    attachments: [],
-    updatedAt: '1 month ago',
-    type: 'text'
-  }
-];
-
 const Library = () => {
-  const [referenceItems, setReferenceItems] = useState<ReferenceItem[]>(initialReferenceItems);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
+  const { toast } = useToast();
+
+  // Fetch user role and ID on mount
+  useEffect(() => {
+    const fetchUserRole = async () => {
+      const {
+        data: { user },
+        error,
+      } = await supabase.auth.getUser();
+      if (error) {
+        console.error("Error fetching user:", error);
+        toast({
+          variant: "destructive",
+          title: "Authentication Error",
+          description: "Could not verify user. Please log in again.",
+        });
+        return;
+      }
+      if (user) {
+        console.log(user);
+        setUserRole(user.user_metadata.role || null);
+        if (user.user_metadata.role === "assistant") {
+          setUserId(user.user_metadata.owner_id || null);
+        } else {
+          setUserId(user.id || null); // For executives, use their own ID
+        }
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Not Logged In",
+          description: "Please log in to access reports.",
+        });
+      }
+    };
+    fetchUserRole();
+  }, [toast]);
+
+  const [referenceItems, setReferenceItems] = useState<ReferenceItem[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [availableTags, setAvailableTags] = useState<string[]>([]);
+  const [availableTags, setAvailableTags] = useState<Tag[]>([]);
   const [editingItem, setEditingItem] = useState<ReferenceItem | null>(null);
   const [isNewItemDialogOpen, setIsNewItemDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingTag, setEditingTag] = useState<string | null>(null);
-  const [newTagValue, setNewTagValue] = useState('');
-  const [tableHeaders, setTableHeaders] = useState<string[]>(['Column 1', 'Column 2', 'Column 3']);
-  const [tableRows, setTableRows] = useState<string[][]>([['', '', ''], ['', '', '']]);
+  const [newTagValue, setNewTagValue] = useState("");
+  const [tableHeaders, setTableHeaders] = useState<string[]>([
+    "Column 1",
+    "Column 2",
+    "Column 3",
+  ]);
+  const [tableRows, setTableRows] = useState<string[][]>([
+    ["", "", ""],
+    ["", "", ""],
+  ]);
 
   const form = useForm({
     defaultValues: {
-      title: '',
-      description: '',
-      content: '',
+      title: "",
+      description: "",
+      content: "",
       tags: [] as string[],
-      newTag: '',
+      newTag: "",
       attachments: [] as ReferenceAttachment[],
-      type: 'text' as ReferenceItemType,
-      imageUrl: '',
+      type: "text" as ReferenceItemType,
+      imageUrl: "",
       tableData: {
-        headers: ['Column 1', 'Column 2', 'Column 3'],
-        rows: [['', '', ''], ['', '', '']]
-      }
-    }
+        headers: ["Column 1", "Column 2", "Column 3"],
+        rows: [
+          ["", "", ""],
+          ["", "", ""],
+        ],
+      },
+    },
   });
 
-  useEffect(() => {
-    const tags = new Set<string>();
-    
-    referenceItems.forEach(item => {
-      item.tags.forEach(tag => tags.add(tag));
-    });
-    
-    setAvailableTags(Array.from(tags));
-  }, [referenceItems]);
+  // Fetch reference items based on user role
+  const fetchReferenceItems = async () => {
+    if (!userId || !userRole) return;
 
-  const filteredItems = referenceItems.filter(item => {
-    const matchesSearch = (
-      item.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    let query = supabase
+      .from("reference_items")
+      .select(
+        `
+        *,
+        reference_item_tags (
+          tags (id, name)
+        ),
+        attachments (*)
+      `
+      )
+      .order("updated_at", { ascending: false });
+
+    // Apply visibility rules
+    if (userRole === "executive") {
+      query = query.eq("user_id", userId); // Executives see their own items
+    } else if (userRole === "assistant" && userId) {
+      query = query.eq("user_id", userId); // Assistants see their owner's items
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error("Error fetching reference items:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to load reference items",
+      });
+      return;
+    }
+
+    const items: ReferenceItem[] = data.map((item) => ({
+      id: item.id,
+      user_id: item.user_id, // Include user_id in the item
+      title: item.title,
+      description: item.description || "",
+      content: item.content || "",
+      tags: item.reference_item_tags.map((rt: any) => rt.tags.name),
+      icon: getIconForType(item.type),
+      attachments: item.attachments,
+      updated_at: new Date(item.updated_at).toLocaleDateString(),
+      type: item.type,
+      image_url: item.image_url,
+      table_data: item.table_data,
+    }));
+
+    setReferenceItems(items);
+  };
+
+  // Fetch tags
+  const fetchTags = async () => {
+    const { data, error } = await supabase
+      .from("tags")
+      .select("*")
+      .order("name", { ascending: true });
+
+    if (error) {
+      console.error("Error fetching tags:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to load tags",
+      });
+    } else {
+      setAvailableTags(data || []);
+    }
+  };
+
+  // Create or get tag
+  const getOrCreateTag = async (tagName: string) => {
+    const existingTag = availableTags.find((t) => t.name === tagName);
+    if (existingTag) return existingTag.id;
+
+    const { data, error } = await supabase
+      .from("tags")
+      .insert({ name: tagName })
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error creating tag:", error);
+      return null;
+    }
+
+    setAvailableTags((prev) => [...prev, data]);
+    return data.id;
+  };
+
+  // Create reference item
+  const createReferenceItem = async (data: any) => {
+    if (!userId) throw new Error("No user logged in");
+
+    const tableData =
+      data.type === "database"
+        ? { headers: tableHeaders, rows: tableRows }
+        : null;
+
+    const { data: itemData, error: itemError } = await supabase
+      .from("reference_items")
+      .insert({
+        user_id: userId, // Set the user_id based on the logged-in user
+        title: data.title,
+        description: data.description,
+        content: data.content,
+        type: data.type,
+        image_url: data.type === "image" ? data.imageUrl : null,
+        table_data: tableData,
+      })
+      .select()
+      .single();
+
+    if (itemError) throw itemError;
+
+    // Add tags
+    const tagIds = await Promise.all(
+      data.tags.map((tag: string) => getOrCreateTag(tag))
+    );
+    const tagRelations = tagIds
+      .filter((id) => id)
+      .map((tagId) => ({
+        reference_item_id: itemData.id,
+        tag_id: tagId,
+      }));
+
+    if (tagRelations.length > 0) {
+      const { error: tagError } = await supabase
+        .from("reference_item_tags")
+        .insert(tagRelations);
+      if (tagError) throw tagError;
+    }
+
+    // Add attachments
+    if (data.attachments.length > 0) {
+      const attachmentsToInsert = data.attachments.map(
+        (att: ReferenceAttachment) => ({
+          reference_item_id: itemData.id,
+          name: att.name,
+          size: att.size,
+          type: att.type,
+          url: att.url,
+        })
+      );
+      const { error: attError } = await supabase
+        .from("attachments")
+        .insert(attachmentsToInsert);
+      if (attError) throw attError;
+    }
+
+    return itemData;
+  };
+
+  // Update reference item
+  const updateReferenceItem = async (id: string, data: any) => {
+    if (!userId) throw new Error("No user logged in");
+
+    const tableData =
+      data.type === "database"
+        ? { headers: tableHeaders, rows: tableRows }
+        : null;
+
+    const { error: itemError } = await supabase
+      .from("reference_items")
+      .update({
+        title: data.title,
+        description: data.description,
+        content: data.content,
+        type: data.type,
+        image_url: data.type === "image" ? data.imageUrl : null,
+        table_data: tableData,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", id)
+      .eq("user_id", userId); // Ensure only the owner can update
+
+    if (itemError) throw itemError;
+
+    // Update tags
+    await supabase
+      .from("reference_item_tags")
+      .delete()
+      .eq("reference_item_id", id);
+    const tagIds = await Promise.all(
+      data.tags.map((tag: string) => getOrCreateTag(tag))
+    );
+    const tagRelations = tagIds
+      .filter((id) => id)
+      .map((tagId) => ({
+        reference_item_id: id,
+        tag_id: tagId,
+      }));
+
+    if (tagRelations.length > 0) {
+      const { error: tagError } = await supabase
+        .from("reference_item_tags")
+        .insert(tagRelations);
+      if (tagError) throw tagError;
+    }
+
+    // Update attachments
+    await supabase.from("attachments").delete().eq("reference_item_id", id);
+    if (data.attachments.length > 0) {
+      const attachmentsToInsert = data.attachments.map(
+        (att: ReferenceAttachment) => ({
+          reference_item_id: id,
+          name: att.name,
+          size: att.size,
+          type: att.type,
+          url: att.url,
+        })
+      );
+      const { error: attError } = await supabase
+        .from("attachments")
+        .insert(attachmentsToInsert);
+      if (attError) throw attError;
+    }
+  };
+
+  // Delete reference item
+  const deleteReferenceItem = async (id: string) => {
+    if (!userId) throw new Error("No user logged in");
+
+    const { error } = await supabase
+      .from("reference_items")
+      .delete()
+      .eq("id", id)
+      .eq("user_id", userId); // Ensure only the owner can delete
+
+    if (error) throw error;
+  };
+
+  // Update tag
+  const updateTag = async (tagId: string, newName: string) => {
+    const { error } = await supabase
+      .from("tags")
+      .update({ name: newName })
+      .eq("id", tagId);
+
+    if (error) {
+      console.error("Error updating tag:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to update tag",
+      });
+    } else {
+      setAvailableTags((prev) =>
+        prev.map((tag) => (tag.id === tagId ? { ...tag, name: newName } : tag))
+      );
+      fetchReferenceItems(); // Refresh items to reflect tag changes
+      toast({
+        title: "Success",
+        description: `Tag updated to "${newName}"`,
+      });
+    }
+  };
+
+  // Delete tag
+  const deleteTag = async (tagId: string, tagName: string) => {
+    const { error } = await supabase.from("tags").delete().eq("id", tagId);
+
+    if (error) {
+      console.error("Error deleting tag:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to delete tag",
+      });
+    } else {
+      setAvailableTags((prev) => prev.filter((tag) => tag.id !== tagId));
+      fetchReferenceItems(); // Refresh items to reflect tag removal
+      toast({
+        title: "Success",
+        description: `Tag "${tagName}" deleted`,
+      });
+    }
+  };
+
+  useEffect(() => {
+    if (userId && userRole) {
+      fetchReferenceItems();
+      fetchTags();
+    }
+  }, [userId, userRole]);
+
+  const filteredItems = referenceItems.filter((item) => {
+    const matchesSearch =
+      item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      item.attachments.some(att => att.name.toLowerCase().includes(searchQuery.toLowerCase()))
-    );
-    
-    const matchesTags = selectedTags.length === 0 || 
-      selectedTags.some(tag => item.tags.includes(tag));
-    
+      item.tags.some((tag) =>
+        tag.toLowerCase().includes(searchQuery.toLowerCase())
+      ) ||
+      item.attachments.some((att) =>
+        att.name.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    const matchesTags =
+      selectedTags.length === 0 ||
+      selectedTags.some((tag) => item.tags.includes(tag));
     return matchesSearch && matchesTags;
   });
 
@@ -246,40 +504,50 @@ const Library = () => {
         description: item.description,
         content: item.content,
         tags: item.tags,
-        newTag: '',
+        newTag: "",
         attachments: item.attachments || [],
         type: item.type,
-        imageUrl: item.imageUrl || '',
-        tableData: item.tableData || {
-          headers: ['Column 1', 'Column 2', 'Column 3'],
-          rows: [['', '', ''], ['', '', '']]
-        }
+        imageUrl: item.image_url || "",
+        tableData: item.table_data || {
+          headers: ["Column 1", "Column 2", "Column 3"],
+          rows: [
+            ["", "", ""],
+            ["", "", ""],
+          ],
+        },
       });
-      
-      if (item.tableData) {
-        setTableHeaders(item.tableData.headers);
-        setTableRows(item.tableData.rows);
-      } else {
-        setTableHeaders(['Column 1', 'Column 2', 'Column 3']);
-        setTableRows([['', '', ''], ['', '', '']]);
-      }
+      setTableHeaders(
+        item.table_data?.headers || ["Column 1", "Column 2", "Column 3"]
+      );
+      setTableRows(
+        item.table_data?.rows || [
+          ["", "", ""],
+          ["", "", ""],
+        ]
+      );
     } else {
       form.reset({
-        title: '',
-        description: '',
-        content: '',
+        title: "",
+        description: "",
+        content: "",
         tags: [],
-        newTag: '',
+        newTag: "",
         attachments: [],
-        type: 'text',
-        imageUrl: '',
+        type: "text",
+        imageUrl: "",
         tableData: {
-          headers: ['Column 1', 'Column 2', 'Column 3'],
-          rows: [['', '', ''], ['', '', '']]
-        }
+          headers: ["Column 1", "Column 2", "Column 3"],
+          rows: [
+            ["", "", ""],
+            ["", "", ""],
+          ],
+        },
       });
-      setTableHeaders(['Column 1', 'Column 2', 'Column 3']);
-      setTableRows([['', '', ''], ['', '', '']]);
+      setTableHeaders(["Column 1", "Column 2", "Column 3"]);
+      setTableRows([
+        ["", "", ""],
+        ["", "", ""],
+      ]);
     }
   };
 
@@ -290,6 +558,14 @@ const Library = () => {
   };
 
   const handleNewItem = () => {
+    if (!userId) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Please log in to add a new item",
+      });
+      return;
+    }
     setEditingItem(null);
     resetForm();
     setIsNewItemDialogOpen(true);
@@ -299,142 +575,125 @@ const Library = () => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
-    const newAttachments: ReferenceAttachment[] = [];
-    
-    Array.from(files).forEach(file => {
-      const fakeUrl = URL.createObjectURL(file);
-      
-      newAttachments.push({
+    const newAttachments: ReferenceAttachment[] = Array.from(files).map(
+      (file) => ({
         id: `att_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         name: file.name,
         size: file.size,
         type: file.type,
-        url: fakeUrl
-      });
-    });
+        url: URL.createObjectURL(file),
+      })
+    );
 
-    const currentAttachments = form.getValues('attachments') || [];
-    form.setValue('attachments', [...currentAttachments, ...newAttachments]);
-    
-    e.target.value = '';
+    const currentAttachments = form.getValues("attachments") || [];
+    form.setValue("attachments", [...currentAttachments, ...newAttachments]);
+    e.target.value = "";
+  };
+
+  const removeAttachment = (id: string) => {
+    const currentAttachments = form.getValues("attachments") || [];
+    form.setValue(
+      "attachments",
+      currentAttachments.filter((att) => att.id !== id)
+    );
   };
 
   const addTableColumn = () => {
     setTableHeaders([...tableHeaders, `Column ${tableHeaders.length + 1}`]);
-    setTableRows(tableRows.map(row => [...row, '']));
+    setTableRows(tableRows.map((row) => [...row, ""]));
   };
 
   const removeTableColumn = (index: number) => {
     if (tableHeaders.length <= 1) return;
-    
-    const newHeaders = [...tableHeaders];
-    newHeaders.splice(index, 1);
-    setTableHeaders(newHeaders);
-    
-    const newRows = tableRows.map(row => {
-      const newRow = [...row];
-      newRow.splice(index, 1);
-      return newRow;
-    });
-    setTableRows(newRows);
+    setTableHeaders((prev) => prev.filter((_, i) => i !== index));
+    setTableRows((prev) =>
+      prev.map((row) => row.filter((_, i) => i !== index))
+    );
   };
 
   const addTableRow = () => {
-    const newRow = Array(tableHeaders.length).fill('');
-    setTableRows([...tableRows, newRow]);
+    setTableRows([...tableRows, Array(tableHeaders.length).fill("")]);
   };
 
   const removeTableRow = (index: number) => {
     if (tableRows.length <= 1) return;
-    
-    const newRows = [...tableRows];
-    newRows.splice(index, 1);
-    setTableRows(newRows);
+    setTableRows((prev) => prev.filter((_, i) => i !== index));
   };
 
   const updateTableHeader = (index: number, value: string) => {
-    const newHeaders = [...tableHeaders];
-    newHeaders[index] = value;
-    setTableHeaders(newHeaders);
+    setTableHeaders((prev) => prev.map((h, i) => (i === index ? value : h)));
   };
 
-  const updateTableCell = (rowIndex: number, colIndex: number, value: string) => {
-    const newRows = [...tableRows];
-    newRows[rowIndex][colIndex] = value;
-    setTableRows(newRows);
+  const updateTableCell = (
+    rowIndex: number,
+    colIndex: number,
+    value: string
+  ) => {
+    setTableRows((prev) =>
+      prev.map((row, i) =>
+        i === rowIndex
+          ? row.map((cell, j) => (j === colIndex ? value : cell))
+          : row
+      )
+    );
   };
 
-  const onSubmit = (data: any) => {
-    const processedTags = [...data.tags];
-    if (data.newTag && !processedTags.includes(data.newTag)) {
-      processedTags.push(data.newTag);
+  const onSubmit = async (data: any) => {
+    try {
+      if (data.newTag && !data.tags.includes(data.newTag)) {
+        data.tags.push(data.newTag);
+      }
+
+      if (editingItem) {
+        await updateReferenceItem(editingItem.id, data);
+        toast({
+          title: "Success",
+          description: "Item updated successfully",
+        });
+      } else {
+        await createReferenceItem(data);
+        toast({
+          title: "Success",
+          description: "New item added successfully",
+        });
+      }
+
+      fetchReferenceItems();
+      setEditingItem(null);
+      setIsEditDialogOpen(false);
+      setIsNewItemDialogOpen(false);
+      resetForm();
+    } catch (error) {
+      console.error("Error submitting item:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to save item",
+      });
     }
-    
-    let tableData = undefined;
-    if (data.type === 'database') {
-      tableData = {
-        headers: tableHeaders,
-        rows: tableRows
-      };
-    }
-    
-    let icon;
-    switch (data.type) {
-      case 'image':
-        icon = ImageIcon;
-        break;
-      case 'file':
-        icon = FileArchive;
-        break;
-      case 'database':
-        icon = TableIcon;
-        break;
-      case 'text':
-      default:
-        icon = TypeIcon;
-        break;
-    }
-    
-    const newItem: ReferenceItem = {
-      id: editingItem ? editingItem.id : Date.now(),
-      title: data.title,
-      description: data.description,
-      content: data.content,
-      tags: processedTags,
-      icon: editingItem?.icon || icon,
-      attachments: data.attachments || [],
-      updatedAt: 'Just now',
-      type: data.type,
-      imageUrl: data.type === 'image' ? data.imageUrl : undefined,
-      tableData: tableData
-    };
-    
-    if (editingItem) {
-      setReferenceItems(prevItems => 
-        prevItems.map(item => item.id === editingItem.id ? newItem : item)
-      );
-      toast.success("Item updated successfully");
-    } else {
-      setReferenceItems(prevItems => [...prevItems, newItem]);
-      toast.success("New item added successfully");
-    }
-    
-    setEditingItem(null);
-    setIsEditDialogOpen(false);
-    setIsNewItemDialogOpen(false);
-    resetForm();
   };
 
-  const handleDeleteItem = (id: number) => {
-    setReferenceItems(prevItems => prevItems.filter(item => item.id !== id));
-    toast.success("Item deleted successfully");
+  const handleDeleteItem = async (id: string) => {
+    try {
+      await deleteReferenceItem(id);
+      toast({
+        title: "Success",
+        description: "Item deleted successfully",
+      });
+      fetchReferenceItems();
+    } catch (error) {
+      console.error("Error deleting item:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to delete item",
+      });
+    }
   };
 
   const toggleTag = (tag: string) => {
-    setSelectedTags(prev => 
-      prev.includes(tag) 
-        ? prev.filter(t => t !== tag) 
-        : [...prev, tag]
+    setSelectedTags((prev) =>
+      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
     );
   };
 
@@ -443,60 +702,52 @@ const Library = () => {
     setNewTagValue(tag);
   };
 
-  const saveEditedTag = () => {
+  const saveEditedTag = async () => {
     if (editingTag && newTagValue && newTagValue !== editingTag) {
-      setReferenceItems(prevItems => 
-        prevItems.map(item => ({
-          ...item,
-          tags: item.tags.map(tag => tag === editingTag ? newTagValue : tag)
-        }))
-      );
-      
-      setSelectedTags(prevTags => 
-        prevTags.map(tag => tag === editingTag ? newTagValue : tag)
-      );
-      
-      setAvailableTags(prevTags => {
-        const newTags = prevTags.filter(tag => tag !== editingTag);
-        return [...newTags, newTagValue];
-      });
-      
-      toast.success(`Tag updated from "${editingTag}" to "${newTagValue}"`);
+      const tagToUpdate = availableTags.find((tag) => tag.name === editingTag);
+      if (tagToUpdate) {
+        await updateTag(tagToUpdate.id, newTagValue);
+      }
     }
-    
     setEditingTag(null);
-    setNewTagValue('');
+    setNewTagValue("");
   };
 
   const cancelEditTag = () => {
     setEditingTag(null);
-    setNewTagValue('');
+    setNewTagValue("");
   };
 
-  const deleteTag = (tagToDelete: string) => {
-    setReferenceItems(prevItems => 
-      prevItems.map(item => ({
-        ...item,
-        tags: item.tags.filter(tag => tag !== tagToDelete)
-      }))
-    );
-    
-    setSelectedTags(prevTags => prevTags.filter(tag => tag !== tagToDelete));
-    
-    setAvailableTags(prevTags => prevTags.filter(tag => tag !== tagToDelete));
-    
-    toast.success(`Tag "${tagToDelete}" deleted`);
+  const handleDeleteTag = async (tagName: string) => {
+    const tagToDelete = availableTags.find((tag) => tag.name === tagName);
+    if (tagToDelete) {
+      await deleteTag(tagToDelete.id, tagName);
+    }
+  };
+
+  const getIconForType = (type: ReferenceItemType) => {
+    switch (type) {
+      case "image":
+        return ImageIcon;
+      case "file":
+        return FileArchive;
+      case "database":
+        return TableIcon;
+      case "text":
+      default:
+        return TypeIcon;
+    }
   };
 
   const renderContentByType = (item: ReferenceItem) => {
     switch (item.type) {
-      case 'image':
+      case "image":
         return (
           <div className="mt-2">
-            {item.imageUrl ? (
-              <img 
-                src={item.imageUrl} 
-                alt={item.title} 
+            {item.image_url ? (
+              <img
+                src={item.image_url}
+                alt={item.title}
                 className="w-full h-auto rounded-md object-cover max-h-28"
               />
             ) : (
@@ -506,7 +757,7 @@ const Library = () => {
             )}
           </div>
         );
-      case 'file':
+      case "file":
         return (
           <div className="mt-1">
             <div className="flex items-center text-sm text-muted-foreground">
@@ -515,32 +766,45 @@ const Library = () => {
             </div>
           </div>
         );
-      case 'database':
+      case "database":
         return (
           <div className="mt-2 overflow-hidden">
-            {item.tableData && (
+            {item.table_data && (
               <div className="overflow-x-auto text-xs border rounded-md">
                 <table className="min-w-full">
                   <thead className="bg-muted/50">
                     <tr>
-                      {item.tableData.headers.slice(0, 3).map((header, index) => (
-                        <th key={index} className="px-2 py-1.5 font-medium text-left truncate">
-                          {header}
-                        </th>
-                      ))}
-                      {item.tableData.headers.length > 3 && (
+                      {item.table_data.headers
+                        .slice(0, 3)
+                        .map((header, index) => (
+                          <th
+                            key={index}
+                            className="px-2 py-1.5 font-medium text-left truncate"
+                          >
+                            {header}
+                          </th>
+                        ))}
+                      {item.table_data.headers.length > 3 && (
                         <th className="px-2 py-1.5 font-medium text-left">
-                          +{item.tableData.headers.length - 3} more
+                          +{item.table_data.headers.length - 3} more
                         </th>
                       )}
                     </tr>
                   </thead>
                   <tbody>
-                    {item.tableData.rows.slice(0, 1).map((row, rowIndex) => (
-                      <tr key={rowIndex} className={rowIndex % 2 === 0 ? 'bg-white' : 'bg-muted/20'}>
+                    {item.table_data.rows.slice(0, 1).map((row, rowIndex) => (
+                      <tr
+                        key={rowIndex}
+                        className={
+                          rowIndex % 2 === 0 ? "bg-white" : "bg-muted/20"
+                        }
+                      >
                         {row.slice(0, 3).map((cell, cellIndex) => (
-                          <td key={cellIndex} className="px-2 py-1 truncate border-t">
-                            {cell || '—'}
+                          <td
+                            key={cellIndex}
+                            className="px-2 py-1 truncate border-t"
+                          >
+                            {cell || "—"}
                           </td>
                         ))}
                         {row.length > 3 && (
@@ -548,10 +812,13 @@ const Library = () => {
                         )}
                       </tr>
                     ))}
-                    {item.tableData.rows.length > 1 && (
+                    {item.table_data.rows.length > 1 && (
                       <tr>
-                        <td colSpan={Math.min(item.tableData.headers.length, 4)} className="px-2 py-1 text-center text-muted-foreground border-t text-xs">
-                          +{item.tableData.rows.length - 1} more rows
+                        <td
+                          colSpan={Math.min(item.table_data.headers.length, 4)}
+                          className="px-2 py-1 text-center text-muted-foreground border-t text-xs"
+                        >
+                          +{item.table_data.rows.length - 1} more rows
                         </td>
                       </tr>
                     )}
@@ -561,10 +828,12 @@ const Library = () => {
             )}
           </div>
         );
-      case 'text':
+      case "text":
       default:
         return (
-          <CardDescription className="line-clamp-2">{item.description}</CardDescription>
+          <CardDescription className="line-clamp-2">
+            {item.description}
+          </CardDescription>
         );
     }
   };
@@ -579,25 +848,35 @@ const Library = () => {
       >
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">Reference Library</h1>
+            <h1 className="text-2xl font-bold tracking-tight">
+              Reference Library
+            </h1>
             <p className="text-muted-foreground mt-1 text-sm">
               Access and manage shared knowledge, processes, and contacts
             </p>
           </div>
-          <Button className="mt-4 md:mt-0" onClick={handleNewItem}>
+          <Button className="mt-4 md:mt-0" onClick={handleNewItem} disabled={!userId}>
             <Plus className="mr-2 h-4 w-4" /> Add New Entry
           </Button>
         </div>
 
-        <Dialog open={isNewItemDialogOpen} onOpenChange={setIsNewItemDialogOpen}>
+        <Dialog
+          open={isNewItemDialogOpen}
+          onOpenChange={setIsNewItemDialogOpen}
+        >
           <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Add New Reference</DialogTitle>
-              <DialogDescription>Create a new reference item in your library.</DialogDescription>
+              <DialogDescription>
+                Create a new reference item in your library.
+              </DialogDescription>
             </DialogHeader>
-            
+
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <form
+                onSubmit={form.handleSubmit(onSubmit)}
+                className="space-y-4"
+              >
                 <FormField
                   control={form.control}
                   name="title"
@@ -645,21 +924,44 @@ const Library = () => {
                       <FormLabel>Tags</FormLabel>
                       <FormControl>
                         <Select
-                          onValueChange={(value) => field.onChange(value)}
-                          value={field.value.length > 0 ? field.value[0] : ""}
+                          onValueChange={(value) => {
+                            const currentTags = field.value || [];
+                            if (!currentTags.includes(value)) {
+                              field.onChange([...currentTags, value]);
+                            }
+                          }}
                         >
                           <SelectTrigger>
                             <SelectValue placeholder="Select tags" />
                           </SelectTrigger>
                           <SelectContent>
-                            {availableTags.map(tag => (
-                              <SelectItem key={tag} value={tag}>
-                                {tag}
+                            {availableTags.map((tag) => (
+                              <SelectItem key={tag.id} value={tag.name}>
+                                {tag.name}
                               </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
                       </FormControl>
+                      <div className="mt-2 flex flex-wrap gap-1">
+                        {field.value?.map((tag: string) => (
+                          <Badge
+                            key={tag}
+                            variant="secondary"
+                            className="mr-1 mb-1"
+                          >
+                            {tag}
+                            <X
+                              className="h-3 w-3 ml-1 cursor-pointer"
+                              onClick={() =>
+                                field.onChange(
+                                  field.value.filter((t: string) => t !== tag)
+                                )
+                              }
+                            />
+                          </Badge>
+                        ))}
+                      </div>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -671,7 +973,7 @@ const Library = () => {
                     <FormItem>
                       <FormLabel>New Tag</FormLabel>
                       <FormControl>
-                        <Input {...field} />
+                        <Input {...field} placeholder="Add new tag" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -687,9 +989,29 @@ const Library = () => {
                         <Input
                           type="file"
                           accept="image/*,application/pdf"
+                          multiple
                           onChange={handleFileUpload}
                         />
                       </FormControl>
+                      <div className="mt-2 space-y-2">
+                        {field.value?.map((att: ReferenceAttachment) => (
+                          <div
+                            key={att.id}
+                            className="flex items-center justify-between bg-gray-50 p-2 rounded"
+                          >
+                            <span className="text-sm">
+                              {att.name} ({(att.size / 1024).toFixed(1)} KB)
+                            </span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeAttachment(att.id)}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -728,7 +1050,10 @@ const Library = () => {
                       <FormItem>
                         <FormLabel>Image URL</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="https://example.com/image.jpg" />
+                          <Input
+                            {...field}
+                            placeholder="https://example.com/image.jpg"
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -739,16 +1064,16 @@ const Library = () => {
                   <div className="space-y-3 border p-3 rounded-md">
                     <div className="flex justify-between items-center">
                       <h4 className="text-sm font-medium">Table Data</h4>
-                      <Button 
-                        type="button" 
-                        variant="outline" 
+                      <Button
+                        type="button"
+                        variant="outline"
                         size="sm"
                         onClick={addTableColumn}
                       >
                         Add Column
                       </Button>
                     </div>
-                    
+
                     <div className="overflow-x-auto border rounded-md">
                       <table className="min-w-full">
                         <thead className="bg-muted/50">
@@ -758,7 +1083,9 @@ const Library = () => {
                                 <div className="flex items-center gap-1">
                                   <Input
                                     value={header}
-                                    onChange={(e) => updateTableHeader(index, e.target.value)}
+                                    onChange={(e) =>
+                                      updateTableHeader(index, e.target.value)
+                                    }
                                     className="h-7 text-xs w-full"
                                     placeholder="Column name"
                                   />
@@ -780,10 +1107,19 @@ const Library = () => {
                           {tableRows.map((row, rowIndex) => (
                             <tr key={rowIndex}>
                               {row.map((cell, colIndex) => (
-                                <td key={colIndex} className="px-2 py-1 border-t">
+                                <td
+                                  key={colIndex}
+                                  className="px-2 py-1 border-t"
+                                >
                                   <Input
                                     value={cell}
-                                    onChange={(e) => updateTableCell(rowIndex, colIndex, e.target.value)}
+                                    onChange={(e) =>
+                                      updateTableCell(
+                                        rowIndex,
+                                        colIndex,
+                                        e.target.value
+                                      )
+                                    }
                                     className="h-7 text-xs"
                                     placeholder="Cell value"
                                   />
@@ -805,10 +1141,10 @@ const Library = () => {
                         </tbody>
                       </table>
                     </div>
-                    
-                    <Button 
-                      type="button" 
-                      variant="outline" 
+
+                    <Button
+                      type="button"
+                      variant="outline"
                       size="sm"
                       onClick={addTableRow}
                     >
@@ -828,11 +1164,16 @@ const Library = () => {
           <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Edit Reference</DialogTitle>
-              <DialogDescription>Update this reference item in your library.</DialogDescription>
+              <DialogDescription>
+                Update this reference item in your library.
+              </DialogDescription>
             </DialogHeader>
-            
+
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <form
+                onSubmit={form.handleSubmit(onSubmit)}
+                className="space-y-4"
+              >
                 <FormField
                   control={form.control}
                   name="title"
@@ -880,21 +1221,44 @@ const Library = () => {
                       <FormLabel>Tags</FormLabel>
                       <FormControl>
                         <Select
-                          onValueChange={(value) => field.onChange(value)}
-                          value={field.value.length > 0 ? field.value[0] : ""}
+                          onValueChange={(value) => {
+                            const currentTags = field.value || [];
+                            if (!currentTags.includes(value)) {
+                              field.onChange([...currentTags, value]);
+                            }
+                          }}
                         >
                           <SelectTrigger>
                             <SelectValue placeholder="Select tags" />
                           </SelectTrigger>
                           <SelectContent>
-                            {availableTags.map(tag => (
-                              <SelectItem key={tag} value={tag}>
-                                {tag}
+                            {availableTags.map((tag) => (
+                              <SelectItem key={tag.id} value={tag.name}>
+                                {tag.name}
                               </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
                       </FormControl>
+                      <div className="mt-2 flex flex-wrap gap-1">
+                        {field.value?.map((tag: string) => (
+                          <Badge
+                            key={tag}
+                            variant="secondary"
+                            className="mr-1 mb-1"
+                          >
+                            {tag}
+                            <X
+                              className="h-3 w-3 ml-1 cursor-pointer"
+                              onClick={() =>
+                                field.onChange(
+                                  field.value.filter((t: string) => t !== tag)
+                                )
+                              }
+                            />
+                          </Badge>
+                        ))}
+                      </div>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -906,7 +1270,7 @@ const Library = () => {
                     <FormItem>
                       <FormLabel>New Tag</FormLabel>
                       <FormControl>
-                        <Input {...field} />
+                        <Input {...field} placeholder="Add new tag" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -922,9 +1286,29 @@ const Library = () => {
                         <Input
                           type="file"
                           accept="image/*,application/pdf"
+                          multiple
                           onChange={handleFileUpload}
                         />
                       </FormControl>
+                      <div className="mt-2 space-y-2">
+                        {field.value?.map((att: ReferenceAttachment) => (
+                          <div
+                            key={att.id}
+                            className="flex items-center justify-between bg-gray-50 p-2 rounded"
+                          >
+                            <span className="text-sm">
+                              {att.name} ({(att.size / 1024).toFixed(1)} KB)
+                            </span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeAttachment(att.id)}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -963,7 +1347,10 @@ const Library = () => {
                       <FormItem>
                         <FormLabel>Image URL</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="https://example.com/image.jpg" />
+                          <Input
+                            {...field}
+                            placeholder="https://example.com/image.jpg"
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -974,16 +1361,16 @@ const Library = () => {
                   <div className="space-y-3 border p-3 rounded-md">
                     <div className="flex justify-between items-center">
                       <h4 className="text-sm font-medium">Table Data</h4>
-                      <Button 
-                        type="button" 
-                        variant="outline" 
+                      <Button
+                        type="button"
+                        variant="outline"
                         size="sm"
                         onClick={addTableColumn}
                       >
                         Add Column
                       </Button>
                     </div>
-                    
+
                     <div className="overflow-x-auto border rounded-md">
                       <table className="min-w-full">
                         <thead className="bg-muted/50">
@@ -993,7 +1380,9 @@ const Library = () => {
                                 <div className="flex items-center gap-1">
                                   <Input
                                     value={header}
-                                    onChange={(e) => updateTableHeader(index, e.target.value)}
+                                    onChange={(e) =>
+                                      updateTableHeader(index, e.target.value)
+                                    }
                                     className="h-7 text-xs w-full"
                                     placeholder="Column name"
                                   />
@@ -1015,10 +1404,19 @@ const Library = () => {
                           {tableRows.map((row, rowIndex) => (
                             <tr key={rowIndex}>
                               {row.map((cell, colIndex) => (
-                                <td key={colIndex} className="px-2 py-1 border-t">
+                                <td
+                                  key={colIndex}
+                                  className="px-2 py-1 border-t"
+                                >
                                   <Input
                                     value={cell}
-                                    onChange={(e) => updateTableCell(rowIndex, colIndex, e.target.value)}
+                                    onChange={(e) =>
+                                      updateTableCell(
+                                        rowIndex,
+                                        colIndex,
+                                        e.target.value
+                                      )
+                                    }
                                     className="h-7 text-xs"
                                     placeholder="Cell value"
                                   />
@@ -1040,10 +1438,10 @@ const Library = () => {
                         </tbody>
                       </table>
                     </div>
-                    
-                    <Button 
-                      type="button" 
-                      variant="outline" 
+
+                    <Button
+                      type="button"
+                      variant="outline"
                       size="sm"
                       onClick={addTableRow}
                     >
@@ -1070,44 +1468,41 @@ const Library = () => {
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-            
+
             <div className="space-y-3 bg-gray-50 p-4 rounded-lg">
               <div className="flex justify-between items-center">
                 <h3 className="text-sm font-medium flex items-center">
                   <Tag className="h-3.5 w-3.5 mr-1.5" /> Tags
                 </h3>
-                {availableTags.length > 0 && (
-                  <div className="flex items-center space-x-1">
-                    <Input 
-                      value={form.watch('newTag') || ''}
-                      onChange={(e) => form.setValue('newTag', e.target.value)}
-                      placeholder="New tag"
-                      className="h-7 text-xs"
-                    />
-                    <Button 
-                      size="sm" 
-                      variant="ghost"
-                      className="h-7 px-2"
-                      onClick={() => {
-                        const newTag = form.getValues('newTag');
-                        if (newTag && !availableTags.includes(newTag)) {
-                          setAvailableTags(prev => [...prev, newTag]);
-                          form.setValue('newTag', '');
-                          toast.success(`Tag "${newTag}" added`);
-                        }
-                      }}
-                    >
-                      <Plus className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                )}
+                <div className="flex items-center space-x-1">
+                  <Input
+                    value={form.watch("newTag") || ""}
+                    onChange={(e) => form.setValue("newTag", e.target.value)}
+                    placeholder="New tag"
+                    className="h-7 text-xs"
+                  />
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 px-2"
+                    onClick={async () => {
+                      const newTag = form.getValues("newTag");
+                      if (newTag) {
+                        await getOrCreateTag(newTag);
+                        form.setValue("newTag", "");
+                      }
+                    }}
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
               </div>
-              
+
               {availableTags.length > 0 ? (
                 <div className="flex flex-wrap gap-1.5">
-                  {availableTags.map(tag => (
-                    <div key={tag} className="flex items-center mb-1">
-                      {editingTag === tag ? (
+                  {availableTags.map((tag) => (
+                    <div key={tag.id} className="flex items-center mb-1">
+                      {editingTag === tag.name ? (
                         <div className="flex items-center">
                           <Input
                             value={newTagValue}
@@ -1115,17 +1510,17 @@ const Library = () => {
                             className="h-7 text-xs w-24 mr-1"
                             autoFocus
                           />
-                          <Button 
-                            size="sm" 
+                          <Button
+                            size="sm"
                             variant="ghost"
                             className="h-7 w-7 p-0"
                             onClick={saveEditedTag}
                           >
                             <Check className="h-3 w-3" />
                           </Button>
-                          <Button 
-                            size="sm" 
-                            variant="ghost" 
+                          <Button
+                            size="sm"
+                            variant="ghost"
                             className="h-7 w-7 p-0"
                             onClick={cancelEditTag}
                           >
@@ -1133,25 +1528,31 @@ const Library = () => {
                           </Button>
                         </div>
                       ) : (
-                        <Badge 
-                          variant={selectedTags.includes(tag) ? "default" : "outline"}
+                        <Badge
+                          variant={
+                            selectedTags.includes(tag.name)
+                              ? "default"
+                              : "outline"
+                          }
                           className="text-xs py-1 px-2 cursor-pointer flex items-center gap-1"
                         >
-                          <span onClick={() => toggleTag(tag)}>{tag}</span>
+                          <span onClick={() => toggleTag(tag.name)}>
+                            {tag.name}
+                          </span>
                           <div className="flex items-center ml-1">
-                            <Button 
-                              size="sm" 
-                              variant="ghost" 
+                            <Button
+                              size="sm"
+                              variant="ghost"
                               className="h-4 w-4 p-0"
-                              onClick={() => startEditTag(tag)}
+                              onClick={() => startEditTag(tag.name)}
                             >
                               <Edit className="h-2.5 w-2.5" />
                             </Button>
-                            <Button 
-                              size="sm" 
-                              variant="ghost" 
+                            <Button
+                              size="sm"
+                              variant="ghost"
                               className="h-4 w-4 p-0 text-destructive"
-                              onClick={() => deleteTag(tag)}
+                              onClick={() => handleDeleteTag(tag.name)}
                             >
                               <X className="h-2.5 w-2.5" />
                             </Button>
@@ -1167,20 +1568,23 @@ const Library = () => {
                 </div>
               )}
             </div>
-            
+
             <div className="flex items-center text-xs text-muted-foreground">
               <RotateCcw className="mr-1.5 h-3 w-3" />
               <span>Last updated: Today</span>
             </div>
           </div>
-          
+
           <div>
             {filteredItems.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
                 {filteredItems.map((item) => {
                   const Icon = item.icon;
                   return (
-                    <Card key={item.id} className="overflow-hidden hover:shadow-md transition-shadow border-muted/40">
+                    <Card
+                      key={item.id}
+                      className="overflow-hidden hover:shadow-md transition-shadow border-muted/40"
+                    >
                       <CardHeader className="pb-2 space-y-2.5">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
@@ -1188,12 +1592,12 @@ const Library = () => {
                               <Icon className="h-4 w-4 text-primary" />
                             </div>
                             <span className="text-xs text-muted-foreground">
-                              {item.updatedAt}
+                              {item.updated_at}
                             </span>
                           </div>
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
+                          <Button
+                            variant="ghost"
+                            size="sm"
                             className="h-7 w-7 p-0"
                             onClick={(e) => {
                               e.stopPropagation();
@@ -1203,26 +1607,33 @@ const Library = () => {
                             <Edit className="h-3.5 w-3.5" />
                           </Button>
                         </div>
-                        <CardTitle className="text-base leading-tight">{item.title}</CardTitle>
+                        <CardTitle className="text-base leading-tight">
+                          {item.title}
+                        </CardTitle>
                       </CardHeader>
                       <CardContent className="space-y-2 pt-1 min-h-[60px]">
                         {renderContentByType(item)}
-                        
-                        {item.attachments && item.attachments.length > 0 && item.type !== 'file' && (
-                          <div className="mt-1.5">
-                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                              <FileArchive className="h-3.5 w-3.5" />
-                              <span>{item.attachments.length} attachment{item.attachments.length !== 1 ? 's' : ''}</span>
+
+                        {item.attachments &&
+                          item.attachments.length > 0 &&
+                          item.type !== "file" && (
+                            <div className="mt-1.5">
+                              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                                <FileArchive className="h-3.5 w-3.5" />
+                                <span>
+                                  {item.attachments.length} attachment
+                                  {item.attachments.length !== 1 ? "s" : ""}
+                                </span>
+                              </div>
                             </div>
-                          </div>
-                        )}
+                          )}
                       </CardContent>
-                      
+
                       <div className="px-6 pb-1">
                         <div className="flex flex-wrap gap-1 mb-3 min-h-[26px] max-h-[52px] overflow-hidden">
-                          {item.tags.map(tag => (
-                            <Badge 
-                              key={tag} 
+                          {item.tags.map((tag) => (
+                            <Badge
+                              key={tag}
                               variant="outline"
                               className="text-xs py-0.5 px-1.5 bg-muted/30"
                             >
@@ -1231,22 +1642,26 @@ const Library = () => {
                           ))}
                         </div>
                       </div>
-                      
+
                       <CardFooter className="justify-between gap-2 border-t pt-2.5 pb-3 bg-muted/5">
                         <Dialog>
                           <DialogTrigger asChild>
-                            <Button variant="outline" size="sm" className="h-8">View Details</Button>
+                            <Button variant="outline" size="sm" className="h-8">
+                              View Details
+                            </Button>
                           </DialogTrigger>
                           <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
                             <DialogHeader>
                               <DialogTitle>{item.title}</DialogTitle>
-                              <DialogDescription>{item.description}</DialogDescription>
+                              <DialogDescription>
+                                {item.description}
+                              </DialogDescription>
                             </DialogHeader>
                             <div className="mt-4 space-y-4">
                               <div className="flex flex-wrap gap-1">
-                                {item.tags.map(tag => (
-                                  <Badge 
-                                    key={tag} 
+                                {item.tags.map((tag) => (
+                                  <Badge
+                                    key={tag}
                                     variant="outline"
                                     className="text-xs"
                                   >
@@ -1254,85 +1669,116 @@ const Library = () => {
                                   </Badge>
                                 ))}
                               </div>
-                              
-                              {item.type === 'text' && (
+
+                              {item.type === "text" && (
                                 <div className="p-4 bg-muted/50 rounded-md whitespace-pre-line">
                                   {item.content}
                                 </div>
                               )}
-                              
-                              {item.type === 'image' && item.imageUrl && (
+
+                              {item.type === "image" && item.image_url && (
                                 <div className="flex justify-center">
-                                  <img 
-                                    src={item.imageUrl} 
-                                    alt={item.title} 
+                                  <img
+                                    src={item.image_url}
+                                    alt={item.title}
                                     className="max-w-full max-h-[400px] object-contain rounded-md"
                                   />
                                 </div>
                               )}
-                              
-                              {item.type === 'database' && item.tableData && (
+
+                              {item.type === "database" && item.table_data && (
                                 <div className="overflow-x-auto border rounded-md">
                                   <table className="min-w-full">
                                     <thead className="bg-muted/50">
                                       <tr>
-                                        {item.tableData.headers.map((header, index) => (
-                                          <th key={index} className="px-4 py-2 font-medium text-left">
-                                            {header}
-                                          </th>
-                                        ))}
+                                        {item.table_data.headers.map(
+                                          (header, index) => (
+                                            <th
+                                              key={index}
+                                              className="px-4 py-2 font-medium text-left"
+                                            >
+                                              {header}
+                                            </th>
+                                          )
+                                        )}
                                       </tr>
                                     </thead>
                                     <tbody>
-                                      {item.tableData.rows.map((row, rowIndex) => (
-                                        <tr key={rowIndex} className={rowIndex % 2 === 0 ? 'bg-white' : 'bg-muted/20'}>
-                                          {row.map((cell, cellIndex) => (
-                                            <td key={cellIndex} className="px-4 py-2 border-t">
-                                              {cell || '—'}
-                                            </td>
-                                          ))}
-                                        </tr>
-                                      ))}
+                                      {item.table_data.rows.map(
+                                        (row, rowIndex) => (
+                                          <tr
+                                            key={rowIndex}
+                                            className={
+                                              rowIndex % 2 === 0
+                                                ? "bg-white"
+                                                : "bg-muted/20"
+                                            }
+                                          >
+                                            {row.map((cell, cellIndex) => (
+                                              <td
+                                                key={cellIndex}
+                                                className="px-4 py-2 border-t"
+                                              >
+                                                {cell || "—"}
+                                              </td>
+                                            ))}
+                                          </tr>
+                                        )
+                                      )}
                                     </tbody>
                                   </table>
                                 </div>
                               )}
-                              
-                              {item.attachments && item.attachments.length > 0 && (
-                                <div className="mt-4">
-                                  <h4 className="text-sm font-medium mb-2">Attachments</h4>
-                                  <div className="space-y-2">
-                                    {item.attachments.map(attachment => (
-                                      <div key={attachment.id} className="flex items-center justify-between bg-gray-50 rounded p-3">
-                                        <div className="flex items-center">
-                                          <FileArchive className="h-4 w-4 mr-2 text-muted-foreground" />
-                                          <span>{attachment.name}</span>
-                                          <span className="text-xs text-muted-foreground ml-2">
-                                            ({(attachment.size / 1024).toFixed(1)} KB)
-                                          </span>
+
+                              {item.attachments &&
+                                item.attachments.length > 0 && (
+                                  <div className="mt-4">
+                                    <h4 className="text-sm font-medium mb-2">
+                                      Attachments
+                                    </h4>
+                                    <div className="space-y-2">
+                                      {item.attachments.map((attachment) => (
+                                        <div
+                                          key={attachment.id}
+                                          className="flex items-center justify-between bg-gray-50 rounded p-3"
+                                        >
+                                          <div className="flex items-center">
+                                            <FileArchive className="h-4 w-4 mr-2 text-muted-foreground" />
+                                            <span>{attachment.name}</span>
+                                            <span className="text-xs text-muted-foreground ml-2">
+                                              (
+                                              {(attachment.size / 1024).toFixed(
+                                                1
+                                              )}{" "}
+                                              KB)
+                                            </span>
+                                          </div>
+                                          <div>
+                                            <Button
+                                              variant="outline"
+                                              size="sm"
+                                              asChild
+                                            >
+                                              <a
+                                                href={attachment.url}
+                                                download={attachment.name}
+                                              >
+                                                <Download className="h-4 w-4 mr-1" />{" "}
+                                                Download
+                                              </a>
+                                            </Button>
+                                          </div>
                                         </div>
-                                        <div>
-                                          <Button
-                                            variant="outline"
-                                            size="sm"
-                                            asChild
-                                          >
-                                            <a href={attachment.url} download={attachment.name}>
-                                              <Download className="h-4 w-4 mr-1" /> Download
-                                            </a>
-                                          </Button>
-                                        </div>
-                                      </div>
-                                    ))}
+                                      ))}
+                                    </div>
                                   </div>
-                                </div>
-                              )}
+                                )}
                             </div>
                             <DialogFooter className="flex justify-between mt-4">
                               <AlertDialog>
                                 <AlertDialogTrigger asChild>
-                                  <Button 
-                                    variant="outline" 
+                                  <Button
+                                    variant="outline"
                                     size="sm"
                                     className="text-destructive border-destructive hover:bg-destructive/10"
                                   >
@@ -1341,14 +1787,20 @@ const Library = () => {
                                 </AlertDialogTrigger>
                                 <AlertDialogContent>
                                   <AlertDialogHeader>
-                                    <AlertDialogTitle>Delete Reference Item</AlertDialogTitle>
+                                    <AlertDialogTitle>
+                                      Delete Reference Item
+                                    </AlertDialogTitle>
                                     <AlertDialogDescription>
-                                      Are you sure you want to delete "{item.title}"? This action cannot be undone.
+                                      Are you sure you want to delete "
+                                      {item.title}"? This action cannot be
+                                      undone.
                                     </AlertDialogDescription>
                                   </AlertDialogHeader>
                                   <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction 
+                                    <AlertDialogCancel>
+                                      Cancel
+                                    </AlertDialogCancel>
+                                    <AlertDialogAction
                                       onClick={() => handleDeleteItem(item.id)}
                                       className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                                     >
@@ -1357,9 +1809,9 @@ const Library = () => {
                                   </AlertDialogFooter>
                                 </AlertDialogContent>
                               </AlertDialog>
-                              <Button 
-                                variant="outline" 
-                                size="sm" 
+                              <Button
+                                variant="outline"
+                                size="sm"
                                 onClick={() => handleEditItem(item)}
                               >
                                 <Edit className="h-4 w-4 mr-1" /> Edit
@@ -1370,8 +1822,8 @@ const Library = () => {
 
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
-                            <Button 
-                              variant="outline" 
+                            <Button
+                              variant="outline"
                               size="sm"
                               className="text-destructive border-destructive hover:bg-destructive/10 h-8"
                             >
@@ -1380,14 +1832,17 @@ const Library = () => {
                           </AlertDialogTrigger>
                           <AlertDialogContent>
                             <AlertDialogHeader>
-                              <AlertDialogTitle>Delete Reference Item</AlertDialogTitle>
+                              <AlertDialogTitle>
+                                Delete Reference Item
+                              </AlertDialogTitle>
                               <AlertDialogDescription>
-                                Are you sure you want to delete "{item.title}"? This action cannot be undone.
+                                Are you sure you want to delete "{item.title}"?
+                                This action cannot be undone.
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                               <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction 
+                              <AlertDialogAction
                                 onClick={() => handleDeleteItem(item.id)}
                                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                               >
@@ -1404,7 +1859,9 @@ const Library = () => {
             ) : (
               <div className="text-center py-10 bg-muted/10 rounded-lg">
                 <FileText className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
-                <h3 className="text-lg font-medium text-muted-foreground/70">No reference items found</h3>
+                <h3 className="text-lg font-medium text-muted-foreground/70">
+                  No reference items found
+                </h3>
                 <p className="text-sm text-muted-foreground/50 mt-1">
                   Try changing your search or filter criteria
                 </p>
@@ -1418,4 +1875,3 @@ const Library = () => {
 };
 
 export default Library;
-

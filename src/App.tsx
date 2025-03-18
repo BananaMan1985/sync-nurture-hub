@@ -13,6 +13,7 @@ import Projects from "./pages/Projects";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
 import Settings from "./pages/Settings";
+import AssistantSignup from "./pages/AssistantSignup";
 
 // Initialize Supabase client (replace with your credentials)
 const supabase = createClient(
@@ -67,6 +68,7 @@ const App = () => {
             <Route path="/login" element={
               isAuthenticated ? <Navigate to="/" replace /> : <Login />
             } />
+            <Route path="/assistant-signup/:user_id" element={<AssistantSignup />} />
             {/* Protected routes */}
             <Route path="/reports" element={<PrivateRoute element={<Reports />} isAuthenticated={isAuthenticated} />} />
             <Route path="/library" element={<PrivateRoute element={<Library />} isAuthenticated={isAuthenticated} />} />

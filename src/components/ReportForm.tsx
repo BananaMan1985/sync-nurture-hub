@@ -10,7 +10,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { toast } from 'sonner';
 import { Send, Calendar as CalendarIcon, ArrowLeft, ArrowRight, Info } from 'lucide-react';
 import { format, isAfter, isBefore, subDays, startOfDay, isEqual } from 'date-fns';
-import { reportHistoryData, formatDateForStorage, getLocalDate } from '@/data/reportData';
+import { createClient } from '@supabase/supabase-js';
+
+// Initialize Supabase client
+const supabase = createClient(
+  import.meta.env.VITE_SUPABASE_URL,
+  import.meta.env.VITE_SUPABASE_ANON_KEY
+);
 
 interface ReportFormData {
   date: string;
@@ -18,13 +24,13 @@ interface ReportFormData {
   outstandingTasks: string;
   needFromManager: string;
   tomorrowPlans: string;
-  busynessLevel: string;
+  busynessLevel: string; // Keeping this as form state name
 }
 
 export type ViewMode = 'form' | 'view';
 
 const ReportForm: React.FC = () => {
-  const today = formatDateForStorage(new Date());
+  const today = format(new Date(), 'yyyy-MM-dd');
   const [formData, setFormData] = useState<ReportFormData>({
     date: today,
     completedTasks: '',
@@ -36,39 +42,95 @@ const ReportForm: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [showCalendar, setShowCalendar] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  
   const [viewMode, setViewMode] = useState<ViewMode>('form');
-  
   const [reportExists, setReportExists] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [hasShownRangeDialog, setHasShownRangeDialog] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [userId, setUserId] = useState<string | null>(null);
+  const [executiveId, setExecutiveId] = useState<string | null>(null); // To store owner_id
+  const [reportDates, setReportDates] = useState<Set<string>>(new Set());
 
   const sevenDaysAgo = subDays(startOfDay(new Date()), 7);
 
+  // Fetch authenticated user ID and owner_id from user_metadata on mount
   useEffect(() => {
-    if (selectedDate) {
-      const formattedDate = formatDateForStorage(selectedDate);
-      const existingReport = reportHistoryData.find(r => r.date === formattedDate);
-      
-      setReportExists(!!existingReport);
-      
-      if (existingReport) {
-        if (viewMode === 'view') {
-          setFormData({
-            date: existingReport.date,
-            completedTasks: existingReport.completedTasks,
-            outstandingTasks: existingReport.outstandingTasks,
-            needFromManager: existingReport.needFromManager,
-            tomorrowPlans: existingReport.tomorrowPlans,
-            busynessLevel: existingReport.busynessLevel
-          });
+    const fetchUser = async () => {
+      const { data: { user }, error } = await supabase.auth.getUser();
+      if (error) {
+        console.error('Error fetching user:', error);
+        toast.error('Failed to authenticate user. Please log in again.', { duration: 3000 });
+      } else if (user) {
+        setUserId(user.id);
+        const ownerId = user.user_metadata?.owner_id; // Extract owner_id from user_metadata
+        if (ownerId) {
+          setExecutiveId(ownerId);
+        } else {
+          console.warn('No owner_id found in user_metadata');
+          toast.warning('No executive ID found. Report will be submitted without an executive ID.', { duration: 3000 });
+          setExecutiveId(null);
         }
       } else {
-        resetFormData(formattedDate);
+        toast.error('No authenticated user found. Please log in.', { duration: 3000 });
       }
-    }
-  }, [selectedDate, viewMode]);
+    };
+    fetchUser();
+  }, []);
+
+  // Fetch all report dates for the user
+  useEffect(() => {
+    const fetchReportDates = async () => {
+      if (userId) {
+        const { data, error } = await supabase
+          .from('reports')
+          .select('date')
+          .eq('assistant_id', userId);
+        if (error) {
+          console.error('Error fetching report dates:', error);
+          toast.error('Failed to fetch report dates.', { duration: 3000 });
+        } else {
+          setReportDates(new Set(data.map((r) => r.date)));
+        }
+      }
+    };
+    fetchReportDates();
+  }, [userId]);
+
+  // Handle date selection and report existence check
+  useEffect(() => {
+    const checkExistingReport = async () => {
+      if (selectedDate && userId) {
+        const formattedDate = format(selectedDate, 'yyyy-MM-dd');
+        const { data, error } = await supabase
+          .from('reports')
+          .select('*')
+          .eq('date', formattedDate)
+          .eq('assistant_id', userId);
+
+        if (error) {
+          console.error('Error checking existing report:', error);
+          toast.error('Failed to check existing report.', { duration: 3000 });
+        } else {
+          const existingReport = data?.[0];
+          setReportExists(!!existingReport);
+
+          if (existingReport && viewMode === 'view') {
+            setFormData({
+              date: existingReport.date,
+              completedTasks: existingReport.completed_task || '',
+              outstandingTasks: existingReport.outstanding_task || '',
+              needFromManager: existingReport.need_from_manager || '',
+              tomorrowPlans: existingReport.tomorrows_plan || '', // Corrected to tomorrows_plan
+              busynessLevel: existingReport.business_level?.toString() || '5'
+            });
+          } else if (!existingReport) {
+            resetFormData(formattedDate);
+          }
+        }
+      }
+    };
+    checkExistingReport();
+  }, [selectedDate, viewMode, userId]);
 
   const resetFormData = (date: string) => {
     setFormData({
@@ -109,38 +171,6 @@ const ReportForm: React.FC = () => {
   const handleDateSelect = (date: Date | undefined) => {
     if (date) {
       setSelectedDate(date);
-      const formattedDate = formatDateForStorage(date);
-      console.log('Selected date:', date);
-      console.log('Formatted date for storage:', formattedDate);
-      
-      const existingReport = reportHistoryData.find(r => r.date === formattedDate);
-      
-      if (existingReport) {
-        setViewMode('view');
-        setFormData({
-          date: existingReport.date,
-          completedTasks: existingReport.completedTasks,
-          outstandingTasks: existingReport.outstandingTasks,
-          needFromManager: existingReport.needFromManager,
-          tomorrowPlans: existingReport.tomorrowPlans,
-          busynessLevel: existingReport.busynessLevel
-        });
-      } else {
-        resetFormData(formattedDate);
-        
-        const isWithinSubmissionRange = !isBefore(date, sevenDaysAgo) && !isAfter(date, new Date());
-        
-        if (isWithinSubmissionRange) {
-          setViewMode('form');
-        } else {
-          if (!hasShownRangeDialog) {
-            setDialogOpen(true);
-            setHasShownRangeDialog(true);
-          }
-          setViewMode('form');
-        }
-      }
-      
       setShowCalendar(false);
     }
   };
@@ -176,104 +206,63 @@ const ReportForm: React.FC = () => {
       return;
     }
     
-    setLoading(true);
-    
-    const currentDate = formatDateForStorage(selectedDate);
-    console.log('Submitting report for date:', currentDate);
-    
-    const existingReportIndex = reportHistoryData.findIndex(r => r.date === currentDate);
-    if (existingReportIndex !== -1) {
-      toast.error("A report already exists for this date", { duration: 3000 });
-      setLoading(false);
+    if (!userId) {
+      toast.error("No authenticated user found. Please log in.", { duration: 3000 });
       return;
     }
+
+    setLoading(true);
     
-    await new Promise((resolve) => setTimeout(resolve, 800));
+    const currentDate = format(selectedDate, 'yyyy-MM-dd');
+    console.log('Submitting report for date:', currentDate);
     
-    const newReport = {
-      id: Date.now(),
+    const { error } = await supabase.from('reports').insert({
       date: currentDate,
-      status: 'Pending',
-      completedTasks: formData.completedTasks,
-      outstandingTasks: formData.outstandingTasks,
-      needFromManager: formData.needFromManager,
-      tomorrowPlans: formData.tomorrowPlans,
-      busynessLevel: formData.busynessLevel
-    };
+      assistant_id: userId,
+      executive_id: executiveId, // Use owner_id from user_metadata as executive_id
+      completed_task: formData.completedTasks,
+      outstanding_task: formData.outstandingTasks,
+      need_from_manager: formData.needFromManager,
+      tomorrows_plan: formData.tomorrowPlans, // Corrected to tomorrows_plan
+      business_level: parseInt(formData.busynessLevel),
+      created_at: new Date().toISOString()
+    });
+
+    if (error) {
+      console.error('Error inserting report:', error);
+      toast.error(`Failed to submit report: ${error.message}`, { duration: 3000 });
+    } else {
+      toast.success("Report submitted successfully", { duration: 3000 });
+      setReportExists(true);
+      setViewMode('view');
+      // Refresh the form data with the submitted data
+      setFormData(prev => ({
+        ...prev,
+        completedTasks: '',
+        outstandingTasks: '',
+        needFromManager: '',
+        tomorrowPlans: ''
+      }));
+      // Update report dates
+      setReportDates(prev => new Set(prev).add(currentDate));
+    }
     
-    reportHistoryData.push(newReport);
-    console.log('Report added:', newReport);
-    console.log('Updated report history:', reportHistoryData);
-    
-    toast.success("Report submitted successfully", { duration: 3000 });
     setLoading(false);
-    setReportExists(true);
-    setViewMode('view');
   };
 
   const goToToday = () => {
     const nowDate = new Date();
     setSelectedDate(nowDate);
-    const todayString = formatDateForStorage(nowDate);
-    
-    const existingReport = reportHistoryData.find(r => r.date === todayString);
-    if (existingReport) {
-      setViewMode('view');
-      setFormData({
-        date: existingReport.date,
-        completedTasks: existingReport.completedTasks,
-        outstandingTasks: existingReport.outstandingTasks,
-        needFromManager: existingReport.needFromManager,
-        tomorrowPlans: existingReport.tomorrowPlans,
-        busynessLevel: existingReport.busynessLevel
-      });
-    } else {
-      resetFormData(todayString);
-      setViewMode('form');
-    }
   };
 
   const moveDate = (days: number) => {
     const newDate = new Date(selectedDate);
     newDate.setDate(newDate.getDate() + days);
     setSelectedDate(newDate);
-    const formattedDate = formatDateForStorage(newDate);
-    
-    const existingReport = reportHistoryData.find(r => r.date === formattedDate);
-    
-    if (existingReport) {
-      setViewMode('view');
-      setFormData({
-        date: existingReport.date,
-        completedTasks: existingReport.completedTasks,
-        outstandingTasks: existingReport.outstandingTasks,
-        needFromManager: existingReport.needFromManager,
-        tomorrowPlans: existingReport.tomorrowPlans,
-        busynessLevel: existingReport.busynessLevel
-      });
-    } else {
-      resetFormData(formattedDate);
-      
-      const isWithinSubmissionRange = !isBefore(newDate, sevenDaysAgo) && !isAfter(newDate, new Date());
-      
-      if (!isWithinSubmissionRange && !hasShownRangeDialog) {
-        setDialogOpen(true);
-        setHasShownRangeDialog(true);
-      }
-      
-      setViewMode('form');
-    }
   };
 
   const dayContent = (day: Date) => {
-    const hasReport = reportHistoryData.some(r => {
-      const reportDate = getLocalDate(r.date);
-      return isEqual(
-        startOfDay(reportDate),
-        startOfDay(day)
-      );
-    });
-    
+    const hasReport = reportDates.has(format(day, 'yyyy-MM-dd'));
     return (
       <div className={`${hasReport ? 'font-bold' : 'font-normal'}`}>
         {day.getDate()}
@@ -539,7 +528,7 @@ const ReportForm: React.FC = () => {
                     <Button 
                       type="submit" 
                       className="gap-2"
-                      disabled={loading || !isDateWithinSubmissionRange}
+                      disabled={loading || !isDateWithinSubmissionRange || !userId}
                     >
                       <Send className="w-4 h-4" />
                       Submit Report
