@@ -9,24 +9,24 @@ const supabase = createClient(
   import.meta.env.VITE_SUPABASE_ANON_KEY
 );
 
-const AssistantSignup = () => {
+const AssistantSignup: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [authError, setAuthError] = useState(null);
+  const [authError, setAuthError] = useState<string | null>(null);
 
   const [signupName, setSignupName] = useState('');
   const [signupEmail, setSignupEmail] = useState('');
   const [signupPassword, setSignupPassword] = useState('');
   const [signupConfirmPassword, setSignupConfirmPassword] = useState('');
 
-  const { user_id } = useParams(); // Get user_id from URL params
+  const { user_id } = useParams<{ user_id: string }>(); // Type the params
   const navigate = useNavigate();
 
-  const isValidEmail = (email) => {
+  const isValidEmail = (email: string) => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
   };
 
-  const handleSignupSubmit = async (e) => {
+  const handleSignupSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setAuthError(null);
@@ -64,28 +64,10 @@ const AssistantSignup = () => {
         data: {
           full_name: signupName,
           role: 'assistant',
-          owner_id: user_id, // Link assistant to the employee
+          owner_id: user_id,
         },
       },
     });
-
-    if (data.user) {
-      const assistantId = data.user.id; // The ID of the newly signed-up assistant
-  
-      const { error: updateError } = await supabase
-        .from('users')
-        .update({ assistant_id: assistantId })
-        .eq('id', user_id); // Match the employee/owner's ID
-  
-      if (updateError) {
-        console.error('Error updating assistant_id in users table:', updateError);
-        setAuthError('Signup successful, but failed to link assistant to employee.');
-        setIsLoading(false);
-        return;
-      }
-  
-      console.log(`Successfully linked assistant ${assistantId} to employee ${user_id}`);
-    }
 
     if (error) {
       setAuthError(error.message || 'Signup failed. Please try again.');
@@ -93,7 +75,24 @@ const AssistantSignup = () => {
       return;
     }
 
-    console.log('Signed up assistant:', data.user);
+    if (data.user) {
+      const assistantId = data.user.id;
+
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({ assistant_id: assistantId })
+        .eq('id', user_id);
+
+      if (updateError) {
+        console.error('Error updating assistant_id in users table:', updateError);
+        setAuthError('Signup successful, but failed to link assistant to employee.');
+        setIsLoading(false);
+        return;
+      }
+
+      console.log(`Successfully linked assistant ${assistantId} to employee ${user_id}`);
+    }
+
     setAuthError('Check your email to confirm your account!');
     setIsLoading(false);
     // Optionally redirect to login after signup
@@ -101,23 +100,48 @@ const AssistantSignup = () => {
   };
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', padding: '16px', backgroundColor: '#f5f5f5' }}>
+    <div
+      style={{
+        minHeight: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: '16px',
+        backgroundColor: '#f5f5f5',
+      }}
+    >
       <div style={{ width: '100%', maxWidth: '400px' }}>
         <div style={{ textAlign: 'center', marginBottom: '32px' }}>
           <h1 style={{ fontSize: '28px', fontWeight: 'bold' }}>Assistant Signup</h1>
           <p style={{ color: '#666', marginTop: '8px' }}>Create your assistant account</p>
         </div>
 
-        <div style={{ backgroundColor: '#fff', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', padding: '24px' }}>
+        <div
+          style={{
+            backgroundColor: '#fff',
+            borderRadius: '8px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+            padding: '24px',
+          }}
+        >
           {authError && (
-            <div style={{ backgroundColor: authError.includes('Check your email') ? '#d1fae5' : '#fee2e2', color: authError.includes('Check your email') ? '#16a34a' : '#dc2626', padding: '12px', borderRadius: '4px', marginBottom: '16px' }}>
+            <div
+              style={{
+                backgroundColor: authError.includes('Check your email') ? '#d1fae5' : '#fee2e2',
+                color: authError.includes('Check your email') ? '#16a34a' : '#dc2626',
+                padding: '12px',
+                borderRadius: '4px',
+                marginBottom: '16px',
+              }}
+            >
               {authError}
             </div>
           )}
 
           <form onSubmit={handleSignupSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <div style={{ position: 'relative' }}>
-              <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>Full Name</label>
+              <label style={{ display: 'block', marginBottom: '4px', fontWeight: 500 }}>Full Name</label>
               <User style={{ position: 'absolute', left: '12px', top: '36px', width: '16px', height: '16px', color: '#666' }} />
               <input
                 type="text"
@@ -128,7 +152,7 @@ const AssistantSignup = () => {
               />
             </div>
             <div style={{ position: 'relative' }}>
-              <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>Email</label>
+              <label style={{ display: 'block', marginBottom: '4px', fontWeight: 500 }}>Email</label>
               <Mail style={{ position: 'absolute', left: '12px', top: '36px', width: '16px', height: '16px', color: '#666' }} />
               <input
                 type="email"
@@ -139,7 +163,7 @@ const AssistantSignup = () => {
               />
             </div>
             <div style={{ position: 'relative' }}>
-              <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>Password</label>
+              <label style={{ display: 'block', marginBottom: '4px', fontWeight: 500 }}>Password</label>
               <Lock style={{ position: 'absolute', left: '12px', top: '36px', width: '16px', height: '16px', color: '#666' }} />
               <input
                 type={showPassword ? 'text' : 'password'}
@@ -157,7 +181,7 @@ const AssistantSignup = () => {
               </button>
             </div>
             <div style={{ position: 'relative' }}>
-              <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>Confirm Password</label>
+              <label style={{ display: 'block', marginBottom: '4px', fontWeight: 500 }}>Confirm Password</label>
               <Lock style={{ position: 'absolute', left: '12px', top: '36px', width: '16px', height: '16px', color: '#666' }} />
               <input
                 type={showPassword ? 'text' : 'password'}
@@ -170,9 +194,24 @@ const AssistantSignup = () => {
             <button
               type="submit"
               disabled={isLoading}
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', width: '100%', padding: '10px', backgroundColor: '#007bff', color: '#fff', border: 'none', borderRadius: '4px', fontSize: '14px', cursor: isLoading ? 'not-allowed' : 'pointer', opacity: isLoading ? 0.7 : 1 }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '4px',
+                width: '100%',
+                padding: '10px',
+                backgroundColor: '#007bff',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '4px',
+                fontSize: '14px',
+                cursor: isLoading ? 'not-allowed' : 'pointer',
+                opacity: isLoading ? 0.7 : 1,
+              }}
             >
-              {isLoading ? 'Creating account...' : 'Create Assistant Account'} <ArrowRight style={{ width: '16px', height: '16px' }} />
+              {isLoading ? 'Creating account...' : 'Create Assistant Account'}
+              <ArrowRight style={{ width: '16px', height: '16px' }} />
             </button>
           </form>
 
