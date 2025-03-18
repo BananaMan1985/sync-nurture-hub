@@ -149,7 +149,7 @@ const Settings: React.FC = () => {
         Invite team members to collaborate with you
   </CardDescription>
   <CardDescription>
-        Share with this link to signup, <a target='_blank' className='font-bold font-black' href={`${import.meta.env.VITE_BASE_URL}/assistant-signup/${userId}`
+        Share with this link to signup, <a target='_blank' className='font-bold font-black' href={`/assistant-signup/${userId}`
 } >Click to copy</a>
       </CardDescription>
     </CardHeader>
