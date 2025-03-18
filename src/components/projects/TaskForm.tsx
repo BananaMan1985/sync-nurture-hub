@@ -1,3 +1,4 @@
+// src/components/projects/TaskForm.tsx
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -29,16 +30,20 @@ const TaskForm: React.FC<TaskFormProps> = ({
 }) => {
   const [newTask, setNewTask] = useState<Partial<Task>>({
     title: task?.title || '',
-    description: task?.description || '',
-    status: task?.status || initialStatus || 'todo',
-    dueDate: task?.dueDate || format(new Date(), 'yyyy-MM-dd'),
-    content: task?.content || '',
+    task: task?.task || '',
+    status: task?.status || initialStatus || 'inbox',
+    due_date: task?.due_date || format(new Date(), 'yyyy-MM-dd'),
+    end_result: task?.end_result || '',
     purpose: task?.purpose || '',
+    labels: task?.labels || '', // Still in state, but not in UI
+    attachments: task?.attachments || '', // Still in state, but not in UI
+    created_by: task?.created_by || '', // Still in state, but not in UI
+    assigned_to: task?.assigned_to || '',
   });
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(
-    task?.dueDate ? new Date(task.dueDate) : new Date()
+    task?.due_date ? new Date(task.due_date) : new Date()
   );
-  const [includeDueDate, setIncludeDueDate] = useState<boolean>(!!task?.dueDate);
+  const [includeDueDate, setIncludeDueDate] = useState<boolean>(!!task?.due_date);
   const [activeTab, setActiveTab] = useState<string>("details");
 
   useEffect(() => {
@@ -46,14 +51,18 @@ const TaskForm: React.FC<TaskFormProps> = ({
       setNewTask({
         ...task,
         title: task.title || '',
-        description: task.description || '',
-        content: task.content || '',
+        task: task.task || '',
+        end_result: task.end_result || '',
         purpose: task.purpose || '',
-        status: task.status || initialStatus || 'todo',
-        dueDate: task.dueDate || format(new Date(), 'yyyy-MM-dd'),
+        status: task.status || initialStatus || 'inbox',
+        due_date: task.due_date || format(new Date(), 'yyyy-MM-dd'),
+        labels: task.labels || '',
+        attachments: task.attachments || '',
+        created_by: task.created_by || '',
+        assigned_to: task.assigned_to || '',
       });
-      setSelectedDate(task.dueDate ? new Date(task.dueDate) : undefined);
-      setIncludeDueDate(!!task.dueDate);
+      setSelectedDate(task.due_date ? new Date(task.due_date) : undefined);
+      setIncludeDueDate(!!task.due_date);
     }
   }, [task, initialStatus]);
 
@@ -64,7 +73,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
   const handleSubmit = () => {
     const taskToSave = { ...newTask };
     if (!includeDueDate) {
-      delete taskToSave.dueDate;
+      delete taskToSave.due_date;
     }
     
     if (task?.id) {
@@ -73,10 +82,6 @@ const TaskForm: React.FC<TaskFormProps> = ({
     
     if (task?.comments) {
       taskToSave.comments = task.comments;
-    }
-    
-    if (task?.attachments) {
-      taskToSave.attachments = task.attachments;
     }
     
     console.log("Saving task:", taskToSave);
@@ -141,22 +146,46 @@ const TaskForm: React.FC<TaskFormProps> = ({
                   ))
                 ) : (
                   <>
-                    <SelectItem value="todo" className="flex items-center gap-2">
+                    <SelectItem value="inbox" className="flex items-center gap-2">
                       <span className="flex h-2 w-2 rounded-full bg-blue-500"></span>
-                      <span>To Do</span>
+                      <span>Inbox</span>
+                    </SelectItem>
+                    <SelectItem value="confirmedreceived" className="flex items-center gap-2">
+                      <span className="flex h-2 w-2 rounded-full bg-amber-500"></span>
+                      <span>Confirmed/Received</span>
                     </SelectItem>
                     <SelectItem value="inprogress" className="flex items-center gap-2">
-                      <span className="flex h-2 w-2 rounded-full bg-amber-500"></span>
+                      <span className="flex h-2 w-2 rounded-full bg-emerald-500"></span>
                       <span>In Progress</span>
                     </SelectItem>
-                    <SelectItem value="done" className="flex items-center gap-2">
-                      <span className="flex h-2 w-2 rounded-full bg-emerald-500"></span>
-                      <span>Done</span>
+                    <SelectItem value="waiting" className="flex items-center gap-2">
+                      <span className="flex h-2 w-2 rounded-full bg-purple-500"></span>
+                      <span>Waiting</span>
+                    </SelectItem>
+                    <SelectItem value="review" className="flex items-center gap-2">
+                      <span className="flex h-2 w-2 rounded-full bg-orange-500"></span>
+                      <span>Review</span>
+                    </SelectItem>
+                    <SelectItem value="archive" className="flex items-center gap-2">
+                      <span className="flex h-2 w-2 rounded-full bg-gray-500"></span>
+                      <span>Archive</span>
                     </SelectItem>
                   </>
                 )}
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 mb-1 text-sm font-medium text-gray-700">
+              <FileText className="h-4 w-4 text-gray-500" />
+              <span>Assigned To (UUID)</span>
+            </div>
+            <Input
+              value={newTask.assigned_to || ''}
+              onChange={(e) => handleChange('assigned_to', e.target.value)}
+              placeholder="Enter assignee UUID"
+            />
           </div>
           
           <div className="space-y-2">
@@ -197,7 +226,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
                     onSelect={(date) => {
                       setSelectedDate(date);
                       if (date) {
-                        handleChange('dueDate', format(date, 'yyyy-MM-dd'));
+                        handleChange('due_date', format(date, 'yyyy-MM-dd'));
                       }
                     }}
                     initialFocus
@@ -230,8 +259,8 @@ const TaskForm: React.FC<TaskFormProps> = ({
             </div>
             <Textarea
               placeholder="List specific actions required to complete this project..."
-              value={newTask.content || ''}
-              onChange={(e) => handleChange('content', e.target.value)}
+              value={newTask.task || ''}
+              onChange={(e) => handleChange('task', e.target.value)}
               className="min-h-[200px] resize-none"
             />
           </div>
@@ -302,8 +331,8 @@ const TaskForm: React.FC<TaskFormProps> = ({
             </div>
             <Textarea
               placeholder="Describe the desired end result of this project..."
-              value={newTask.description}
-              onChange={(e) => handleChange('description', e.target.value)}
+              value={newTask.end_result || ''}
+              onChange={(e) => handleChange('end_result', e.target.value)}
               className="min-h-[200px] resize-none"
             />
           </div>

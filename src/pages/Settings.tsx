@@ -1,32 +1,80 @@
-
 import React, { useState } from 'react';
 import Layout from '@/components/Layout';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardDescription, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/use-toast';
 import { UserPlus, Mail } from 'lucide-react';
 import { motion } from 'framer-motion';
+import axios from 'axios';
 
 const Settings: React.FC = () => {
   const [email, setEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
-  const handleInvite = (e: React.FormEvent) => {
+  // Function to send email via Resend API
+  const sendInviteEmail = async (recipientEmail: string) => {
+    const apiKey = import.meta.env.VITE_RESEND_API_KEY;
+    const signupLink = 'https://your-app.com/signup'; // Replace with your actual signup URL
+
+    const emailData = {
+      from: 'Your Name <your-email@your-domain.com>', // Replace with your verified email/domain
+      to: [recipientEmail],
+      subject: 'Invitation to Join as an Assistant',
+      html: `
+        <p>Hello,</p>
+        <p>You’ve been invited to join as an assistant on our platform!</p>
+        <p>Please click the link below to sign up:</p>
+        <p><a href="${signupLink}">${signupLink}</a></p>
+        <p>Best regards,<br>Your Team</p>
+      `,
+    };
+
+    try {
+      const response = await axios.post(
+        'https://api.resend.com/emails',
+        emailData,
+        {
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      if (response.status === 200) {
+        return true;
+      } else {
+        throw new Error('Failed to send email');
+      }
+    } catch (error) {
+      console.error('Error sending email:', error);
+      throw error;
+    }
+  };
+
+  const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
 
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      await sendInviteEmail(email);
       toast({
-        title: "Invitation sent",
+        title: 'Invitation Sent',
         description: `We've sent an invitation to ${email}`,
       });
       setEmail('');
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to send invitation. Please try again.',
+      });
+    } finally {
       setIsSubmitting(false);
-    }, 1500);
+    }
   };
 
   return (
@@ -73,7 +121,7 @@ const Settings: React.FC = () => {
                       />
                     </div>
                     <Button type="submit" disabled={isSubmitting || !email}>
-                      {isSubmitting ? "Sending..." : "Send Invite"}
+                      {isSubmitting ? 'Sending...' : 'Send Invite'}
                     </Button>
                   </div>
                   <p className="text-sm text-muted-foreground mt-2">

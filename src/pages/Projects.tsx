@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createClient } from '@supabase/supabase-js';
 import Layout from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
@@ -12,11 +13,16 @@ import TaskColumn from '@/components/projects/TaskColumn';
 import TaskForm from '@/components/projects/TaskForm';
 import TaskEditDialog from '@/components/projects/TaskEditDialog';
 import ColumnCarousel from '@/components/projects/ColumnCarousel';
-import { Task, TaskStatus, mockTasks, Comment as TaskComment, Column, defaultColumns } from '@/components/projects/types';
+import { Task, TaskStatus, Comment as TaskComment, Column, defaultColumns } from '@/components/projects/types';
 import ProjectsGrid from '@/components/projects/ProjectsGrid';
 
+// Initialize Supabase client with Vite environment variables
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
 const Projects = () => {
-  const [tasks, setTasks] = useState<Task[]>(mockTasks);
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [columns] = useState<Column[]>(defaultColumns);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
@@ -29,16 +35,16 @@ const Projects = () => {
   const { toast } = useToast();
 
   useEffect(() => {
+    fetchTasks();
+  }, []);
+
+  useEffect(() => {
     const handleGlobalDragStart = (e: DragEvent) => {
       const taskId = e.dataTransfer?.getData('taskId');
-      if (taskId) {
-        setDraggedTaskId(taskId);
-      }
+      if (taskId) setDraggedTaskId(taskId);
     };
 
-    const handleGlobalDragEnd = () => {
-      setDraggedTaskId(null);
-    };
+    const handleGlobalDragEnd = () => setDraggedTaskId(null);
 
     document.addEventListener('dragstart', handleGlobalDragStart);
     document.addEventListener('dragend', handleGlobalDragEnd);
@@ -49,29 +55,52 @@ const Projects = () => {
     };
   }, []);
 
-  const getTasksByStatus = (status: TaskStatus) => {
-    return tasks.filter(task => task.status === status);
+  const fetchTasks = async () => {
+    try {
+      setIsLoading(true);
+      const { data, error } = await supabase
+        .from('tasks')
+        .select('*')
+  
+
+      if (error) throw error;
+      setTasks(data || []);
+    } catch (error) {
+      console.error('Error fetching tasks:', error);
+      toast({ title: "Error", description: "Failed to load tasks", variant: "destructive" });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleDrop = (taskId: string, newStatus: TaskStatus) => {
-    if (!taskId) return;
-    
-    setTasks(prev => prev.map(task => 
-      task.id === taskId 
-        ? { ...task, status: newStatus } 
-        : task
-    ));
-    setDraggedTaskId(null);
-    
-    const columnTitle = columns.find(col => col.id === newStatus)?.title || newStatus;
-    
-    toast({
-      title: "Project moved",
-      description: `Project moved to ${columnTitle}.`,
-    });
+  const getTasksByStatus = (status: TaskStatus) => tasks.filter(task => task.status === status);
+
+  const handleDrop = async (taskId: string, newStatus: TaskStatus) => {
+    try {
+      setIsLoading(true);
+      const { error } = await supabase
+        .from('tasks')
+        .update({ status: newStatus })
+        .eq('id', taskId);
+
+      if (error) throw error;
+
+      setTasks(prev => prev.map(task => 
+        task.id === taskId ? { ...task, status: newStatus } : task
+      ));
+
+      const columnTitle = columns.find(col => col.id === newStatus)?.title || newStatus;
+      toast({ title: "Project moved", description: `Project moved to ${columnTitle}.` });
+    } catch (error) {
+      console.error('Error updating task status:', error);
+      toast({ title: "Error", description: "Failed to move project", variant: "destructive" });
+    } finally {
+      setIsLoading(false);
+      setDraggedTaskId(null);
+    }
   };
 
-  const handleReorderTasks = (draggedTaskId: string, targetIndex: number, status: TaskStatus) => {
+  const handleReorderTasks = async (draggedTaskId: string, targetIndex: number, status: TaskStatus) => {
     if (!draggedTaskId) return;
     
     const statusTasks = [...getTasksByStatus(status)];
@@ -87,22 +116,31 @@ const Projects = () => {
       ...task,
       order: index
     }));
-    
-    setTasks(prev => {
-      const otherTasks = prev.filter(task => task.status !== status);
-      return [...otherTasks, ...updatedTasks];
-    });
-    
-    setDraggedTaskId(null);
+
+    try {
+      setIsLoading(true);
+      await Promise.all(updatedTasks.map(task => 
+        supabase.from('tasks').update({ order: task.order }).eq('id', task.id)
+      ));
+
+      setTasks(prev => {
+        const otherTasks = prev.filter(task => task.status !== status);
+        return [...otherTasks, ...updatedTasks];
+      });
+    } catch (error) {
+      console.error('Error reordering tasks:', error);
+      toast({ title: "Error", description: "Failed to reorder tasks", variant: "destructive" });
+    } finally {
+      setIsLoading(false);
+      setDraggedTaskId(null);
+    }
   };
 
   const handleDragOver = (e: React.DragEvent, status: TaskStatus) => {
     e.preventDefault();
     if (e.dataTransfer && e.dataTransfer.types.includes('taskId')) {
       const taskId = e.dataTransfer.getData('taskId');
-      if (taskId && draggedTaskId !== taskId) {
-        setDraggedTaskId(taskId);
-      }
+      if (taskId && draggedTaskId !== taskId) setDraggedTaskId(taskId);
     }
   };
 
@@ -111,22 +149,65 @@ const Projects = () => {
     setIsTaskDialogOpen(true);
   };
 
-  const handleSaveTask = (updatedTask: Task) => {
-    console.log("Saving updated task in main component:", updatedTask);
-    
-    setTasks(prev => prev.map(task => 
-      task.id === updatedTask.id ? updatedTask : task
-    ));
-    
-    if (selectedTask && selectedTask.id === updatedTask.id) {
-      setSelectedTask(updatedTask);
+  const handleSaveTask = async (updatedTask: Task) => {
+    try {
+      setIsLoading(true);
+      const { error } = await supabase
+        .from('tasks')
+        .update({
+          title: updatedTask.title,
+          task: updatedTask.task,
+          status: updatedTask.status,
+          labels: updatedTask.labels || '', // Ensure it's included even if not in UI
+          attachments: updatedTask.attachments || '', // Ensure it's included even if not in UI
+          // created_by: updatedTask.created_by || '', // Ensure it's included even if not in UI
+          // assigned_to: updatedTask.assigned_to,
+          due_date: updatedTask.due_date,
+          purpose: updatedTask.purpose,
+          end_result: updatedTask.end_result,
+     
+        })
+        .eq('id', updatedTask.id);
+
+      if (error) throw error;
+
+      setTasks(prev => prev.map(task => 
+        task.id === updatedTask.id ? updatedTask : task
+      ));
+      
+      if (selectedTask && selectedTask.id === updatedTask.id) {
+        setSelectedTask(updatedTask);
+      }
+      
+      setIsTaskDialogOpen(false);
+      toast({ title: "Project updated", description: "Your project has been saved." });
+    } catch (error) {
+      console.error('Error saving task:', error);
+      toast({ title: "Error", description: "Failed to save project", variant: "destructive" });
+    } finally {
+      setIsLoading(false);
     }
-    
-    setIsTaskDialogOpen(false);
   };
 
-  const handleDeleteTask = (taskId: string) => {
-    setTasks(prev => prev.filter(task => task.id !== taskId));
+  const handleDeleteTask = async (taskId: string) => {
+    try {
+      setIsLoading(true);
+      const { error } = await supabase
+        .from('tasks')
+        .delete()
+        .eq('id', taskId);
+
+      if (error) throw error;
+
+      setTasks(prev => prev.filter(task => task.id !== taskId));
+      setIsTaskDialogOpen(false);
+      toast({ title: "Project deleted", description: "Project has been removed." });
+    } catch (error) {
+      console.error('Error deleting task:', error);
+      toast({ title: "Error", description: "Failed to delete project", variant: "destructive" });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleAddTask = (status: TaskStatus) => {
@@ -134,144 +215,163 @@ const Projects = () => {
     setIsNewTaskDialogOpen(true);
   };
 
-  const handleCreateTask = (newTask: Partial<Task>) => {
-    const taskToAdd: Task = {
-      id: `task-${Date.now()}`,
-      title: newTask.title || 'Untitled Project',
-      description: newTask.description || '',
-      status: newTask.status || newTaskStatus,
-      dueDate: newTask.dueDate || format(new Date(), 'yyyy-MM-dd'),
-      comments: [],
-      content: newTask.content || '',
-      purpose: newTask.purpose || '',
-      order: getTasksByStatus(newTask.status || newTaskStatus).length
-    };
-    
-    setTasks(prev => [...prev, taskToAdd]);
-    setIsNewTaskDialogOpen(false);
-    
-    toast({
-      title: "Project created",
-      description: "Your new project has been created.",
-    });
+  const handleCreateTask = async (newTask: Partial<Task>) => {
+    try {
+      setIsLoading(true);
+      const taskToAdd: Task = {
+        id: `task-${Date.now()}`,
+        title: newTask.title || 'Untitled Project',
+        task: newTask.task || '',
+        status: newTask.status || newTaskStatus,
+        labels: '', // Default to empty string since not in UI
+        attachments: '', // Default to empty string since not in UI
+        // created_by: '', // Default to empty string since not in UI
+        // assigned_to: newTask.assigned_to || '',
+        due_date: newTask.due_date || format(new Date(), 'yyyy-MM-dd'),
+        purpose: newTask.purpose || '',
+        end_result: newTask.end_result || '',
+        order: getTasksByStatus(newTask.status || newTaskStatus).length,
+        comments: [],
+      };
+
+      const { data, error } = await supabase
+        .from('tasks')
+        .insert([{
+          // id: taskToAdd.id,
+          title: taskToAdd.title,
+          task: taskToAdd.task,
+          status: taskToAdd.status,
+          labels: taskToAdd.labels,
+          attachments: taskToAdd.attachments,
+          // created_by: taskToAdd.created_by,
+          // assigned_to: taskToAdd.assigned_to,
+          due_date: taskToAdd.due_date,
+          purpose: taskToAdd.purpose,
+          end_result: taskToAdd.end_result,
+          order: taskToAdd.order,
+        }])
+        .select();
+
+      if (error) throw error;
+
+      setTasks(prev => [...prev, data[0]]);
+      setIsNewTaskDialogOpen(false);
+      toast({ title: "Project created", description: "Your new project has been created." });
+    } catch (error) {
+      console.error('Error creating task:', error);
+      toast({ title: "Error", description: "Failed to create project", variant: "destructive" });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleAddComment = (taskId: string, comment: Omit<TaskComment, 'id'>) => {
+  const handleAddComment = async (taskId: string, comment: Omit<TaskComment, 'id'>) => {
     const newComment: TaskComment = {
       id: `comment-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
       ...comment
     };
-    
-    console.log("Adding comment:", newComment, "to task:", taskId);
-    
-    setTasks(prev => {
-      return prev.map(task => {
-        if (task.id === taskId) {
-          return {
-            ...task,
-            comments: [...(task.comments || []), newComment]
-          };
-        }
-        return task;
-      });
-    });
-    
-    if (selectedTask && selectedTask.id === taskId) {
-      setSelectedTask(prev => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          comments: [...(prev.comments || []), newComment]
-        };
-      });
-    }
-    
-    toast({
-      title: "Comment added",
-      description: "Your comment has been added to the project.",
-    });
-  };
 
-  const handleEditComment = (taskId: string, commentId: string, updatedComment: TaskComment) => {
-    setTasks(prev => {
-      return prev.map(task => {
-        if (task.id === taskId) {
-          return {
-            ...task,
-            comments: task.comments?.map(comment => 
-              comment.id === commentId ? updatedComment : comment
-            )
-          };
-        }
-        return task;
-      });
-    });
-    
-    if (selectedTask && selectedTask.id === taskId) {
-      setSelectedTask(prev => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          comments: prev.comments?.map(comment => 
-            comment.id === commentId ? updatedComment : comment
-          )
-        };
-      });
+    try {
+      setIsLoading(true);
+      const updatedComments = [...(tasks.find(t => t.id === taskId)?.comments || []), newComment];
+      
+      const { error } = await supabase
+        .from('tasks')
+        .update({ comments: updatedComments })
+        .eq('id', taskId);
+
+      if (error) throw error;
+
+      setTasks(prev => prev.map(task => 
+        task.id === taskId ? { ...task, comments: updatedComments } : task
+      ));
+
+      if (selectedTask && selectedTask.id === taskId) {
+        setSelectedTask(prev => prev ? { ...prev, comments: updatedComments } : prev);
+      }
+
+      toast({ title: "Comment added", description: "Your comment has been added." });
+    } catch (error) {
+      console.error('Error adding comment:', error);
+      toast({ title: "Error", description: "Failed to add comment", variant: "destructive" });
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleDeleteComment = (taskId: string, commentId: string) => {
-    setTasks(prev => {
-      return prev.map(task => {
-        if (task.id === taskId) {
-          return {
-            ...task,
-            comments: task.comments?.filter(comment => comment.id !== commentId)
-          };
-        }
-        return task;
-      });
-    });
-    
-    if (selectedTask && selectedTask.id === taskId) {
-      setSelectedTask(prev => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          comments: prev.comments?.filter(comment => comment.id !== commentId)
-        };
-      });
+  const handleEditComment = async (taskId: string, commentId: string, updatedComment: TaskComment) => {
+    try {
+      setIsLoading(true);
+      const updatedComments = tasks.find(t => t.id === taskId)?.comments?.map(comment => 
+        comment.id === commentId ? updatedComment : comment
+      ) || [];
+
+      const { error } = await supabase
+        .from('tasks')
+        .update({ comments: updatedComments })
+        .eq('id', taskId);
+
+      if (error) throw error;
+
+      setTasks(prev => prev.map(task => 
+        task.id === taskId ? { ...task, comments: updatedComments } : task
+      ));
+
+      if (selectedTask && selectedTask.id === taskId) {
+        setSelectedTask(prev => prev ? { ...prev, comments: updatedComments } : prev);
+      }
+    } catch (error) {
+      console.error('Error editing comment:', error);
+      toast({ title: "Error", description: "Failed to edit comment", variant: "destructive" });
+    } finally {
+      setIsLoading(false);
     }
-    
-    toast({
-      title: "Comment deleted",
-      description: "Your comment has been removed from the project.",
-    });
+  };
+
+  const handleDeleteComment = async (taskId: string, commentId: string) => {
+    try {
+      setIsLoading(true);
+      const updatedComments = tasks.find(t => t.id === taskId)?.comments?.filter(comment => 
+        comment.id !== commentId
+      ) || [];
+
+      const { error } = await supabase
+        .from('tasks')
+        .update({ comments: updatedComments })
+        .eq('id', taskId);
+
+      if (error) throw error;
+
+      setTasks(prev => prev.map(task => 
+        task.id === taskId ? { ...task, comments: updatedComments } : task
+      ));
+
+      if (selectedTask && selectedTask.id === taskId) {
+        setSelectedTask(prev => prev ? { ...prev, comments: updatedComments } : prev);
+      }
+
+      toast({ title: "Comment deleted", description: "Your comment has been removed." });
+    } catch (error) {
+      console.error('Error deleting comment:', error);
+      toast({ title: "Error", description: "Failed to delete comment", variant: "destructive" });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleEditColumnTitle = (id: string, newTitle: string) => {
-    toast({
-      title: "Column names are fixed",
-      description: "Column names cannot be changed in this version.",
-    });
+    toast({ title: "Column names are fixed", description: "Column names cannot be changed." });
   };
 
   const getColumnIcon = (columnId: string) => {
     switch (columnId) {
-      case 'inbox':
-        return <Inbox className="h-5 w-5" />;
-      case 'confirmedreceived':
-        return <ClipboardList className="h-5 w-5" />;
-      case 'inprogress':
-        return <Clock className="h-5 w-5" />;
-      case 'waiting':
-        return <Timer className="h-5 w-5" />;
-      case 'review':
-        return <FileText className="h-5 w-5" />;
-      case 'archive':
-        return <Archive className="h-5 w-5" />;
-      default:
-        return <ListChecks className="h-5 w-5" />;
+      case 'inbox': return <Inbox className="h-5 w-5" />;
+      case 'confirmedreceived': return <ClipboardList className="h-5 w-5" />;
+      case 'inprogress': return <Clock className="h-5 w-5" />;
+      case 'waiting': return <Timer className="h-5 w-5" />;
+      case 'review': return <FileText className="h-5 w-5" />;
+      case 'archive': return <Archive className="h-5 w-5" />;
+      default: return <ListChecks className="h-5 w-5" />;
     }
   };
 
@@ -390,6 +490,3 @@ const Projects = () => {
 };
 
 export default Projects;
-
-
-
