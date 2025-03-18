@@ -68,7 +68,7 @@ const App = () => {
             <Route path="/login" element={
               isAuthenticated ? <Navigate to="/" replace /> : <Login />
             } />
-            <Route path="/assistant-signup/:user_id" element={<AssistantSignup />} />
+            <Route path="/assistant-signup" element={<AssistantSignup />} />
             {/* Protected routes */}
             <Route path="/reports" element={<PrivateRoute element={<Reports />} isAuthenticated={isAuthenticated} />} />
             <Route path="/library" element={<PrivateRoute element={<Library />} isAuthenticated={isAuthenticated} />} />

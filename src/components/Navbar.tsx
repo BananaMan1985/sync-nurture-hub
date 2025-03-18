@@ -111,7 +111,16 @@ const Navbar: React.FC = () => {
                   </Link>
                 </Button>
               ))}
-          </div>
+</div>
+          
+  <a href='/assistant-signup'>
+  <Button
+variant="outline"
+size="sm"
+className="flex items-center px-2"
+>
+    <span>Assistant Signup</span>
+</Button></a>
 
           {/* Public Login button (converts to Logout when logged in) */}
           <Button

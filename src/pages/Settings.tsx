@@ -1,15 +1,21 @@
-import React, { useEffect, useState } from 'react';
-import Layout from '@/components/Layout';
-import { Card, CardContent, CardHeader, CardDescription, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { useToast } from '@/components/ui/use-toast';
-import { UserPlus, Mail } from 'lucide-react';
-import { motion } from 'framer-motion';
-import axios from 'axios';
+import React, { useEffect, useState } from "react";
+import Layout from "@/components/Layout";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardDescription,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/components/ui/use-toast";
+import { UserPlus, Mail } from "lucide-react";
+import { motion } from "framer-motion";
+import axios from "axios";
 
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from "@supabase/supabase-js";
 
 // Initialize Supabase client
 const supabase = createClient(
@@ -17,21 +23,20 @@ const supabase = createClient(
   import.meta.env.VITE_SUPABASE_ANON_KEY
 );
 
-
 const Settings: React.FC = () => {
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
   // Function to send email via Resend API
   const sendInviteEmail = async (recipientEmail: string) => {
     const apiKey = import.meta.env.VITE_RESEND_API_KEY;
-    const signupLink = 'https://your-app.com/signup'; // Replace with your actual signup URL
+    const signupLink = "https://your-app.com/signup"; // Replace with your actual signup URL
 
     const emailData = {
-      from: 'Your Name <your-email@your-domain.com>', // Replace with your verified email/domain
+      from: "Your Name <your-email@your-domain.com>", // Replace with your verified email/domain
       to: [recipientEmail],
-      subject: 'Invitation to Join as an Assistant',
+      subject: "Invitation to Join as an Assistant",
       html: `
         <p>Hello,</p>
         <p>You’ve been invited to join as an assistant on our platform!</p>
@@ -43,12 +48,12 @@ const Settings: React.FC = () => {
 
     try {
       const response = await axios.post(
-        'https://api.resend.com/emails',
+        "https://api.resend.com/emails",
         emailData,
         {
           headers: {
-            'Authorization': `Bearer ${apiKey}`,
-            'Content-Type': 'application/json',
+            Authorization: `Bearer ${apiKey}`,
+            "Content-Type": "application/json",
           },
         }
       );
@@ -56,10 +61,10 @@ const Settings: React.FC = () => {
       if (response.status === 200) {
         return true;
       } else {
-        throw new Error('Failed to send email');
+        throw new Error("Failed to send email");
       }
     } catch (error) {
-      console.error('Error sending email:', error);
+      console.error("Error sending email:", error);
       throw error;
     }
   };
@@ -71,15 +76,15 @@ const Settings: React.FC = () => {
     try {
       await sendInviteEmail(email);
       toast({
-        title: 'Invitation Sent',
+        title: "Invitation Sent",
         description: `We've sent an invitation to ${email}`,
       });
-      setEmail('');
+      setEmail("");
     } catch (error) {
       toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to send invitation. Please try again.',
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to send invitation. Please try again.",
       });
     } finally {
       setIsSubmitting(false);
@@ -88,7 +93,6 @@ const Settings: React.FC = () => {
 
   const [userRole, setUserRole] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
-
 
   // Fetch user role and ID on mount
   useEffect(() => {
@@ -137,52 +141,53 @@ const Settings: React.FC = () => {
             Manage your account and preferences
           </p>
         </div>
-{
-  userRole === "executive" && <div className="grid gap-8" >
-    <Card>
-    <CardHeader>
-    <div className="flex items-center gap-2 mb-2" >
-      <UserPlus className="h-5 w-5 text-primary" />
-        <CardTitle>Share Account </CardTitle>
+        {userRole === "executive" && (
+          <div className="grid gap-8">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center gap-2 mb-2">
+                  <UserPlus className="h-5 w-5 text-primary" />
+                  <CardTitle>Share Account </CardTitle>
+                </div>
+                <CardDescription>
+                  Invite team members to collaborate with you
+                </CardDescription>
+                <CardDescription>
+                  Share with this link to signup,{" "}
+                  <a className="font-bold font-black"> {userId} </a>
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleInvite} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email Address</Label>
+                    <div className="flex gap-2">
+                      <div className="relative flex-grow">
+                        <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          id="email"
+                          type="email"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          className="pl-10"
+                          placeholder="colleague@example.com"
+                          required
+                        />
+                      </div>
+                      <Button type="submit" disabled={isSubmitting || !email}>
+                        {isSubmitting ? "Sending..." : "Send Invite"}
+                      </Button>
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-2">
+                      The invited user will receive an email with instructions
+                      to join your account.
+                    </p>
+                  </div>
+                </form>
+              </CardContent>
+            </Card>
           </div>
-          <CardDescription>
-        Invite team members to collaborate with you
-  </CardDescription>
-  <CardDescription>
-        Share with this link to signup, <a target='_blank' className='font-bold font-black' href={`/assistant-signup/${userId}`
-} >Click to copy</a>
-      </CardDescription>
-    </CardHeader>
-    <CardContent>
-      <form onSubmit={handleInvite} className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="email">Email Address</Label>
-          <div className="flex gap-2">
-            <div className="relative flex-grow">
-              <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="pl-10"
-                placeholder="colleague@example.com"
-                required
-              />
-            </div>
-            <Button type="submit" disabled={isSubmitting || !email}>
-              {isSubmitting ? 'Sending...' : 'Send Invite'}
-            </Button>
-          </div>
-          <p className="text-sm text-muted-foreground mt-2">
-            The invited user will receive an email with instructions to join your account.
-          </p>
-        </div>
-      </form>
-    </CardContent>
-  </Card>
-</div>}
-        
+        )}
       </motion.div>
     </Layout>
   );
