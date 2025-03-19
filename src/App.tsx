@@ -124,7 +124,7 @@ const App = () => {
               }
             />
             <Route
-              path="/reset-password"
+              path="/reset-password/login"
               element={<PrivateRoute
                 element={<UpdatePassword />}
                 isAuthenticated={isAuthenticated}
