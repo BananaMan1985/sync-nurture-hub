@@ -14,6 +14,7 @@ import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
 import Settings from "./pages/Settings";
 import AssistantSignup from "./pages/AssistantSignup";
+import UpdatePassword from "./pages/UpdatePassword";
 
 // Initialize Supabase client (replace with your credentials)
 const supabase = createClient(
@@ -35,15 +36,19 @@ const App = () => {
   useEffect(() => {
     // Get initial session
     const getSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       setIsAuthenticated(!!session); // Set true if session exists, false if not
     };
     getSession();
 
     // Listen for auth state changes (e.g., login, logout)
-    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setIsAuthenticated(!!session);
-    });
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        setIsAuthenticated(!!session);
+      }
+    );
 
     // Cleanup subscription
     return () => {
@@ -65,17 +70,70 @@ const App = () => {
           <Routes>
             {/* Public routes */}
             <Route path="/" element={<Index />} />
-            <Route path="/login" element={
-              isAuthenticated ? <Navigate to="/" replace /> : <Login />
-            } />
+            <Route
+              path="/login"
+              element={
+                isAuthenticated ? <Navigate to="/" replace /> : <Login />
+              }
+            />
             <Route path="/assistant-signup" element={<AssistantSignup />} />
             {/* Protected routes */}
-            <Route path="/reports" element={<PrivateRoute element={<Reports />} isAuthenticated={isAuthenticated} />} />
-            <Route path="/library" element={<PrivateRoute element={<Library />} isAuthenticated={isAuthenticated} />} />
-            <Route path="/voice" element={<PrivateRoute element={<Voice />} isAuthenticated={isAuthenticated} />} />
-            <Route path="/projects" element={<PrivateRoute element={<Projects />} isAuthenticated={isAuthenticated} />} />
-            <Route path="/settings" element={<PrivateRoute element={<Settings />} isAuthenticated={isAuthenticated} />} />
-            <Route path="/tasks" element={<Navigate to="/projects" replace />} />
+            <Route
+              path="/reports"
+              element={
+                <PrivateRoute
+                  element={<Reports />}
+                  isAuthenticated={isAuthenticated}
+                />
+              }
+            />
+            <Route
+              path="/library"
+              element={
+                <PrivateRoute
+                  element={<Library />}
+                  isAuthenticated={isAuthenticated}
+                />
+              }
+            />
+            <Route
+              path="/voice"
+              element={
+                <PrivateRoute
+                  element={<Voice />}
+                  isAuthenticated={isAuthenticated}
+                />
+              }
+            />
+            <Route
+              path="/projects"
+              element={
+                <PrivateRoute
+                  element={<Projects />}
+                  isAuthenticated={isAuthenticated}
+                />
+              }
+            />
+            <Route
+              path="/settings"
+              element={
+                <PrivateRoute
+                  element={<Settings />}
+                  isAuthenticated={isAuthenticated}
+                />
+              }
+            />
+            <Route
+              path="/reset-password"
+              element={<PrivateRoute
+                element={<UpdatePassword />}
+                isAuthenticated={isAuthenticated}
+              />}
+            />
+            <Route
+              path="/tasks"
+              element={<Navigate to="/projects" replace />}
+            />
             {/* Catch-all route */}
             <Route path="*" element={<NotFound />} />
           </Routes>
