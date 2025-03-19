@@ -63,7 +63,7 @@ const Login = () => {
     if (role === "executive") {
       navigate("/voice"); // Adjust route as needed
     } else if (role === "assistant") {
-      navigate("/settings"); // Adjust route as needed
+      navigate("/voice"); // Adjust route as needed
     } else {
       navigate("/"); // Default route if role isn't set
     }
@@ -152,6 +152,7 @@ const Login = () => {
 
     const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail, {
       // redirectTo: 'http://localhost:3000/reset-password', // Adjust this URL
+      redirectTo:'https://sagancommandcenter.vercel.app/reset-password'
     });
 
     if (error) {
