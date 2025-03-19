@@ -54,7 +54,8 @@ const Projects = () => {
   const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
   const [editingColumnId, setEditingColumnId] = useState<string | null>(null);
   const [activeView, setActiveView] = useState<string>("kanban");
-  const [refreshKey, setRefreshKey] = useState(0); // Added to force re-render
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [userRole, setUserRole] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -88,6 +89,8 @@ const Projects = () => {
 
       if (userError) throw userError;
 
+      setUserRole(user.user_metadata.role);
+
       const { data: publicUser, error: publicError } = await supabase.from("users").select("*").eq("id", user.id);
 
       console.log(user.user_metadata);
@@ -111,8 +114,6 @@ const Projects = () => {
       if (error) throw error;
       setTasks(data || []);
       }
-
-      
     } catch (error) {
       console.error("Error fetching tasks:", error);
       toast({
@@ -138,17 +139,9 @@ const Projects = () => {
 
       if (error) throw error;
 
-      // Update tasks and force re-render
-      setTasks((prev) => {
-        const updatedTasks = prev.map((task) =>
-          task.id === taskId ? { ...task, status: newStatus } : { ...task }
-        );
-        return [...updatedTasks]; // Create a new array to ensure re-render
-      });
-
-      // Increment refreshKey to force ColumnCarousel to re-render
-      setRefreshKey((prev) => prev + 1);
-
+      // Instead of just updating state, refresh the entire page
+      window.location.reload();
+      
       const columnTitle =
         columns.find((col) => col.id === newStatus)?.title || newStatus;
       toast({
@@ -204,7 +197,6 @@ const Projects = () => {
         return [...otherTasks, ...updatedTasks].sort((a, b) => (a.order || 0) - (b.order || 0));
       });
 
-      // Force re-render after reordering
       setRefreshKey((prev) => prev + 1);
     } catch (error) {
       console.error("Error reordering tasks:", error);
@@ -303,8 +295,10 @@ const Projects = () => {
   };
 
   const handleAddTask = (status: TaskStatus) => {
-    setNewTaskStatus(status);
-    setIsNewTaskDialogOpen(true);
+    // if (userRole !== "assistant") {
+      setNewTaskStatus(status);
+      setIsNewTaskDialogOpen(true);
+    // }
   };
 
   const handleCreateTask = async (newTask: Partial<Task>) => {
@@ -324,64 +318,93 @@ const Projects = () => {
         .eq("id", user.id);
       console.log(publicUser);
 
-      if (publicUser[0].assistant_id) {
-        const taskToAdd: Task = {
-          title: newTask.title || "Untitled Project",
-          task: newTask.task || "",
-          status: newTask.status || newTaskStatus,
-          labels: "",
-          attachments: "",
-          created_by: user.id,
-          assigned_to:publicUser[0].assistant_id,
-          due_date: newTask.due_date || format(new Date(), "yyyy-MM-dd"),
-          purpose: newTask.purpose || "",
-          end_result: newTask.end_result || "",
-        }; 
-
-        const { data, error } = await supabase
-        .from("tasks")
-        .insert([taskToAdd])
-        .select();
-
-      if (error) throw error;
-
-      setTasks((prev) => [...prev, data[0]]);
-      setIsNewTaskDialogOpen(false);
-      toast({
-        title: "Project created",
-        description: "Your new project has been created.",
-      });
-      } else {
-        const taskToAdd: Task = {
-          title: newTask.title || "Untitled Project",
-          task: newTask.task || "",
-          status: newTask.status || newTaskStatus,
-          labels: "",
-          attachments: "",
-          created_by: user.id,
-          due_date: newTask.due_date || format(new Date(), "yyyy-MM-dd"),
-          purpose: newTask.purpose || "",
-          end_result: newTask.end_result || "",
-        };
-
-        const { data, error } = await supabase
-        .from("tasks")
-        .insert([taskToAdd])
-        .select();
-
-      if (error) throw error;
-
-      setTasks((prev) => [...prev, data[0]]);
-      setIsNewTaskDialogOpen(false);
-      toast({
-        title: "Project created",
-        description: "Your new project has been created.",
-      });
+      if (user.user_metadata.role === "executive") {
+        if (publicUser[0].assistant_id) {
+          const taskToAdd: Task = {
+            title: newTask.title || "Untitled Project",
+            task: newTask.task || "",
+            status: newTask.status || newTaskStatus,
+            labels: "",
+            attachments: "",
+            created_by: user.id,
+            assigned_to:publicUser[0].assistant_id,
+            due_date: newTask.due_date || format(new Date(), "yyyy-MM-dd"),
+            purpose: newTask.purpose || "",
+            end_result: newTask.end_result || "",
+          }; 
+  
+          const { data, error } = await supabase
+          .from("tasks")
+          .insert([taskToAdd])
+          .select();
+  
+        if (error) throw error;
+  
+        setTasks((prev) => [...prev, data[0]]);
+        setIsNewTaskDialogOpen(false);
+        toast({
+          title: "Project created",
+          description: "Your new project has been created.",
+        });
+        } else {
+          const taskToAdd: Task = {
+            title: newTask.title || "Untitled Project",
+            task: newTask.task || "",
+            status: newTask.status || newTaskStatus,
+            labels: "",
+            attachments: "",
+            created_by: user.id,
+            due_date: newTask.due_date || format(new Date(), "yyyy-MM-dd"),
+            purpose: newTask.purpose || "",
+            end_result: newTask.end_result || "",
+          };
+  
+          const { data, error } = await supabase
+          .from("tasks")
+          .insert([taskToAdd])
+          .select();
+  
+        if (error) throw error;
+  
+        setTasks((prev) => [...prev, data[0]]);
+        setIsNewTaskDialogOpen(false);
+        toast({
+          title: "Project created",
+          description: "Your new project has been created.",
+        });
+        }
+      } else if (user.user_metadata.role === "assistant") {
+      
+          const taskToAdd: Task = {
+            title: newTask.title || "Untitled Project",
+            task: newTask.task || "",
+            status: newTask.status || newTaskStatus,
+            labels: "",
+            attachments: "",
+            created_by: user.user_metadata.owner_id,
+            assigned_to:user.id,
+            due_date: newTask.due_date || format(new Date(), "yyyy-MM-dd"),
+            purpose: newTask.purpose || "",
+            end_result: newTask.end_result || "",
+          }; 
+  
+          const { data, error } = await supabase
+          .from("tasks")
+          .insert([taskToAdd])
+          .select();
+  
+        if (error) throw error;
+  
+        setTasks((prev) => [...prev, data[0]]);
+        setIsNewTaskDialogOpen(false);
+        toast({
+          title: "Project created",
+          description: "Your new project has been created.",
+        });
+        
       }
 
-      
 
-     
     } catch (error) {
       console.error("Error creating task:", error);
       toast({
@@ -396,7 +419,7 @@ const Projects = () => {
 
   const handleAddComment = async (
     taskId: string,
-    comment: Omit<TaskComment, "id">
+    comment: omit<TaskComment, "id">
   ) => {
     const newComment: TaskComment = {
       id: `comment-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
@@ -572,15 +595,17 @@ const Projects = () => {
             Projects Board
           </h1>
           <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setIsNewTaskDialogOpen(true)}
-              className="flex items-center gap-1"
-            >
-              <Plus className="h-4 w-4" />
-              Add New Project
-            </Button>
+          
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsNewTaskDialogOpen(true)}
+                className="flex items-center gap-1"
+              >
+                <Plus className="h-4 w-4" />
+                Add New Project
+              </Button>
+         
           </div>
         </div>
 
@@ -603,7 +628,7 @@ const Projects = () => {
 
           <TabsContent value="kanban" className="mt-4">
             <ColumnCarousel
-              key={refreshKey} // Add key to force re-render
+              key={refreshKey}
               columns={columns.map((column) => ({
                 id: column.id,
                 title: column.title,
@@ -649,27 +674,27 @@ const Projects = () => {
             onDeleteComment={handleDeleteComment}
           />
         )}
+      
+          <Dialog
+            open={isNewTaskDialogOpen}
+            onOpenChange={setIsNewTaskDialogOpen}
+          >
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Create New Project</DialogTitle>
+                <DialogDescription>
+                  Fill in the details for your new project.
+                </DialogDescription>
+              </DialogHeader>
 
-        <Dialog
-          open={isNewTaskDialogOpen}
-          onOpenChange={setIsNewTaskDialogOpen}
-        >
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Create New Project</DialogTitle>
-              <DialogDescription>
-                Fill in the details for your new project.
-              </DialogDescription>
-            </DialogHeader>
-
-            <TaskForm
-              onSave={handleCreateTask}
-              onCancel={() => setIsNewTaskDialogOpen(false)}
-              statuses={columns.map((col) => ({ id: col.id, name: col.title }))}
-              initialStatus={newTaskStatus}
-            />
-          </DialogContent>
-        </Dialog>
+              <TaskForm
+                onSave={handleCreateTask}
+                onCancel={() => setIsNewTaskDialogOpen(false)}
+                statuses={columns.map((col) => ({ id: col.id, name: col.title }))}
+                initialStatus={newTaskStatus}
+              />
+            </DialogContent>
+          </Dialog>
       </motion.div>
     </Layout>
   );

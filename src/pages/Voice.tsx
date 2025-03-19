@@ -72,14 +72,6 @@ const Voice: React.FC = () => {
   }, [toast]);
 
   const startRecording = async () => {
-    if (userRole !== 'executive') {
-      toast({
-        variant: "destructive",
-        title: "Unauthorized",
-        description: "You are not authorized to use voice recording. This feature is restricted to executives.",
-      });
-      return;
-    }
 
     try {
       audioChunksRef.current = [];
@@ -186,13 +178,15 @@ const Voice: React.FC = () => {
         throw new Error('Authentication failed');
       }
 
-      const { error } = await supabase
+      if (user.user_metadata.role === "assistant") {
+        const { error } = await supabase
         .from('tasks')
         .insert({
           title: generatedTitle,
           task: transcribedText,
           created_at: new Date().toISOString(),
-          created_by: user.id,
+          created_by: user.user_metadata.owner_id,
+          assigned_to:user.id,
           status: "inbox"
         });
 
@@ -202,6 +196,36 @@ const Voice: React.FC = () => {
         title: "Task Added",
         description: "Your voice note has been transcribed and added to your tasks!",
       });
+      } else {
+        const { data: publicUser, error: publicError } = await supabase.from("users").select("*").eq("id", user.id);
+  
+        if (publicError) throw publicError;
+
+        console.log(publicUser[0].assistant_id)
+
+        if (publicUser[0].assistant_id) {
+          const { error } = await supabase
+        .from('tasks')
+        .insert({
+          title: generatedTitle,
+          task: transcribedText,
+          created_at: new Date().toISOString(),
+          created_by: user.id,
+          assigned_to:publicUser[0].assistant_id,
+          status: "inbox"
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Task Added",
+        description: "Your voice note has been transcribed and added to your tasks!",
+      });
+        }
+  
+      }
+
+      
 
       setTranscription(null);
       setRecordingStatus('idle');
@@ -283,9 +307,7 @@ const Voice: React.FC = () => {
             )}
             
             <p className="text-center text-muted-foreground mt-4">
-              {userRole === 'employee' 
-                ? (openai ? "Tap to record a voice note. It will be transcribed and added as a task." : "Tap to record a voice note. Transcription and task creation are currently disabled.")
-                : "Voice recording is restricted to executives only."}
+              {openai ? "Tap to record a voice note. It will be transcribed and added as a task." : "Tap to record a voice note. Transcription and task creation are currently disabled."}
             </p>
           </div>
         </div>

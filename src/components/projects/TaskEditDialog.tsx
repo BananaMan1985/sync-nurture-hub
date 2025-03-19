@@ -153,6 +153,16 @@ const TaskEditDialog: React.FC<TaskEditDialogProps> = ({
     }
   };
 
+  
+//   <button
+//   className={`pb-2 pt-1 px-3 flex items-center ${activeTab === 'comments' ? 'border-b-2 border-primary font-medium' : 'text-muted-foreground'}`}
+//   onClick={() => setActiveTab('comments')}
+// >
+//   Comments {editedTask.comments && editedTask.comments.length > 0 && 
+//     <span className="ml-1.5 bg-slate-100 rounded-full w-5 h-5 flex items-center justify-center text-xs font-medium text-slate-600">
+//       {editedTask.comments.length}
+//     </span>}
+// </button>
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-auto" onKeyDown={handleKeyNavigation}>
@@ -182,16 +192,10 @@ const TaskEditDialog: React.FC<TaskEditDialogProps> = ({
                 >
                   Project Details
                 </button>
-                <button
-                  className={`pb-2 pt-1 px-3 flex items-center ${activeTab === 'comments' ? 'border-b-2 border-primary font-medium' : 'text-muted-foreground'}`}
-                  onClick={() => setActiveTab('comments')}
-                >
-                  Comments {editedTask.comments && editedTask.comments.length > 0 && 
-                    <span className="ml-1.5 bg-slate-100 rounded-full w-5 h-5 flex items-center justify-center text-xs font-medium text-slate-600">
-                      {editedTask.comments.length}
-                    </span>}
-                </button>
+
               </div>
+
+                    
               
               <div className="flex space-x-1">
                 <Button 
