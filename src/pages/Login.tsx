@@ -643,7 +643,7 @@ const Login = () => {
                 >
                   {isLoading
                     ? "Creating account..."
-                    : "Create Employee Account"}{" "}
+                    : "Create Executive Account"}{" "}
                   <ArrowRight style={{ width: "16px", height: "16px" }} />
                 </button>
               </form>
@@ -688,7 +688,7 @@ const Login = () => {
               {showForgotPassword
                 ? "Back to Login"
                 : isLogin
-                ? "Don't have an account? Sign up as Employee"
+                ? "Don't have an account? Sign up as Executive"
                 : "Already have an account? Log in"}
             </button>
             <p style={{ color: "#666", fontSize: "12px" }}>

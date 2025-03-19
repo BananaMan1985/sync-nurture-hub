@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import { createClient } from "@supabase/supabase-js";
 import Layout from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
@@ -25,7 +24,6 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-
 import TaskColumn from "@/components/projects/TaskColumn";
 import TaskForm from "@/components/projects/TaskForm";
 import TaskEditDialog from "@/components/projects/TaskEditDialog";
@@ -38,6 +36,7 @@ import {
   defaultColumns,
 } from "@/components/projects/types";
 import ProjectsGrid from "@/components/projects/ProjectsGrid";
+import { createClient } from "@supabase/supabase-js";
 
 // Initialize Supabase client with Vite environment variables
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -55,6 +54,7 @@ const Projects = () => {
   const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
   const [editingColumnId, setEditingColumnId] = useState<string | null>(null);
   const [activeView, setActiveView] = useState<string>("kanban");
+  const [refreshKey, setRefreshKey] = useState(0); // Added to force re-render
   const { toast } = useToast();
 
   useEffect(() => {
@@ -81,19 +81,38 @@ const Projects = () => {
   const fetchTasks = async () => {
     try {
       setIsLoading(true);
-
       const {
         data: { user },
-        usererror,
+        error: userError,
       } = await supabase.auth.getUser();
 
-      const { data, error } = await supabase
+      if (userError) throw userError;
+
+      const { data: publicUser, error: publicError } = await supabase.from("users").select("*").eq("id", user.id);
+
+      console.log(user.user_metadata);
+
+      if (publicError) throw publicError;
+
+      if (user.user_metadata.role === "assistant") {
+        const { data, error } = await supabase
+        .from("tasks")
+        .select("*")
+        .eq("created_by", user.user_metadata.owner_id);
+
+      if (error) throw error;
+      setTasks(data || []);
+      } else {
+        const { data, error } = await supabase
         .from("tasks")
         .select("*")
         .eq("created_by", user.id);
 
       if (error) throw error;
       setTasks(data || []);
+      }
+
+      
     } catch (error) {
       console.error("Error fetching tasks:", error);
       toast({
@@ -112,18 +131,23 @@ const Projects = () => {
   const handleDrop = async (taskId: string, newStatus: TaskStatus) => {
     try {
       setIsLoading(true);
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from("tasks")
         .update({ status: newStatus })
         .eq("id", taskId);
 
       if (error) throw error;
 
-      setTasks((prev) =>
-        prev.map((task) =>
-          task.id === taskId ? { ...task, status: newStatus } : task
-        )
-      );
+      // Update tasks and force re-render
+      setTasks((prev) => {
+        const updatedTasks = prev.map((task) =>
+          task.id === taskId ? { ...task, status: newStatus } : { ...task }
+        );
+        return [...updatedTasks]; // Create a new array to ensure re-render
+      });
+
+      // Increment refreshKey to force ColumnCarousel to re-render
+      setRefreshKey((prev) => prev + 1);
 
       const columnTitle =
         columns.find((col) => col.id === newStatus)?.title || newStatus;
@@ -177,8 +201,11 @@ const Projects = () => {
 
       setTasks((prev) => {
         const otherTasks = prev.filter((task) => task.status !== status);
-        return [...otherTasks, ...updatedTasks];
+        return [...otherTasks, ...updatedTasks].sort((a, b) => (a.order || 0) - (b.order || 0));
       });
+
+      // Force re-render after reordering
+      setRefreshKey((prev) => prev + 1);
     } catch (error) {
       console.error("Error reordering tasks:", error);
       toast({
@@ -215,10 +242,8 @@ const Projects = () => {
           title: updatedTask.title,
           task: updatedTask.task,
           status: updatedTask.status,
-          labels: updatedTask.labels || "", // Ensure it's included even if not in UI
-          attachments: updatedTask.attachments || "", // Ensure it's included even if not in UI
-          // created_by: updatedTask.created_by || '', // Ensure it's included even if not in UI
-          // assigned_to: updatedTask.assigned_to,
+          labels: updatedTask.labels || "",
+          attachments: updatedTask.attachments || "",
           due_date: updatedTask.due_date,
           purpose: updatedTask.purpose,
           end_result: updatedTask.end_result,
@@ -288,8 +313,10 @@ const Projects = () => {
 
       const {
         data: { user },
-        usererror,
+        error: userError,
       } = await supabase.auth.getUser();
+
+      if (userError) throw userError;
 
       const { data: publicUser, publicUsererror } = await supabase
         .from("users")
@@ -297,40 +324,23 @@ const Projects = () => {
         .eq("id", user.id);
       console.log(publicUser);
 
-      const taskToAdd: Task = {
-        id: `task-${Date.now()}`,
-        title: newTask.title || "Untitled Project",
-        task: newTask.task || "",
-        status: newTask.status || newTaskStatus,
-        labels: "", // Default to empty string since not in UI
-        attachments: "", // Default to empty string since not in UI
-        created_by: user.id, // Default to empty string since not in UI
-        // assigned_to: publicUser. || '',
-        due_date: newTask.due_date || format(new Date(), "yyyy-MM-dd"),
-        purpose: newTask.purpose || "",
-        end_result: newTask.end_result || "",
-        order: getTasksByStatus(newTask.status || newTaskStatus).length,
-        comments: [],
-      };
+      if (publicUser[0].assistant_id) {
+        const taskToAdd: Task = {
+          title: newTask.title || "Untitled Project",
+          task: newTask.task || "",
+          status: newTask.status || newTaskStatus,
+          labels: "",
+          attachments: "",
+          created_by: user.id,
+          assigned_to:publicUser[0].assistant_id,
+          due_date: newTask.due_date || format(new Date(), "yyyy-MM-dd"),
+          purpose: newTask.purpose || "",
+          end_result: newTask.end_result || "",
+        }; 
 
-      const { data, error } = await supabase
+        const { data, error } = await supabase
         .from("tasks")
-        .insert([
-          {
-            // id: taskToAdd.id,
-            title: taskToAdd.title,
-            task: taskToAdd.task,
-            status: taskToAdd.status,
-            labels: taskToAdd.labels,
-            attachments: taskToAdd.attachments,
-            created_by: taskToAdd.created_by,
-            // assigned_to: taskToAdd.assigned_to,
-            due_date: taskToAdd.due_date,
-            purpose: taskToAdd.purpose,
-            end_result: taskToAdd.end_result,
-            order: taskToAdd.order,
-          },
-        ])
+        .insert([taskToAdd])
         .select();
 
       if (error) throw error;
@@ -341,6 +351,37 @@ const Projects = () => {
         title: "Project created",
         description: "Your new project has been created.",
       });
+      } else {
+        const taskToAdd: Task = {
+          title: newTask.title || "Untitled Project",
+          task: newTask.task || "",
+          status: newTask.status || newTaskStatus,
+          labels: "",
+          attachments: "",
+          created_by: user.id,
+          due_date: newTask.due_date || format(new Date(), "yyyy-MM-dd"),
+          purpose: newTask.purpose || "",
+          end_result: newTask.end_result || "",
+        };
+
+        const { data, error } = await supabase
+        .from("tasks")
+        .insert([taskToAdd])
+        .select();
+
+      if (error) throw error;
+
+      setTasks((prev) => [...prev, data[0]]);
+      setIsNewTaskDialogOpen(false);
+      toast({
+        title: "Project created",
+        description: "Your new project has been created.",
+      });
+      }
+
+      
+
+     
     } catch (error) {
       console.error("Error creating task:", error);
       toast({
@@ -561,35 +602,26 @@ const Projects = () => {
           </TabsList>
 
           <TabsContent value="kanban" className="mt-4">
-            <ColumnCarousel>
-              {columns.map((column) => (
-                <div
-                  key={column.id}
-                  className="min-w-[300px] w-[350px] max-w-md flex-shrink-0"
-                >
-                  <TaskColumn
-                    title={column.title}
-                    icon={getColumnIcon(column.id)}
-                    tasks={getTasksByStatus(column.id)}
-                    status={column.id}
-                    isLoading={isLoading}
-                    onDrop={handleDrop}
-                    onTaskClick={handleTaskClick}
-                    onReorderTasks={handleReorderTasks}
-                    draggedTaskId={draggedTaskId}
-                    onDragOver={handleDragOver}
-                    onAddTask={handleAddTask}
-                    onEditColumnTitle={(newTitle) =>
-                      handleEditColumnTitle(column.id, newTitle)
-                    }
-                    isEditing={editingColumnId === column.id}
-                    setIsEditing={(isEditing) =>
-                      setEditingColumnId(isEditing ? column.id : null)
-                    }
-                  />
-                </div>
-              ))}
-            </ColumnCarousel>
+            <ColumnCarousel
+              key={refreshKey} // Add key to force re-render
+              columns={columns.map((column) => ({
+                id: column.id,
+                title: column.title,
+                icon: getColumnIcon(column.id),
+                tasks: getTasksByStatus(column.id),
+                isLoading,
+                onDrop: handleDrop,
+                onTaskClick: handleTaskClick,
+                onReorderTasks: handleReorderTasks,
+                draggedTaskId,
+                onDragOver: handleDragOver,
+                onAddTask: handleAddTask,
+                onEditColumnTitle: handleEditColumnTitle,
+                isEditing: editingColumnId === column.id,
+                setIsEditing: (isEditing) =>
+                  setEditingColumnId(isEditing ? column.id : null),
+              }))}
+            />
           </TabsContent>
 
           <TabsContent value="grid" className="mt-4">

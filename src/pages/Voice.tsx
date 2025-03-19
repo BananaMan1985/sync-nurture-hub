@@ -37,7 +37,6 @@ const openai = (() => {
 const Voice: React.FC = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [recordingStatus, setRecordingStatus] = useState('idle');
-  const [audioURL, setAudioURL] = useState<string | null>(null);
   const [transcription, setTranscription] = useState<string | null>(null);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [userRole, setUserRole] = useState<string | null>(null);
@@ -72,15 +71,6 @@ const Voice: React.FC = () => {
     fetchUserRole();
   }, [toast]);
 
-  // Cleanup audio URL on unmount
-  useEffect(() => {
-    return () => {
-      if (audioURL) {
-        URL.revokeObjectURL(audioURL);
-      }
-    };
-  }, [audioURL]);
-
   const startRecording = async () => {
     if (userRole !== 'executive') {
       toast({
@@ -104,8 +94,6 @@ const Voice: React.FC = () => {
 
       mediaRecorderRef.current.onstop = () => {
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-        const url = URL.createObjectURL(audioBlob);
-        setAudioURL(url);
         setRecordingStatus('recorded');
         
         if (openai) {
@@ -187,7 +175,7 @@ const Voice: React.FC = () => {
           { role: 'system', content: 'You are a helpful assistant that generates concise task titles based on provided text.' },
           { role: 'user', content: `Generate a concise title for a task based on this transcription: ${transcribedText}` },
         ],
-        max_tokens: 10, // Limit to short titles
+        max_tokens: 10,
       });
 
       const generatedTitle = titleResponse.choices[0].message.content.trim();
@@ -204,18 +192,19 @@ const Voice: React.FC = () => {
           title: generatedTitle,
           task: transcribedText,
           created_at: new Date().toISOString(),
-          created_by: user.id, // Use auth.user.id
-          status:"inbox"
+          created_by: user.id,
+          status: "inbox"
         });
 
       if (error) throw error;
 
-      // Clear transcription and show toast
-      setTranscription(null);
       toast({
-        title: "Success",
-        description: "Task added successfully!",
+        title: "Task Added",
+        description: "Your voice note has been transcribed and added to your tasks!",
       });
+
+      setTranscription(null);
+      setRecordingStatus('idle');
     } catch (error) {
       console.error('Transcription or task creation error:', error);
       toast({
@@ -282,35 +271,20 @@ const Voice: React.FC = () => {
               {isRecording ? "Stop Recording" : "Start Recording"}
             </Button>
             
-            {/* Combined Audio and Transcription Display */}
-            {recordingStatus === 'recorded' && audioURL && (
+            {isTranscribing && (
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.3 }}
                 className="w-full mt-4 p-4 bg-gray-50 rounded-md border border-gray-200"
               >
-                <h3 className="text-lg font-medium mb-2">Your Recording</h3>
-                <audio src={audioURL} controls className="w-full mb-4" />
-                
-                {isTranscribing ? (
-                  <p className="text-sm text-gray-500 italic">Transcribing...</p>
-                ) : transcription ? (
-                  <div>
-                    <h4 className="text-md font-medium mb-1">Transcription</h4>
-                    <p className="text-sm text-gray-800 bg-white p-2 rounded-md border border-gray-300">{transcription}</p>
-                  </div>
-                ) : openai ? (
-                  <p className="text-sm text-gray-500">Transcription failed or pending.</p>
-                ) : (
-                  <p className="text-sm text-gray-500">Transcription disabled due to missing API key.</p>
-                )}
+                <p className="text-sm text-gray-500 italic">Transcribing and adding task...</p>
               </motion.div>
             )}
             
             <p className="text-center text-muted-foreground mt-4">
               {userRole === 'employee' 
-                ? (openai ? "Tap to record a voice note. It will be transcribed, titled, and added as a task." : "Tap to record a voice note. Transcription and task creation are currently disabled.")
+                ? (openai ? "Tap to record a voice note. It will be transcribed and added as a task." : "Tap to record a voice note. Transcription and task creation are currently disabled.")
                 : "Voice recording is restricted to executives only."}
             </p>
           </div>

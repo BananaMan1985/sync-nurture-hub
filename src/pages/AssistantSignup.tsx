@@ -42,25 +42,25 @@ const AssistantSignup = () => {
       return uuidRegex.test(str);
     };
 
-  // Validate signupName as a UUID
-  if (!isValidUuid(signupName)) {
-    setAuthError("Code is not a valid UUID!");
-    setIsLoading(false);
-    return;
-  }
+    // Validate signupName as a UUID
+    if (!isValidUuid(signupName)) {
+      setAuthError("Code is not a valid UUID!");
+      setIsLoading(false);
+      return;
+    }
 
-  // Check if a user exists with this UUID in the users table
-  const { data:user, error:Usererror } = await supabase
-    .from("users")
-    .select("*")
-    .eq("id", signupName)
-    .maybeSingle();
+    // Check if a user exists with this UUID in the users table
+    const { data: user, error: Usererror } = await supabase
+      .from("users")
+      .select("*")
+      .eq("id", signupName)
+      .maybeSingle();
 
-  if (Usererror || !user) {
-    setAuthError("Code is not correct or no user found!");
-    setIsLoading(false);
-    return;
-  }
+    if (Usererror || !user) {
+      setAuthError("Code is not correct or no user found!");
+      setIsLoading(false);
+      return;
+    }
     if (!isValidEmail(signupEmail)) {
       setAuthError("Please enter a valid email address");
       setIsLoading(false);
@@ -144,7 +144,7 @@ const AssistantSignup = () => {
             Assistant Signup
           </h1>
           <p style={{ color: "#666", marginTop: "8px" }}>
-            Create your assistant account
+            Ask your owner for Owner Code
           </p>
         </div>
 

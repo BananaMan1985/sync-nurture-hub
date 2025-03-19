@@ -1,124 +1,111 @@
-
-import React, { useRef, useEffect } from 'react';
+// components/projects/ColumnCarousel.tsx
+import React, { useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import TaskColumn from './TaskColumn';
 
 interface ColumnCarouselProps {
-  children: React.ReactNode;
+  columns: {
+    id: string;
+    title: string;
+    icon: React.ReactNode;
+    tasks: any[];
+    isLoading: boolean;
+    onDrop: (taskId: string, newStatus: string) => void;
+    onTaskClick: (task: any) => void;
+    onReorderTasks: (draggedTaskId: string, targetIndex: number, status: string) => void;
+    draggedTaskId: string | null;
+    onDragOver: (e: React.DragEvent, status: string) => void;
+    onAddTask: (status: string) => void;
+    onEditColumnTitle: (id: string, newTitle: string) => void;
+    isEditing: boolean;
+    setIsEditing: (isEditing: boolean) => void;
+  }[];
 }
 
-const ColumnCarousel: React.FC<ColumnCarouselProps> = ({ children }) => {
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const [canScrollLeft, setCanScrollLeft] = React.useState(false);
-  const [canScrollRight, setCanScrollRight] = React.useState(false);
+const ColumnCarousel: React.FC<ColumnCarouselProps> = ({ columns }) => {
+  const carouselRef = useRef<HTMLDivElement>(null);
+  const COLUMN_WIDTH = 350; // Matches the w-[350px] in the className
 
-  const checkScrollability = () => {
-    const el = scrollContainerRef.current;
-    if (!el) return;
-    
-    const { scrollLeft, scrollWidth, clientWidth } = el;
-    setCanScrollLeft(scrollLeft > 0);
-    setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 10); // Buffer of 10px
-  };
-
-  useEffect(() => {
-    const el = scrollContainerRef.current;
-    if (!el) return;
-    
-    checkScrollability();
-    el.addEventListener('scroll', checkScrollability);
-    window.addEventListener('resize', checkScrollability);
-    
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (document.activeElement?.tagName !== 'INPUT' && 
-          document.activeElement?.tagName !== 'TEXTAREA') {
-        if (e.key === 'ArrowRight') {
-          scroll('right');
-        } else if (e.key === 'ArrowLeft') {
-          scroll('left');
-        }
-      }
-    };
-    
-    window.addEventListener('keydown', handleKeyDown);
-    
-    return () => {
-      el.removeEventListener('scroll', checkScrollability);
-      window.removeEventListener('resize', checkScrollability);
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, []);
-
-  const scroll = (direction: 'left' | 'right') => {
-    const el = scrollContainerRef.current;
-    if (!el) return;
-    
-    const scrollAmount = direction === 'left' ? -350 : 350; // One column width
-    
-    el.scrollBy({
-      left: scrollAmount,
-      behavior: 'smooth'
-    });
-  };
-
-  const handleWheel = (e: React.WheelEvent) => {
-    if (e.shiftKey || Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
-      return; // Let native scrolling happen
+  const scrollLeft = () => {
+    if (carouselRef.current) {
+      const currentScroll = carouselRef.current.scrollLeft;
+      const newScroll = Math.max(0, currentScroll - COLUMN_WIDTH);
+      carouselRef.current.scrollTo({
+        left: newScroll,
+        behavior: 'smooth'
+      });
     }
-    
-    if (scrollContainerRef.current) {
-      e.preventDefault();
-      scrollContainerRef.current.scrollBy({
-        left: e.deltaY,
+  };
+
+  const scrollRight = () => {
+    if (carouselRef.current) {
+      const currentScroll = carouselRef.current.scrollLeft;
+      const maxScroll = carouselRef.current.scrollWidth - carouselRef.current.clientWidth;
+      const newScroll = Math.min(maxScroll, currentScroll + COLUMN_WIDTH);
+      carouselRef.current.scrollTo({
+        left: newScroll,
+        behavior: 'smooth'
       });
     }
   };
 
   return (
-    <div className="relative flex w-full">
-      {canScrollLeft && (
-        <Button
-          variant="outline"
-          size="icon"
-          className="absolute left-0 top-1/2 -translate-y-1/2 z-10 h-10 w-10 rounded-full border bg-background/80 shadow-md backdrop-blur-sm"
-          onClick={() => scroll('left')}
-          aria-label="Scroll left"
-        >
-          <ChevronLeft className="h-6 w-6" />
-        </Button>
-      )}
-      
-      <ScrollArea 
-        className="w-full overflow-hidden" 
-        orientation="horizontal"
+    <div className="relative">
+      <div 
+        ref={carouselRef}
+        className="flex overflow-x-auto scroll-smooth gap-4 pb-4 snap-x snap-mandatory"
+        style={{ 
+          scrollbarWidth: 'none', 
+          msOverflowStyle: 'none',
+          WebkitOverflowScrolling: 'touch' // Improves iOS scrolling
+        }}
       >
-        <div 
-          ref={scrollContainerRef}
-          className="w-full overflow-x-auto pb-6 hide-scrollbar"
-          style={{ 
-            scrollbarWidth: 'none',
-            msOverflowStyle: 'none'
-          }}
-          onWheel={handleWheel}
-        >
-          <div className="flex gap-6 px-4 py-2">
-            {children}
+        {columns.map((column) => (
+          <div
+            key={column.id}
+            className="min-w-[300px] w-[350px] max-w-md flex-shrink-0 snap-start"
+          >
+            <TaskColumn
+              title={column.title}
+              icon={column.icon}
+              tasks={column.tasks}
+              status={column.id}
+              isLoading={column.isLoading}
+              onDrop={column.onDrop}
+              onTaskClick={column.onTaskClick}
+              onReorderTasks={column.onReorderTasks}
+              draggedTaskId={column.draggedTaskId}
+              onDragOver={column.onDragOver}
+              onAddTask={column.onAddTask}
+              onEditColumnTitle={column.onEditColumnTitle}
+              isEditing={column.isEditing}
+              setIsEditing={column.setIsEditing}
+            />
           </div>
-        </div>
-      </ScrollArea>
-      
-      {canScrollRight && (
-        <Button
-          variant="outline"
-          size="icon"
-          className="absolute right-0 top-1/2 -translate-y-1/2 z-10 h-10 w-10 rounded-full border bg-background/80 shadow-md backdrop-blur-sm"
-          onClick={() => scroll('right')}
-          aria-label="Scroll right"
-        >
-          <ChevronRight className="h-6 w-6" />
-        </Button>
-      )}
+        ))}
+      </div>
+      <Button
+        variant="outline"
+        size="icon"
+        className="absolute left-0 top-1/2 -translate-y-1/2 bg-white"
+        onClick={scrollLeft}
+        disabled={carouselRef.current?.scrollLeft === 0}
+      >
+        <ChevronLeft className="h-4 w-4" />
+      </Button>
+      <Button
+        variant="outline"
+        size="icon"
+        className="absolute right-0 top-1/2 -translate-y-1/2 bg-white"
+        onClick={scrollRight}
+        disabled={
+          carouselRef.current?.scrollLeft >= 
+          (carouselRef.current?.scrollWidth - carouselRef.current?.clientWidth - 1)
+        }
+      >
+        <ChevronRight className="h-4 w-4" />
+      </Button>
     </div>
   );
 };
