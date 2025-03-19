@@ -221,6 +221,24 @@ const Voice: React.FC = () => {
         title: "Task Added",
         description: "Your voice note has been transcribed and added to your tasks!",
       });
+        } else {
+          const { error } = await supabase
+        .from('tasks')
+        .insert({
+          title: generatedTitle,
+          task: transcribedText,
+          created_at: new Date().toISOString(),
+          created_by: user.id,
+          // assigned_to:publicUser[0].assistant_id,
+          status: "inbox"
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Task Added",
+        description: "Your voice note has been transcribed and added to your tasks!",
+      });
         }
   
       }
