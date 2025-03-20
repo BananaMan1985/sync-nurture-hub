@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { createClient } from "@supabase/supabase-js";
-import { User, Lock, Mail, Eye, EyeOff, ArrowRight, Code } from "lucide-react";
+import { User, Lock, Mail, Eye, EyeOff, ArrowRight } from "lucide-react";
 
 // Initialize Supabase client
 const supabase = createClient(
@@ -14,15 +14,21 @@ const AssistantSignup = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
 
-  const [signupName, setSignupName] = useState("");
   const [signupEmail, setSignupEmail] = useState("");
   const [signupPassword, setSignupPassword] = useState("");
   const [signupConfirmPassword, setSignupConfirmPassword] = useState("");
 
   const navigate = useNavigate();
+  const { user_id } = useParams(); // Extract user_id from URL params
 
   const isValidEmail = (email: string) => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+  };
+
+  const isValidUuid = (str: string): boolean => {
+    const uuidRegex =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(str);
   };
 
   const handleSignupSubmit = async (e: React.FormEvent) => {
@@ -30,37 +36,28 @@ const AssistantSignup = () => {
     setIsLoading(true);
     setAuthError(null);
 
-    // if (!user_id) {
-    //   setAuthError("Invalid user ID. Please use a valid signup link.");
-    //   setIsLoading(false);
-    //   return;
-    // }
-
-    const isValidUuid = (str: string): boolean => {
-      const uuidRegex =
-        /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-      return uuidRegex.test(str);
-    };
-
-    // Validate signupName as a UUID
-    if (!isValidUuid(signupName)) {
-      setAuthError("Code is not a valid UUID!");
+    // Validate user_id from URL params
+    if (!user_id || !isValidUuid(user_id)) {
+      setAuthError(
+        "Invalid or missing Owner Code in the URL. Please use a valid signup link."
+      );
       setIsLoading(false);
       return;
     }
 
     // Check if a user exists with this UUID in the users table
-    const { data: user, error: Usererror } = await supabase
+    const { data: user, error: userError } = await supabase
       .from("users")
       .select("*")
-      .eq("id", signupName)
+      .eq("id", user_id)
       .maybeSingle();
 
-    if (Usererror || !user) {
-      setAuthError("Code is not correct or no user found!");
+    if (userError || !user) {
+      setAuthError("Owner Code is not correct or no user found!");
       setIsLoading(false);
       return;
     }
+
     if (!isValidEmail(signupEmail)) {
       setAuthError("Please enter a valid email address");
       setIsLoading(false);
@@ -82,9 +79,9 @@ const AssistantSignup = () => {
       password: signupPassword,
       options: {
         data: {
-          full_name: signupName,
+          full_name: user_id, // Using user_id as full_name (adjust if needed)
           role: "assistant",
-          owner_id: signupName,
+          owner_id: user_id,
         },
       },
     });
@@ -101,7 +98,7 @@ const AssistantSignup = () => {
       const { error: updateError } = await supabase
         .from("users")
         .update({ assistant_id: assistantId })
-        .eq("id", signupName);
+        .eq("id", user_id);
 
       if (updateError) {
         console.error(
@@ -116,12 +113,13 @@ const AssistantSignup = () => {
       }
 
       console.log(
-        `Successfully linked assistant ${assistantId} to employee ${signupName}`
+        `Successfully linked assistant ${assistantId} to employee ${user_id}`
       );
     }
 
-    setAuthError("Check your email to confirm your account!");
+    // setAuthError("Check your email to confirm your account!");
     setIsLoading(false);
+    navigate("/");
     // Optionally redirect to login after signup
     // setTimeout(() => navigate('/login'), 2000);
   };
@@ -144,7 +142,7 @@ const AssistantSignup = () => {
             Assistant Signup
           </h1>
           <p style={{ color: "#666", marginTop: "8px" }}>
-            Ask your owner for Owner Code
+            Use the Owner Code from your signup link
           </p>
         </div>
 
@@ -186,7 +184,7 @@ const AssistantSignup = () => {
                   fontWeight: 500,
                 }}
               >
-                Owner Code
+                Owner Code (from URL)
               </label>
               <User
                 style={{
@@ -201,15 +199,15 @@ const AssistantSignup = () => {
               <input
                 type="text"
                 placeholder="Owner Code"
-                value={signupName}
-                require
-                onChange={(e) => setSignupName(e.target.value)}
+                value={user_id || ""}
+                disabled
                 style={{
                   width: "100%",
                   padding: "8px 8px 8px 36px",
                   border: "1px solid #ddd",
                   borderRadius: "4px",
                   fontSize: "14px",
+                  backgroundColor: "#f0f0f0",
                 }}
               />
             </div>

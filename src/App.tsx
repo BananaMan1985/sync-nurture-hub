@@ -76,7 +76,7 @@ const App = () => {
                 isAuthenticated ? <Navigate to="/" replace /> : <Login />
               }
             />
-            <Route path="/assistant-signup" element={<AssistantSignup />} />
+            <Route path="/assistant-signup/:user_id" element={<AssistantSignup />} />
             {/* Protected routes */}
             <Route
               path="/reports"

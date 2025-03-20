@@ -13,8 +13,6 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
 import { UserPlus, Mail } from "lucide-react";
 import { motion } from "framer-motion";
-import axios from "axios";
-
 import { createClient } from "@supabase/supabase-js";
 
 // Initialize Supabase client
@@ -28,16 +26,31 @@ const Settings: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
-  // Function to send email via Resend API
+  // Function to send email via Brevo REST API
   const sendInviteEmail = async (recipientEmail: string) => {
-    const apiKey = import.meta.env.VITE_RESEND_API_KEY;
-    const signupLink = "https://your-app.com/signup"; // Replace with your actual signup URL
+
+    const { data: { user }, error } = await supabase.auth.getUser()
+    if (error) {
+      console.error("Error fetching user:", error);
+      toast({
+        variant: "destructive",
+        title: "Authentication Error",
+        description: "Could not verify user. Please log in again.",
+      });
+      return;
+    }
+
+    const apiKey = import.meta.env.VITE_BREVO_API_KEY;
+    const signupLink = `https://sagancommandcenter.vercel.app/assistant-signup/${user.id}`; // Replace with your actual signup URL
 
     const emailData = {
-      from: "Your Name <your-email@your-domain.com>", // Replace with your verified email/domain
-      to: [recipientEmail],
+      sender: {
+        name: "Sagan",
+        email: "jon@getsagan.com", // Replace with your verified sender email
+      },
+      to: [{ email: recipientEmail, name: "Recipient Name" }],
       subject: "Invitation to Join as an Assistant",
-      html: `
+      htmlContent: `
         <p>Hello,</p>
         <p>You’ve been invited to join as an assistant on our platform!</p>
         <p>Please click the link below to sign up:</p>
@@ -47,21 +60,21 @@ const Settings: React.FC = () => {
     };
 
     try {
-      const response = await axios.post(
-        "https://api.resend.com/emails",
-        emailData,
-        {
-          headers: {
-            Authorization: `Bearer ${apiKey}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      const response = await fetch("https://api.brevo.com/v3/smtp/email", {
+        method: "POST",
+        headers: {
+          "accept": "application/json",
+          "api-key": apiKey,
+          "content-type": "application/json",
+        },
+        body: JSON.stringify(emailData),
+      });
 
-      if (response.status === 200) {
+      if (response.ok) {
         return true;
       } else {
-        throw new Error("Failed to send email");
+        const errorData = await response.json();
+        throw new Error(`Failed to send email: ${errorData.message || response.statusText}`);
       }
     } catch (error) {
       console.error("Error sending email:", error);
@@ -147,14 +160,14 @@ const Settings: React.FC = () => {
               <CardHeader>
                 <div className="flex items-center gap-2 mb-2">
                   <UserPlus className="h-5 w-5 text-primary" />
-                  <CardTitle>Share Account </CardTitle>
+                  <CardTitle>Share Account</CardTitle>
                 </div>
                 <CardDescription>
                   Invite team members to collaborate with you
                 </CardDescription>
                 <CardDescription>
                   Share with this link to signup,{" "}
-                  <a className="font-bold font-black"> {userId} </a>
+                  <a className="font-bold font-black">{userId}</a>
                 </CardDescription>
               </CardHeader>
               <CardContent>
